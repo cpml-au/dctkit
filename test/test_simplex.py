@@ -1,12 +1,17 @@
-import numpy as np
-from dctkit.mesh import simplex
+from dctkit.mesh import simplex, util
 
 
-def test_compute_face_to_edge_connectivity():
-    #test 1
-    edge = np.array([[1,3], [0,3], [0,1], [2,3], [1,3], [1,2], [3,4],[2,4], [2,3]])
-    print(f"Label edge matrix: \n {simplex.compute_face_to_edge_connectivity(edge)}")
+def test_prova():
+    numNodes, numElements, nodeTagsPerElem, x = util.read_mesh("test1.msh")
+    print(f"The number of nodes in the mesh is {numNodes}")
+    print(f"The number of faces in the mesh is {numElements}")
+    print(f"The vectorization of the face matrix is \n {nodeTagsPerElem}")
+    print(f"The coordinates of the nodes are \n {x}")
+    C, NtE, EtF = simplex.compute_face_to_edge_connectivity(nodeTagsPerElem)
+    print(f"The orientation matrix is \n {C}")
+    print(f"The NtE matrix is \n {NtE}")
+    print(f"The NtE matrix is \n {EtF}")
 
-    #test 2
-    edge = np.array([[1,2], [0,2], [0,1], [2,3], [0,3], [0,2]])
-    print(f"Label edge matrix: \n {simplex.compute_face_to_edge_connectivity(edge)}")
+
+if __name__ == "__main__":
+    test_prova()
