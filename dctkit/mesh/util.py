@@ -1,6 +1,7 @@
 import gmsh
 import numpy as np
 
+
 def read_mesh(filename, format="gmsh"):
     """Reads mesh from file.
     Args:
@@ -31,10 +32,10 @@ def read_mesh(filename, format="gmsh"):
     numElements = len(elemTags)
     # print("# elements = ", numElements)
 
-    physicalGrps = gmsh.model.getPhysicalGroups()
+    # physicalGrps = gmsh.model.getPhysicalGroups()
     # print("physical groups: ", physicalGrps)
 
-    edgeNodesTags = gmsh.model.mesh.getElementEdgeNodes(2)
+    # edgeNodesTags = gmsh.model.mesh.getElementEdgeNodes(2)
     # print("edge nodes tags: ", edgeNodesTags)
 
     # Position vectors of mesh points
@@ -48,8 +49,3 @@ def read_mesh(filename, format="gmsh"):
     x = x.T
 
     return numNodes, numElements, nodeTagsPerElem, x
-
-numNodes, numElements, nodeTagsPerElem, x = read_mesh("test1.msh")
-
-print(numNodes, numElements, nodeTagsPerElem)
-print(x)
