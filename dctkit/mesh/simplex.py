@@ -5,6 +5,8 @@ def simplex_array_parity(s):
     """Compute the number of transpositions needed to sort the array
        in ascending order modulo 2.
 
+       (Copied from PyDEC, dec/simplex_array.py)
+
         Args:
             s (np.array): array of the simplices.
 
@@ -42,18 +44,19 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
         nodeTagsPerElem (np.array): 1-dimensional array of node tags.
 
     Returns:
-        C (np.array): matrix of orientations.
-        NtE (np.array): matrix in which any element is a node tag and any
-                        row is a different edge.
-        EtF (np.array): matrix in which any element is an edge tag and any
-                        row is a different simplex.
+        C (np.array): (num_faces x edges_per_face) matrix encoding the
+                        relative orientation of each edge (columns) with
+                        respect to a parent face (rows).
+        NtE (np.array): matrix containing the IDs of the nodes (columns)
+                        belonging to each edge (rows) of the mesh.
+        EtF (np.array): matrix containing the IDs of the edges (columns)
+                        belonging to each face (rows) of the mesh.
 
     """
 
     # reshape nodeTagsPerElem to have a matrix in which
     # any row is a different simplex
     S_2 = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
-    print(S_2)
 
     num_simplices = S_2.shape[0]
     faces_per_simplex = S_2.shape[1]
@@ -61,6 +64,7 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
 
     # calculate orientations
     orientations = 1 - 2 * simplex_array_parity(S_2)
+
     # sort S_2 lexicographically
     S_2.sort(axis=1)
 
@@ -83,29 +87,36 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
     # orientation
     C = temp[:, -2].reshape(len(temp[:, :2]) // 3, 3)
 
-    # save edges without repetitions,
-    # indexes to restore the original matrix
-    # and number of occurences of any vector
+    # save edges without repetitions, indexes to restore the original
+    # matrix and number of occurences of any vector
     vals, idx, count = np.unique(edge,
                                  axis=0,
                                  return_index=True,
                                  return_counts=True)
+
     big = np.c_[vals, count, idx]
+
     # sort to preserve the initial order
     big = big[big[:, -1].argsort()]
+
     # update count and vals w.r.t the original order
     count = big[:, 2]
     vals = big[:, :2]
+
     # save the edge repeated
     rep_edges = vals[count > 1]
+
     # index position of rep_edges in the original array edge
     position = np.array(
         [np.where((edge == i).all(axis=1))[0] for i in rep_edges])
     position = np.concatenate(position)
+
     # create the vectors of label
     EtF = np.array(range(len(edge)))
+
     # eliminate duplicate labels
     EtF[position[1::2]] = position[::2]
+
     # build edge to face matrix
     EtF = EtF.reshape(len(edge) // 3, 3)
 
