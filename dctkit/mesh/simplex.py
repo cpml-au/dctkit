@@ -35,12 +35,10 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
     faces_per_simplex = S_2.shape[1]
     num_faces = num_simplices * faces_per_simplex
     orientations = 1 - 2 * simplex_array_parity(S_2)  # calculate orientations
-    print(type(orientations))
     S_2.sort(axis=1)  # sort S_2 lexicographically
     # S_2_plus_plus = np.c_[S_2_ord, orientations, np.arange(num_simplices)]
-
     faces = np.empty((num_faces, faces_per_simplex + 1),
-                     dtype=S_2.dtype)  # add documentation
+                     dtype=int)  # add documentation
     for i in range(faces_per_simplex):
         rows = faces[num_simplices * i:num_simplices * (i + 1)]
         rows[:, :i] = S_2[:, :i]
@@ -48,10 +46,9 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
         rows[:, -1] = np.arange(num_simplices)
         rows[:, -2] = ((-1)**i) * orientations
 
-    print(faces)
     temp = faces[faces[:, -1].argsort()]
     edge = temp[:, :2]
-    C = temp[:, -2]  # orientation
+    C = temp[:, -2].reshape(len(temp[:, :2]) // 3, 3)  # orientation
 
     # compute edge to face matrix
     vals, idx, count = np.unique(edge,
