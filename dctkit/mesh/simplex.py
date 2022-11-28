@@ -10,7 +10,7 @@ def simplex_array_parity(s):
 
         Returns:
             trans (np.array): array of the transpositions needed modulo 2.
-    
+
     """
     s = s.copy()
     M, N = s.shape
@@ -40,7 +40,7 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
 
     Args:
         nodeTagsPerElem (np.array): 1-dimensional array of node tags.
-    
+
     Returns:
         C (np.array): matrix of orientations.
         NtE (np.array): matrix in which any element is a node tag and any

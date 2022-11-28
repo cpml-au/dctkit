@@ -4,6 +4,7 @@ import os
 
 cwd = os.path.dirname(simplex.__file__)
 
+
 def test_compute_face_to_edge_connectivity():
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
