@@ -29,5 +29,20 @@ def test_compute_face_to_edge_connectivity():
     assert np.alltrue(NtE == NtE_true)
 
 
+def test_0():
+    filename = "test1.msh"
+    full_path = os.path.join(cwd, filename)
+    numNodes, numElements, nodeTagsPerElem, _ = util.read_mesh(full_path)
+
+    print(f"The number of nodes in the mesh is {numNodes}")
+    print(f"The number of faces in the mesh is {numElements}")
+    print(f"The vectorization of the face matrix is \n {nodeTagsPerElem}")
+
+    ptr, indices, C = simplex.compute_boundary_tags(nodeTagsPerElem)
+    print(ptr)
+    print(indices)
+    print(C)
+
+
 if __name__ == "__main__":
-    test_compute_face_to_edge_connectivity()
+    test_0()
