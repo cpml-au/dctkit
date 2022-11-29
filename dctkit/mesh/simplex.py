@@ -127,7 +127,7 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
     return C, NtE, EtF
 
 
-def compute_boundary_tags(nodeTagsPerElem):
+def compute_boundary_COO(nodeTagsPerElem):
     # reshape nodeTagsPerElem to have a matrix in which
     # any row is a different simplex
     S_2 = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
@@ -153,7 +153,27 @@ def compute_boundary_tags(nodeTagsPerElem):
         rows[:, -2] = ((-1)**i) * orientations
 
     faces_ordered = faces[np.lexsort(faces[:, :-2].T[::-1])]
-    C = faces_ordered[:, -2]
-    indices = faces_ordered[:, -1]
-    vals, ptr = np.unique(faces_ordered[:, :2], axis=0, return_index=True)
-    return ptr, indices, C
+    values = faces_ordered[:, -2]
+    column_index = faces_ordered[:, -1]
+    edge = faces_ordered[:, :2]
+    vals, idx, count = np.unique(edge,
+                                 axis=0,
+                                 return_index=True,
+                                 return_counts=True)
+    # save the edge repeated
+    vals_with_label = np.c_[vals, range(len(vals))]
+    rep_edges_with_label = vals_with_label[count > 1]
+    rep_edges = rep_edges_with_label[:, :2]
+    rep_label = rep_edges_with_label[:, -1]
+    # index position of rep_edges in the original array edge
+    position = np.array(
+        [np.where((edge == i).all(axis=1))[0] for i in rep_edges])
+    position = np.concatenate(position)
+    position_odd = position[1::2]
+    # create the vectors of label
+    rows_index = np.zeros(len(edge))
+    # eliminate duplicate labels
+    rows_index[position_odd] = rep_label
+    rows_index[rows_index == 0] = range(len(vals))
+
+    return rows_index, column_index, values
