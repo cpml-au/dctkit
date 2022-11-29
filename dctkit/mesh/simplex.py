@@ -125,3 +125,35 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
     NtE = np.unique(NtE, axis=0)
 
     return C, NtE, EtF
+
+
+def compute_boundary_tags(nodeTagsPerElem):
+    # reshape nodeTagsPerElem to have a matrix in which
+    # any row is a different simplex
+    S_2 = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
+
+    num_simplices = S_2.shape[0]
+    faces_per_simplex = S_2.shape[1]
+    num_faces = num_simplices * faces_per_simplex
+
+    # calculate orientations
+    orientations = 1 - 2 * simplex_array_parity(S_2)
+
+    # sort S_2 lexicographically
+    S_2.sort(axis=1)
+
+    faces = np.empty((num_faces, faces_per_simplex + 1), dtype=int)
+    # compute edges with their induced orientations and membership simplex
+    # and store this information in faces
+    for i in range(faces_per_simplex):
+        rows = faces[num_simplices * i:num_simplices * (i + 1)]
+        rows[:, :i] = S_2[:, :i]
+        rows[:, i:-2] = S_2[:, i + 1:]
+        rows[:, -1] = np.arange(num_simplices)
+        rows[:, -2] = ((-1)**i) * orientations
+
+    faces_ordered = faces[np.lexsort(faces[:, :-2].T[::-1])]
+    C = faces_ordered[:, -2]
+    indices = faces_ordered[:, -1]
+    vals, ptr = np.unique(faces_ordered[:, :2], axis=0, return_index=True)
+    return ptr, indices, C
