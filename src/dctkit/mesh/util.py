@@ -27,7 +27,7 @@ def read_mesh(filename, format="gmsh"):
 
     # Decrease element IDs by 1 to have node indices starting from 0
     nodeTagsPerElem = np.array(nodeTagsPerElem) - 1
-
+    nodeTagsPerElem = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
     # Get number of TRIANGLES
     numElements = len(elemTags)
     # print("# elements = ", numElements)
