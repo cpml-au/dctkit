@@ -127,53 +127,75 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
     return C, NtE, EtF
 
 
-def compute_boundary_COO(nodeTagsPerElem):
-    # reshape nodeTagsPerElem to have a matrix in which
-    # any row is a different simplex
-    S_2 = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
+def compute_boundary_COO(S_p):
+    """Compute the COO representation of the boundary matrix of S_p
 
-    num_simplices = S_2.shape[0]
-    faces_per_simplex = S_2.shape[1]
+    Args:
+        S_p (np.array): np.array matrix of node tags per p-face
+    Returns:
+        boundary_COO (tuple): tuple with the COO representation of the boundary
+        vals (np.array): np.array matrix of node tags per (p-1)-face ordered
+                         lexicographically
+    """
+    num_simplices = S_p.shape[0]
+    faces_per_simplex = S_p.shape[1]
     num_faces = num_simplices * faces_per_simplex
 
     # calculate orientations
-    orientations = 1 - 2 * simplex_array_parity(S_2)
+    orientations = 1 - 2 * simplex_array_parity(S_p)
 
-    # sort S_2 lexicographically
-    S_2.sort(axis=1)
+    # sort S_p lexicographically
+    F = S_p.copy()
+    F.sort(axis=1)
 
     faces = np.empty((num_faces, faces_per_simplex + 1), dtype=int)
     # compute edges with their induced orientations and membership simplex
     # and store this information in faces
     for i in range(faces_per_simplex):
         rows = faces[num_simplices * i:num_simplices * (i + 1)]
-        rows[:, :i] = S_2[:, :i]
-        rows[:, i:-2] = S_2[:, i + 1:]
+        rows[:, :i] = F[:, :i]
+        rows[:, i:-2] = F[:, i + 1:]
         rows[:, -1] = np.arange(num_simplices)
         rows[:, -2] = ((-1)**i) * orientations
 
+    # order faces lexicographically
     faces_ordered = faces[np.lexsort(faces[:, :-2].T[::-1])]
     values = faces_ordered[:, -2]
     column_index = faces_ordered[:, -1]
-    edge = faces_ordered[:, :2]
-    vals, idx, count = np.unique(edge,
+    edge = faces_ordered[:, :-2]
+    # compute vals and rows_index
+    vals, rows_index = np.unique(edge,
                                  axis=0,
-                                 return_index=True,
-                                 return_counts=True)
-    # save the edge repeated
-    vals_with_label = np.c_[vals, range(len(vals))]
-    rep_edges_with_label = vals_with_label[count > 1]
-    rep_edges = rep_edges_with_label[:, :2]
-    rep_label = rep_edges_with_label[:, -1]
-    # index position of rep_edges in the original array edge
-    position = np.array(
-        [np.where((edge == i).all(axis=1))[0] for i in rep_edges])
-    position = np.concatenate(position)
-    position_odd = position[1::2]
-    # create the vectors of label
-    rows_index = np.zeros(len(edge))
-    # eliminate duplicate labels
-    rows_index[position_odd] = rep_label
-    rows_index[rows_index == 0] = range(len(vals))
+                                 return_inverse=True)
+    boundary_COO = (rows_index, column_index, values)
+    return boundary_COO, vals
 
-    return rows_index, column_index, values
+
+class simplicial_complex:
+    """Simplicial complex
+
+    Args:
+        node_tags (np.array): np.array matrix of node tags.
+    Attributes:
+        node_tags (np.array): np.array matrix of node tags.
+    """
+    def __init__(self, node_tags):
+        self.node_tags = node_tags
+
+    def get_boundary_operators(self):
+        """Compute all the COO representations of the boundary matrices 
+
+        Returns:
+            boundary (tuple): tuple of COO representations of boundary matrices
+        """
+        boundary = []
+        node_tags = self.node_tags
+        for i in range(node_tags.shape[1] - 1):
+            current_boundary, vals = compute_boundary_COO(node_tags)
+            boundary.append(current_boundary)
+            node_tags = vals
+        boundary.reverse()
+        return boundary
+
+
+SimComplex = simplicial_complex
