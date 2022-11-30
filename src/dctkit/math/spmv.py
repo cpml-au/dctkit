@@ -4,7 +4,7 @@ import jax.ops as ops
 def spmv_coo(A, v, transpose=False):
     """Performs the matrix-vector product between a sparse matrix in COO
     format and a vector.
-  
+
     Args:
         A: tuple (rows,cols,values) representing the sparse matrix in
             COO format. Each of the elements of the tuple is a

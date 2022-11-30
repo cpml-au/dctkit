@@ -1,4 +1,4 @@
-from dctkit.math import spmv
+from src.dctkit.math import spmv
 import numpy as np
 
 
