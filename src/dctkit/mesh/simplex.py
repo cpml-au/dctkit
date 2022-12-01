@@ -1,6 +1,41 @@
 import numpy as np
 
 
+class SimplicialComplex:
+    """Simplicial complex class.
+
+    Args:
+        tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
+        containing the IDs of the nodes belonging to each tetrahedron (or higher
+        level simplex).
+    Attributes:
+        tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
+        containing the IDs of the nodes belonging to each tetrahedron (or higher
+        level simplex).
+    """
+
+    def __init__(self, tet_node_tags):
+        self.tet_node_tags = tet_node_tags
+        # dimension of the complex
+        self.dim = tet_node_tags.shape[1] - 1
+        # list of the boundary operators
+        self.boundary = [None]*self.dim
+        # popoulate boundary operators
+        self.get_boundary_operators()
+
+    def get_boundary_operators(self):
+        """Compute all the COO representations of the boundary matrices.
+        """
+        # S_p is the matrix containing the IDs of the p-dimensional simplices
+        S_p = self.tet_node_tags
+
+        for p in range(self.dim):
+            current_boundary, vals = compute_boundary_COO(S_p)
+            # FIXME: the p-dim boundary matrix is the p-1 entry of boundary[]
+            self.boundary[self.dim - p - 1] = current_boundary
+            S_p = vals
+
+
 def simplex_array_parity(s):
     """Compute the number of transpositions needed to sort the array
        in ascending order modulo 2.
@@ -174,38 +209,3 @@ def compute_boundary_COO(S_p):
     boundary_COO = (rows_index, column_index, values)
 
     return boundary_COO, vals
-
-
-class SimplicialComplex:
-    """Simplicial complex class.
-
-    Args:
-        tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
-        containing the IDs of the nodes belonging to each tetrahedron (or higher
-        level simplex).
-    Attributes:
-        tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
-        containing the IDs of the nodes belonging to each tetrahedron (or higher
-        level simplex).
-    """
-
-    def __init__(self, tet_node_tags):
-        self.tet_node_tags = tet_node_tags
-        # dimension of the complex
-        self.dim = tet_node_tags.shape[1] - 1
-        # list of the boundary operators
-        self.boundary = [None]*self.dim
-        # popoulate boundary operators
-        self.get_boundary_operators()
-
-    def get_boundary_operators(self):
-        """Compute all the COO representations of the boundary matrices.
-        """
-        # S_p is the matrix containing the IDs of the p-dimensional simplices
-        S_p = self.tet_node_tags
-
-        for p in range(self.dim):
-            current_boundary, vals = compute_boundary_COO(S_p)
-            # FIXME: the p-dim boundary matrix is the p-1 entry of boundary[]
-            self.boundary[self.dim - p - 1] = current_boundary
-            S_p = vals
