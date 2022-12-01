@@ -1,8 +1,8 @@
-from src.dctkit.mesh import simplex
-from src.dctkit.math import spmv
+from dctkit.mesh import simplex
+from dctkit.math import spmv
 
 
-class cochain(simplex.simplicial_complex):
+class Cochain(simplex.SimplicialComplex):
     """Cochain associated to a simplicial complex
 
     Args:
@@ -18,6 +18,7 @@ class cochain(simplex.simplicial_complex):
         node_tags (np.array): inherited from the class simplicial_complex
         vec (np.array): vectorial representation of the cochain.
     """
+
     def __init__(self, dim: int, is_primal: bool, node_tags, vec=None):
         super().__init__(node_tags)
         self.dim = dim
@@ -34,7 +35,7 @@ def coboundary_operator(c):
         dc (Cochain): the cochain obtained taking the coboundary of c
     """
     # initialize dc
-    dc = cochain(dim=c.dim + 1, is_primal=c.is_primal, node_tags=c.node_tags)
+    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, node_tags=c.node_tags)
 
     # construct boundary matrix
     t = c.get_boundary_operators()[c.dim]
@@ -46,6 +47,3 @@ def coboundary_operator(c):
     else:
         dc.vec = spmv.spmv_coo(t, c.vec, transpose=False)
     return dc
-
-
-Cochain = cochain
