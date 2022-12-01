@@ -62,7 +62,6 @@ def test_simplicial_complex():
     print(f"The face matrix is \n {S_2}")
 
     S = simplex.SimplicialComplex(S_2)
-    boundary = S.get_boundary_operators()
     boundary_true = []
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])
     cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 5, 6, 3, 5, 7, 2, 4, 6, 7])
@@ -73,8 +72,8 @@ def test_simplicial_complex():
     boundary_true.append((rows_1_true, cols_1_true, values_1_true))
     boundary_true.append((rows_2_true, cols_2_true, values_2_true))
     for i in range(3):
-        assert np.alltrue(boundary[0][i] == boundary_true[0][i])
-        assert np.alltrue(boundary[1][i] == boundary_true[1][i])
+        assert np.alltrue(S.boundary[0][i] == boundary_true[0][i])
+        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
 
 
 if __name__ == "__main__":

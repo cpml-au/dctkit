@@ -19,14 +19,15 @@ def test_cochain():
     v_0_true = np.array([1, 2, 4, 2, 3, 1, 2, 1])
     v_1 = np.array([1, 2, 3, 4, 5, 6, 7, 8])
     v_1_true = np.array([3, -6, 7, -7])
-    c_0 = cochain.Cochain(dim=0, is_primal=True, node_tags=S_2, vec=v_0)
-    c_1 = cochain.Cochain(dim=1, is_primal=True, node_tags=S_2, vec=v_1)
-    dc_0 = cochain.coboundary_operator(c_0)
-    dc_1 = cochain.coboundary_operator(c_1)
-    dc_0_true = cochain.Cochain(dim=0, is_primal=True, node_tags=S_2, vec=v_0_true)
-    dc_1_true = cochain.Cochain(dim=1, is_primal=True, node_tags=S_2, vec=v_1_true)
-    assert np.alltrue(dc_0.vec == dc_0_true.vec)
-    assert np.alltrue(dc_1.vec == dc_1_true.vec)
+    cpx = simplex.SimplicialComplex(S_2)
+    c_0 = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0)
+    c_1 = cochain.Cochain(dim=1, is_primal=True, complex=cpx, coeffs=v_1)
+    dc_0 = cochain.coboundary(c_0)
+    dc_1 = cochain.coboundary(c_1)
+    dc_0_true = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0_true)
+    dc_1_true = cochain.Cochain(dim=1, is_primal=True, complex=cpx, coeffs=v_1_true)
+    assert np.alltrue(dc_0.coeffs == dc_0_true.coeffs)
+    assert np.alltrue(dc_1.coeffs == dc_1_true.coeffs)
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
-from dctkit.mesh import simplex
+from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
 
 
-class Cochain(simplex.SimplicialComplex):
+class Cochain():
     """Cochain associated to a simplicial complex
 
     Args:
@@ -19,31 +19,32 @@ class Cochain(simplex.SimplicialComplex):
         vec (np.array): vectorial representation of the cochain.
     """
 
-    def __init__(self, dim: int, is_primal: bool, node_tags, vec=None):
-        super().__init__(node_tags)
+    def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex, coeffs=None):
         self.dim = dim
+        self.complex = complex
         self.is_primal = is_primal
-        self.vec = vec
+        self.coeffs = coeffs
 
 
-def coboundary_operator(c):
-    """Implements the coboundary operator
+def coboundary(c):
+    """Implements the coboundary operator.
 
     Args:
-        c (Cochain): a cochain
+        c (Cochain): a cochain.
     Returns:
-        dc (Cochain): the cochain obtained taking the coboundary of c
+        dc (Cochain): the cochain obtained taking the coboundary of c.
     """
     # initialize dc
-    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, node_tags=c.node_tags)
+    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
 
-    # construct boundary matrix
-    t = c.get_boundary_operators()[c.dim]
+    # get the appropriate (primal) boundary matrix
+    t = c.complex.boundary[c.dim]
 
-    # check if transposition is needed
-    # and compute matrix-vector product
+    # apply coboundary matrix (transpose of the primal boundary matrix) to the
+    # array of coefficients of the cochain.
     if c.is_primal:
-        dc.vec = spmv.spmv_coo(t, c.vec, transpose=True)
+        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=True)
     else:
-        dc.vec = spmv.spmv_coo(t, c.vec, transpose=False)
+        # FIXME: transpose is not enough to compute the dual coboundary op
+        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False)
     return dc
