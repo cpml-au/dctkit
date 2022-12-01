@@ -1,5 +1,5 @@
 import numpy as np
-from src.dctkit.mesh import simplex, util
+from dctkit.mesh import simplex, util
 import os
 
 cwd = os.path.dirname(simplex.__file__)
@@ -61,7 +61,7 @@ def test_simplicial_complex():
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    S = simplex.SimComplex(S_2)
+    S = simplex.SimplicialComplex(S_2)
     boundary = S.get_boundary_operators()
     boundary_true = []
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])

@@ -36,7 +36,7 @@ def simplex_array_parity(s):
     return trans
 
 
-def compute_face_to_edge_connectivity(nodeTagsPerElem):
+def compute_face_to_edge_connectivity(S_2):
     """Compute node-to-edge matrix, edge-to-face matrix and orientations
        of the edges with respect to faces.
 
@@ -53,10 +53,6 @@ def compute_face_to_edge_connectivity(nodeTagsPerElem):
                         belonging to each face (rows) of the mesh.
 
     """
-
-    # reshape nodeTagsPerElem to have a matrix in which
-    # any row is a different simplex
-    S_2 = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
 
     num_simplices = S_2.shape[0]
     faces_per_simplex = S_2.shape[1]
@@ -164,14 +160,12 @@ def compute_boundary_COO(S_p):
     column_index = faces_ordered[:, -1]
     edge = faces_ordered[:, :-2]
     # compute vals and rows_index
-    vals, rows_index = np.unique(edge,
-                                 axis=0,
-                                 return_inverse=True)
+    vals, rows_index = np.unique(edge, axis=0, return_inverse=True)
     boundary_COO = (rows_index, column_index, values)
     return boundary_COO, vals
 
 
-class simplicial_complex:
+class SimplicialComplex:
     """Simplicial complex
 
     Args:
@@ -179,6 +173,7 @@ class simplicial_complex:
     Attributes:
         node_tags (np.array): np.array matrix of node tags.
     """
+
     def __init__(self, node_tags):
         self.node_tags = node_tags
 
@@ -196,6 +191,3 @@ class simplicial_complex:
             node_tags = vals
         boundary.reverse()
         return boundary
-
-
-SimComplex = simplicial_complex

@@ -1,6 +1,6 @@
 import numpy as np
-from src.dctkit.mesh import simplex, util
-from src.dctkit.dec import cochain
+from dctkit.mesh import simplex, util
+from dctkit.dec import cochain
 import os
 
 cwd = os.path.dirname(simplex.__file__)
