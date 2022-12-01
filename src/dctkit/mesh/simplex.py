@@ -127,7 +127,7 @@ def compute_boundary_COO(S_p):
     """Compute the COO representation of the boundary matrix of S_p
 
     Args:
-        S_p (np.array): np.array matrix of node tags per p-face
+        S_p (np.array): matrix of the IDs of the nodes belonging to each p-simplex.
     Returns:
         boundary_COO (tuple): tuple with the COO representation of the boundary
         vals (np.array): np.array matrix of node tags per (p-1)-face ordered
@@ -137,31 +137,42 @@ def compute_boundary_COO(S_p):
     faces_per_simplex = S_p.shape[1]
     num_faces = num_simplices * faces_per_simplex
 
-    # calculate orientations
+    # compute array of relative orientations of the (p-1)-faces wrt the p-simplices
     orientations = 1 - 2 * simplex_array_parity(S_p)
 
-    # sort S_p lexicographically
+    # sort the rows of S_p lexicographically
+    # FIXME: avoid making a copy and sorting every time
     F = S_p.copy()
     F.sort(axis=1)
 
-    faces = np.empty((num_faces, faces_per_simplex + 1), dtype=int)
-    # compute edges with their induced orientations and membership simplex
-    # and store this information in faces
+    # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
+    S_pm1_ext = np.empty((num_faces, faces_per_simplex + 1), dtype=np.int32)
+
+    # find the node IDs of the (p-1)-simplices and store their relative
+    # orientations wrt the parent simplex
     for i in range(faces_per_simplex):
-        rows = faces[num_simplices * i:num_simplices * (i + 1)]
+        # remove the i-th column from the S_p matrix and put the result in the
+        # appropriate block S_pm1_ext
+        rows = S_pm1_ext[num_simplices * i:num_simplices * (i + 1)]
         rows[:, :i] = F[:, :i]
         rows[:, i:-2] = F[:, i + 1:]
+        # put IDs of the p-simplices in the last column
         rows[:, -1] = np.arange(num_simplices)
+        # put the orientations in the next-to-last-column
         rows[:, -2] = ((-1)**i) * orientations
 
-    # order faces lexicographically
-    faces_ordered = faces[np.lexsort(faces[:, :-2].T[::-1])]
+    # order faces lexicographically (copied from PyDEC)
+    # FIXME: maybe use sort
+    faces_ordered = S_pm1_ext[np.lexsort(S_pm1_ext[:, :-2].T[::-1])]
+
     values = faces_ordered[:, -2]
     column_index = faces_ordered[:, -1]
     edge = faces_ordered[:, :-2]
+
     # compute vals and rows_index
     vals, rows_index = np.unique(edge, axis=0, return_inverse=True)
     boundary_COO = (rows_index, column_index, values)
+
     return boundary_COO, vals
 
 
