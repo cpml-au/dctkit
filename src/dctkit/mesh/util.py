@@ -4,9 +4,10 @@ import numpy as np
 
 def read_mesh(filename, format="gmsh"):
     """Reads mesh from file.
+
     Args:
         filename: name of the file containing the mesh
-    Returns
+    Returns:
         numNodes: number of mesh points.
     """
     if format != "gmsh":
@@ -38,5 +39,5 @@ def read_mesh(filename, format="gmsh"):
     # print("edge nodes tags: ", edgeNodesTags)
 
     # Position vectors of mesh points
-    x = coords.reshape(len(coords)//3, 3)
-    return numNodes, numElements, nodeTagsPerElem, x
+    node_coords = coords.reshape(len(coords)//3, 3)
+    return numNodes, numElements, nodeTagsPerElem, node_coords
