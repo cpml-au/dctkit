@@ -55,13 +55,13 @@ def test_boundary_COO():
 def test_simplicial_complex():
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, _ = util.read_mesh(full_path)
+    numNodes, numElements, S_2, x = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    S = simplex.SimplicialComplex(S_2)
+    S = simplex.SimplicialComplex(S_2, x)
     boundary_true = []
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])
     cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 5, 6, 3, 5, 7, 2, 4, 6, 7])

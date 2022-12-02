@@ -9,7 +9,7 @@ cwd = os.path.dirname(simplex.__file__)
 def test_cochain():
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, _ = util.read_mesh(full_path)
+    numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
@@ -19,7 +19,7 @@ def test_cochain():
     v_0_true = np.array([1, 2, 4, 2, 3, 1, 2, 1])
     v_1 = np.array([1, 2, 3, 4, 5, 6, 7, 8])
     v_1_true = np.array([3, -6, 7, -7])
-    cpx = simplex.SimplicialComplex(S_2)
+    cpx = simplex.SimplicialComplex(S_2, node_coord)
     c_0 = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0)
     c_1 = cochain.Cochain(dim=1, is_primal=True, complex=cpx, coeffs=v_1)
     dc_0 = cochain.coboundary(c_0)
