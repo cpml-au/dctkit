@@ -17,7 +17,6 @@ def read_mesh(filename, format="gmsh"):
 
     # Get nodes and corresponding coordinates
     nodeTags, coords, paramCoords = gmsh.model.mesh.getNodes()
-
     numNodes = len(nodeTags)
     # print("# nodes = ", numNodes)
 
@@ -39,13 +38,5 @@ def read_mesh(filename, format="gmsh"):
     # print("edge nodes tags: ", edgeNodesTags)
 
     # Position vectors of mesh points
-    x = np.zeros((3, numNodes))
-
-    # Loop over nodes
-    for i in range(numNodes):
-        # Populate tensor of node positions
-        x[:, i] = coords[3 * i:3 * (i + 1)]
-
-    x = x.T
-
+    x = coords.reshape(len(coords)//3, 3)
     return numNodes, numElements, nodeTagsPerElem, x
