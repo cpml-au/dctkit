@@ -1,4 +1,5 @@
 import numpy as np
+from dctkit.math import circumcenter as circ
 
 
 class SimplicialComplex:
@@ -8,22 +9,34 @@ class SimplicialComplex:
         tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
         containing the IDs of the nodes belonging to each tetrahedron (or higher
         level simplex).
+        node_coord (float np.array): coordinates of all the nodes of the cell complex.
+        dim (int32): dimension of the complex
+        other_node_tags (list): list in which any entry p is the matrix containing the
+                                IDs of the nodes belonging to each p-simplex.
+        circ (list): list in which any entry p is a matrix containing all the
+                     circumcenters of all the p-simplexes.
+        boundary(list): list of the boundary operators.
     Attributes:
         tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
         containing the IDs of the nodes belonging to each tetrahedron (or higher
         level simplex).
+        node_coord (float np.array): coordinates of all the nodes (in order) of
+                                     the cell complex.
     """
 
-    def __init__(self, tet_node_tags):
+    def __init__(self, tet_node_tags, node_coord):
         self.tet_node_tags = tet_node_tags
-        # dimension of the complex
+        self.node_coord = node_coord
         self.dim = tet_node_tags.shape[1] - 1
-        # list of the boundary operators
+        self.other_node_tags = [None]*(self.dim)
+        self.circ = [None]*(self.dim)
         self.boundary = [None]*self.dim
-        # popoulate boundary operators
-        self.get_boundary_operators()
+        # populate boundary operators
+        self.get_boundary_other_tags()
+        # populate circ
+        self.get_circumcenters()
 
-    def get_boundary_operators(self):
+    def get_boundary_other_tags(self):
         """Compute all the COO representations of the boundary matrices.
         """
         # S_p is the matrix containing the IDs of the p-dimensional simplices
@@ -33,7 +46,17 @@ class SimplicialComplex:
             current_boundary, vals = compute_boundary_COO(S_p)
             # FIXME: the p-dim boundary matrix is the p-1 entry of boundary[]
             self.boundary[self.dim - p - 1] = current_boundary
-            S_p = vals
+            self.other_node_tags[self.dim - p - 1] = vals
+            S_p = self.other_node_tags[self.dim - p - 1]
+
+    def get_circumcenters(self):
+        """Compute all the circumcenters.
+        """
+        for p in range(self.dim - 1):
+            self.circ[p] = circ.all_circumcenters(self.other_node_tags[p+1],
+                                                  self.node_coord)
+        self.circ[self.dim - 1] = circ.all_circumcenters(self.tet_node_tags,
+                                                         self.node_coord)
 
 
 def simplex_array_parity(s):
