@@ -32,21 +32,3 @@ def circumcenter(s, node_coord):
     circumcenter = np.dot(bary_coords, simplex_coord)
 
     return circumcenter
-
-
-def all_circumcenters(S, node_coord):
-    """Compute the circumcenters of all the p-simplices S of a cell complex.
-
-    Args:
-        S (np.array): matrix of node tags in which any rows represents the tag
-                      of a p-simplex.
-        node_coord (np.array): coordinates of every node of the cell complex
-                          in which s is defined.
-    Returns:
-        C (np.array): matrix in which rows are the coordinates of the circumcenter
-                      of the relative rows of S.
-    """
-    C = np.empty((S.shape[0], node_coord.shape[1]))
-    for i in range(S.shape[0]):
-        C[i, :] = circumcenter(S[i, :], node_coord)
-    return C
