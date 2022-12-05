@@ -1,5 +1,6 @@
 import numpy as np
 from dctkit.math import circumcenter as circ
+from dctkit.math import volume
 
 
 class SimplicialComplex:
@@ -10,53 +11,73 @@ class SimplicialComplex:
         containing the IDs of the nodes belonging to each tetrahedron (or higher
         level simplex).
         node_coord (float np.array): coordinates of all the nodes of the cell complex.
+    Attributes:
+        node_coord (float np.array): coordinates of all the nodes of the cell complex.
         dim (int32): dimension of the complex
-        other_node_tags (list): list in which any entry p is the matrix containing the
-                                IDs of the nodes belonging to each p-simplex.
+        S_p (list): list in which any entry p is the matrix containing the
+                    IDs of the nodes belonging to each p-simplex.
         circ (list): list in which any entry p is a matrix containing all the
                      circumcenters of all the p-simplexes.
         boundary(list): list of the boundary operators.
-    Attributes:
-        tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
-        containing the IDs of the nodes belonging to each tetrahedron (or higher
-        level simplex).
-        node_coord (float np.array): coordinates of all the nodes (in order) of
-                                     the cell complex.
     """
 
     def __init__(self, tet_node_tags, node_coord):
-        self.tet_node_tags = tet_node_tags
         self.node_coord = node_coord
         self.dim = tet_node_tags.shape[1] - 1
-        self.other_node_tags = [None]*(self.dim)
-        self.circ = [None]*(self.dim)
+        # S_p is the matrix containing the IDs of the nodes belonging
+        # to each p-dimensional simplices
+        self.S_p = [None]*(self.dim + 1)
+        self.S_p[-1] = tet_node_tags
+        self.embedded_dim = node_coord.shape[1]
         self.boundary = [None]*self.dim
+        self.circ = [None]*(self.dim)
+        self.primal_volumes = [None]*(self.dim)
         # populate boundary operators
-        self.get_boundary_other_tags()
+        self.get_boundary()
         # populate circ
         self.get_circumcenters()
+        # populate primal volumes
+        self.get_primal_volumes()
 
-    def get_boundary_other_tags(self):
+    def get_boundary(self):
         """Compute all the COO representations of the boundary matrices.
         """
-        # S_p is the matrix containing the IDs of the p-dimensional simplices
-        S_p = self.tet_node_tags
-
         for p in range(self.dim):
-            current_boundary, vals = compute_boundary_COO(S_p)
+            current_boundary, vals = compute_boundary_COO(self.S_p[self.dim - p])
             # FIXME: the p-dim boundary matrix is the p-1 entry of boundary[]
             self.boundary[self.dim - p - 1] = current_boundary
-            self.other_node_tags[self.dim - p - 1] = vals
-            S_p = self.other_node_tags[self.dim - p - 1]
+            self.S_p[self.dim - p - 1] = vals
 
     def get_circumcenters(self):
         """Compute all the circumcenters.
         """
-        for p in range(self.dim - 1):
-            self.circ[p] = circ.all_circumcenters(self.other_node_tags[p+1],
-                                                  self.node_coord)
-        self.circ[self.dim - 1] = circ.all_circumcenters(self.tet_node_tags,
-                                                         self.node_coord)
+        for p in range(self.dim):
+            S_p = self.S_p[p+1]
+            C = np.empty((S_p.shape[0], self.node_coord.shape[1]))
+            for i in range(S_p.shape[0]):
+                C[i, :] = circ.circumcenter(S_p[i, :], self.node_coord)
+            self.circ[p] = C
+
+    def get_primal_volumes(self):
+        """Compute all the primal volumes.
+        """
+        unsigned_range = self.dim
+        if self.dim == self.embedded_dim:
+            unsigned_range -= 1
+        for p in range(unsigned_range):
+            S = self.S_p[p+1]
+            rows, _ = S.shape
+            primal_volumes = np.empty(rows)
+            for i in range(rows):
+                primal_volumes[i] = volume.unsigned_volume(S[i, :], self.node_coord)
+            self.primal_volumes[p] = primal_volumes
+        if self.dim == self.embedded_dim:
+            S_p = self.S_p[self.dim]
+            rows, _ = S_p.shape
+            primal_volumes = np.empty(rows)
+            for i in range(rows):
+                primal_volumes[i] = volume.signed_volume(S_p[i, :], self.node_coord)
+            self.primal_volumes[self.dim-1] = primal_volumes
 
 
 def simplex_array_parity(s):
