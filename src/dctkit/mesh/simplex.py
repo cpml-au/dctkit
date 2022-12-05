@@ -10,28 +10,34 @@ class SimplicialComplex:
         tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
         containing the IDs of the nodes belonging to each tetrahedron (or higher
         level simplex).
-        node_coord (float np.array): coordinates of all the nodes of the cell complex.
+        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes (rows) of the simplicial complex.
     Attributes:
-        node_coord (float np.array): coordinates of all the nodes of the cell complex.
         dim (int32): dimension of the complex
         S_p (list): list in which any entry p is the matrix containing the
                     IDs of the nodes belonging to each p-simplex.
         circ (list): list in which any entry p is a matrix containing all the
                      circumcenters of all the p-simplexes.
         boundary(list): list of the boundary operators.
+        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes (rows) of the simplicial complex.
     """
 
     def __init__(self, tet_node_tags, node_coord):
         self.node_coord = node_coord
+        # Compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
         # S_p is the matrix containing the IDs of the nodes belonging
-        # to each p-dimensional simplices
+        # to each p-simplex
         self.S_p = [None]*(self.dim + 1)
         self.S_p[-1] = tet_node_tags
         self.embedded_dim = node_coord.shape[1]
         self.boundary = [None]*self.dim
         self.circ = [None]*(self.dim)
+        self.bary_circ = [None]*(self.dim)
         self.primal_volumes = [None]*(self.dim)
+        self.dual_volumes = [None]*(self.dim)
+
+        self.boundary_simplices = [None]*self.dim
+
         # populate boundary operators
         self.get_boundary()
         # populate circ
@@ -54,9 +60,11 @@ class SimplicialComplex:
         for p in range(self.dim):
             S_p = self.S_p[p+1]
             C = np.empty((S_p.shape[0], self.node_coord.shape[1]))
+            B = np.empty((S_p.shape[0], S_p.shape[1]))
             for i in range(S_p.shape[0]):
-                C[i, :] = circ.circumcenter(S_p[i, :], self.node_coord)
+                C[i, :], B[i,:] = circ.circumcenter(S_p[i, :], self.node_coord)
             self.circ[p] = C
+            self.bary_circ[p] = B
 
     def get_primal_volumes(self):
         """Compute all the primal volumes.
@@ -78,6 +86,33 @@ class SimplicialComplex:
             for i in range(rows):
                 primal_volumes[i] = volume.signed_volume(S_p[i, :], self.node_coord)
             self.primal_volumes[self.dim-1] = primal_volumes
+    
+    def get_dual_volumes(self):
+        """Compute all the dual volumes.
+        """
+        # Loop over simplices at all dimensions
+        # for p in range(self.dim + 1):
+        p = 1
+        num_p, num_bnd_simplices = self.boundary_simplices[p].shape
+        num_pm1, _ = self.boundary_simplices[p-1].shape
+        self.dual_volumes[p-1] = np.zeros(num_pm1)
+        # Loop over p-simplices
+        for i in range(num_p):
+            # Loop over boundary simplices of the p-simplex
+            for j in range(num_bnd_simplices):
+                # ID of the boundary (p-1)-simplex
+                index = self.boundary_simplices[p][i,j]
+                # Distance between circumcenters of the p-simplex and the boundary (p-1)-simplex
+                length = np.linalg.norm(self.circ[p][i,:]-self.circ[p-1][index,:])
+                # Find opposite vertex to the (p-1)-simplex
+                opp_vert = list(set(self.S_p[p+1][i,:])-set(self.S_p[p][index,:]))[0]
+                opp_vert_index = list(self.S_p[p+1][i,:]).index(opp_vert)
+                # Sign of the dual volume of the boundary (p-1)-simplex = sign of the barycentric coordinate of the circumcenter of the parent p-simplex relative to the opposite vertex
+                sign = np.copysign(1,self.bary_circ[p][i,opp_vert_index])
+                # Update dual volume of the boundary (p-1)-simplex
+                self.dual_volumes[p-1][index] += sign*length
+ 
+        print(self.dual_volumes[p-1])
 
 
 def simplex_array_parity(s):

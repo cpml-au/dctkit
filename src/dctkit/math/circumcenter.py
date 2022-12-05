@@ -31,4 +31,4 @@ def circumcenter(s, node_coord):
     # compute the coordinates of the circumcenter
     circumcenter = np.dot(bary_coords, simplex_coord)
 
-    return circumcenter
+    return circumcenter, bary_coords
