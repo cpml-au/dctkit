@@ -10,7 +10,8 @@ class SimplicialComplex:
         tet_node_tags (int32 np.array): (num_tet x num_nodes_per_tet) matrix
         containing the IDs of the nodes belonging to each tetrahedron (or higher
         level simplex).
-        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes (rows) of the simplicial complex.
+        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes
+                                     (rows) of the simplicial complex.
     Attributes:
         dim (int32): dimension of the complex
         S_p (list): list in which any entry p is the matrix containing the
@@ -18,7 +19,8 @@ class SimplicialComplex:
         circ (list): list in which any entry p is a matrix containing all the
                      circumcenters of all the p-simplexes.
         boundary(list): list of the boundary operators.
-        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes (rows) of the simplicial complex.
+        node_coord (float np.array): Cartesian coordinates (columns) of all the nodes
+                                     (rows) of the simplicial complex.
     """
 
     def __init__(self, tet_node_tags, node_coord):
@@ -39,20 +41,48 @@ class SimplicialComplex:
         self.boundary_simplices = [None]*self.dim
 
         # populate boundary operators
-        self.get_boundary()
-        # populate circ
-        self.get_circumcenters()
+        self.__get_boundary()
         # populate primal volumes
         self.get_primal_volumes()
 
-    def get_boundary(self):
+    def __getitem__(self, key):
+        dict = {'boundary': self.boundary[key - 1],
+                'circumcenters': self.circ[key - 1],
+                'barycentric_circumcenters': self.bary_circ[key - 1],
+                'primal_volumes': self.primal_volumes[key-1]}
+        if key >= 2:
+            dict['boundary_simplices'] = self.boundary_simplices[key-2]
+        else:
+            dict['boundary_simplices'] = self.S_p[key]
+        return dict
+
+    def __setitem__(self, arg, key_value):
+        key, value = key_value
+        if arg == 'boundary':
+            self.boundary[key - 1] = value
+        elif arg == 'circumcenters':
+            self.circ[key - 1] = value
+        elif arg == 'barycentric_circumcenters':
+            self.bary_circ[key - 1] = value
+        elif arg == 'primal_volumes':
+            self.primal_volumes[key - 1] = value
+        elif arg == 'boundary_simplices':
+            self.boundary_simplices[key - 2] = value
+
+    def __get_boundary(self):
         """Compute all the COO representations of the boundary matrices.
         """
         for p in range(self.dim):
-            current_boundary, vals = compute_boundary_COO(self.S_p[self.dim - p])
-            # FIXME: the p-dim boundary matrix is the p-1 entry of boundary[]
-            self.boundary[self.dim - p - 1] = current_boundary
-            self.S_p[self.dim - p - 1] = vals
+            # FIXME: initialize with np.empty every boundary
+            if self.dim - p > 1:
+                boundary, vals, b_sim = compute_boundary_COO(self.S_p[self.dim - p])
+                self.__setitem__('boundary', (self.dim - p, boundary))
+                self.S_p[self.dim - p - 1] = vals
+                self.__setitem__('boundary_simplices', (self.dim - p, b_sim))
+            else:
+                boundary, vals = compute_boundary_COO(self.S_p[self.dim - p])
+                self.__setitem__('boundary', (self.dim - p, boundary))
+                self.S_p[self.dim - p - 1] = vals
 
     def get_circumcenters(self):
         """Compute all the circumcenters.
@@ -62,9 +92,11 @@ class SimplicialComplex:
             C = np.empty((S_p.shape[0], self.node_coord.shape[1]))
             B = np.empty((S_p.shape[0], S_p.shape[1]))
             for i in range(S_p.shape[0]):
-                C[i, :], B[i,:] = circ.circumcenter(S_p[i, :], self.node_coord)
-            self.circ[p] = C
-            self.bary_circ[p] = B
+                C[i, :], B[i, :] = circ.circumcenter(S_p[i, :], self.node_coord)
+            self.__setitem__('circumcenters', (p + 1, C))
+            self.__setitem__('barycentric_circumcenters', (p + 1, B))
+            # self.circ[p] = C
+            # self.bary_circ[p] = B
 
     def get_primal_volumes(self):
         """Compute all the primal volumes.
@@ -78,15 +110,17 @@ class SimplicialComplex:
             primal_volumes = np.empty(rows)
             for i in range(rows):
                 primal_volumes[i] = volume.unsigned_volume(S[i, :], self.node_coord)
-            self.primal_volumes[p] = primal_volumes
+            self.__setitem__('primal_volumes', (p + 1, primal_volumes))
+            # self.primal_volumes[p] = primal_volumes
         if self.dim == self.embedded_dim:
             S_p = self.S_p[self.dim]
             rows, _ = S_p.shape
             primal_volumes = np.empty(rows)
             for i in range(rows):
                 primal_volumes[i] = volume.signed_volume(S_p[i, :], self.node_coord)
-            self.primal_volumes[self.dim-1] = primal_volumes
-    
+            self.__setitem__('primal_volumes', (self.dim, primal_volumes))
+            # self.primal_volumes[self.dim-1] = primal_volumes
+
     def get_dual_volumes(self):
         """Compute all the dual volumes.
         """
@@ -101,17 +135,20 @@ class SimplicialComplex:
             # Loop over boundary simplices of the p-simplex
             for j in range(num_bnd_simplices):
                 # ID of the boundary (p-1)-simplex
-                index = self.boundary_simplices[p][i,j]
-                # Distance between circumcenters of the p-simplex and the boundary (p-1)-simplex
-                length = np.linalg.norm(self.circ[p][i,:]-self.circ[p-1][index,:])
+                index = self.boundary_simplices[p][i, j]
+                # Distance between circumcenters of the p-simplex
+                # and the boundary (p-1)-simplex
+                length = np.linalg.norm(self.circ[p][i, :]-self.circ[p-1][index, :])
                 # Find opposite vertex to the (p-1)-simplex
-                opp_vert = list(set(self.S_p[p+1][i,:])-set(self.S_p[p][index,:]))[0]
-                opp_vert_index = list(self.S_p[p+1][i,:]).index(opp_vert)
-                # Sign of the dual volume of the boundary (p-1)-simplex = sign of the barycentric coordinate of the circumcenter of the parent p-simplex relative to the opposite vertex
-                sign = np.copysign(1,self.bary_circ[p][i,opp_vert_index])
+                opp_vert = list(set(self.S_p[p+1][i, :])-set(self.S_p[p][index, :]))[0]
+                opp_vert_index = list(self.S_p[p+1][i, :]).index(opp_vert)
+                # Sign of the dual volume of the boundary (p-1)-simplex = sign of the
+                # barycentric coordinate of the circumcenter of the parent p-simplex
+                # relative to the opposite vertex
+                sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
                 # Update dual volume of the boundary (p-1)-simplex
                 self.dual_volumes[p-1][index] += sign*length
- 
+
         print(self.dual_volumes[p-1])
 
 
@@ -193,7 +230,6 @@ def compute_face_to_edge_connectivity(S_2):
     # for any three rows of the matrix
     temp = faces[faces[:, -1].argsort()]
     edge = temp[:, :2]
-
     # orientation
     C = temp[:, -2].reshape(len(temp[:, :2]) // 3, 3)
 
@@ -203,7 +239,6 @@ def compute_face_to_edge_connectivity(S_2):
                                  axis=0,
                                  return_index=True,
                                  return_counts=True)
-
     big = np.c_[vals, count, idx]
 
     # sort to preserve the initial order
@@ -278,7 +313,6 @@ def compute_boundary_COO(S_p):
     # order faces lexicographically (copied from PyDEC)
     # FIXME: maybe use sort
     faces_ordered = S_pm1_ext[np.lexsort(S_pm1_ext[:, :-2].T[::-1])]
-
     values = faces_ordered[:, -2]
     column_index = faces_ordered[:, -1]
     edge = faces_ordered[:, :-2]
@@ -286,5 +320,16 @@ def compute_boundary_COO(S_p):
     # compute vals and rows_index
     vals, rows_index = np.unique(edge, axis=0, return_inverse=True)
     boundary_COO = (rows_index, column_index, values)
-
+    if faces_per_simplex > 2:
+        # order faces_ordered w.r.t last column
+        faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
+        # initialize the matrix of the boundary simplex as an array
+        b_sim = np.empty(edge.shape[0])
+        for i, v in enumerate(vals):
+            # find position of vector v in faces_ordered_last[:, :-2]
+            position = np.where((faces_ordered_last[:, :-2] == v).all(axis=1))[0]
+            # update b_sim in position indices
+            b_sim[position] = i
+        b_sim = b_sim.reshape(edge.shape[0] // faces_per_simplex, faces_per_simplex)
+        return boundary_COO, vals, b_sim
     return boundary_COO, vals
