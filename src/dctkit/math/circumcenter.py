@@ -8,9 +8,9 @@ def circumcenter(s, node_coord):
        for Discretization of Exterior Calculus, 2012, Section 10.1)
 
         Args:
-            s (np.array): matrix containing the IDs of the nodes beloging to s.
+            s (np.array): array containing the IDs of the nodes beloging to s.
             node_coord (np.array): coordinates of every node of the cell complex
-                          in which s is defined.
+                                   in which s is defined.
         Returns:
             circumcenter (np.array): coordinates of the circumcenter of s.
     """
