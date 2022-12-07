@@ -1,32 +1,9 @@
 import numpy as np
 from dctkit.mesh import simplex, util
+from dctkit.math import shifted_list as sl
 import os
 
 cwd = os.path.dirname(simplex.__file__)
-
-
-def test_compute_face_to_edge_connectivity():
-    filename = "test1.msh"
-    full_path = os.path.join(cwd, filename)
-    numNodes, numElements, nodeTagsPerElem, _ = util.read_mesh(full_path)
-
-    print(f"The number of nodes in the mesh is {numNodes}")
-    print(f"The number of faces in the mesh is {numElements}")
-    print(f"The vectorization of the face matrix is \n {nodeTagsPerElem}")
-
-    C, NtE, EtF = simplex.compute_face_to_edge_connectivity(nodeTagsPerElem)
-    print(f"The orientation matrix is \n {C}")
-    print(f"The NtE matrix is \n {NtE}")
-    print(f"The EtF matrix is \n {EtF}")
-
-    C_true = np.array([[1, -1, 1], [-1, 1, -1], [1, -1, 1], [-1, 1, -1]])
-    EtF_true = np.array([[0, 1, 2], [3, 1, 5], [6, 0, 8], [6, 3, 11]])
-    NtE_true = np.array([[0, 1], [0, 2], [0, 4], [1, 3], [1, 4], [2, 3],
-                         [2, 4], [3, 4]])
-
-    assert np.alltrue(C == C_true)
-    assert np.alltrue(EtF == EtF_true)
-    assert np.alltrue(NtE == NtE_true)
 
 
 def test_boundary_COO():
@@ -38,7 +15,7 @@ def test_boundary_COO():
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    boundary_tuple, _ = simplex.compute_boundary_COO(
+    boundary_tuple, _, _ = simplex.compute_boundary_COO(
         S_2)
     print(f"The row index vector is \n {boundary_tuple[0]}")
     print(f"The column index vector is \n {boundary_tuple[1]}")
@@ -62,7 +39,7 @@ def test_simplicial_complex():
     print(f"The face matrix is \n {S_2}")
 
     S = simplex.SimplicialComplex(S_2, x)
-    boundary_true = []
+    boundary_true = sl.ShiftedList([],-1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])
     cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 5, 6, 3, 5, 7, 2, 4, 6, 7])
     values_1_true = np.array([-1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1, 1, 1])
@@ -72,8 +49,8 @@ def test_simplicial_complex():
     boundary_true.append((rows_1_true, cols_1_true, values_1_true))
     boundary_true.append((rows_2_true, cols_2_true, values_2_true))
     for i in range(3):
-        assert np.alltrue(S.boundary[0][i] == boundary_true[0][i])
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
+        assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
 
 
 if __name__ == "__main__":

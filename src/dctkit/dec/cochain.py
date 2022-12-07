@@ -38,7 +38,7 @@ def coboundary(c):
     dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
 
     # get the appropriate (primal) boundary matrix
-    t = c.complex.boundary[c.dim]
+    t = c.complex.boundary[c.dim + 1]
 
     # apply coboundary matrix (transpose of the primal boundary matrix) to the
     # array of coefficients of the cochain.
