@@ -39,7 +39,11 @@ def test_simplicial_complex():
     print(f"The face matrix is \n {S_2}")
 
     S = simplex.SimplicialComplex(S_2, x)
-    boundary_true = sl.ShiftedList([],-1)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+
+    # define true boundary values
+    boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])
     cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 5, 6, 3, 5, 7, 2, 4, 6, 7])
     values_1_true = np.array([-1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1, 1, 1])
@@ -48,12 +52,39 @@ def test_simplicial_complex():
     values_2_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1, -1])
     boundary_true.append((rows_1_true, cols_1_true, values_1_true))
     boundary_true.append((rows_2_true, cols_2_true, values_2_true))
+
+    # define true circumcenters
+
+    circ_true = sl.ShiftedList([], -1)
+    circ_1_true = np.array([[0.5, 0, 0], [1, 0.5, 0], [0.75, 0.25, 0], [0, 0.5, 0],
+                           [0.25, 0.25, 0], [0.5, 1, 0], [0.75, 0.75, 0],
+                           [0.25, 0.75, 0]])
+    circ_2_true = np.array([[0.5, 0, 0], [1, 0.5, 0], [0, 0.5, 0], [0.5, 1, 0]])
+    circ_true.append(circ_1_true)
+    circ_true.append(circ_2_true)
+
+    # define true primal volumes values
+    pv_true = sl.ShiftedList([], -1)
+    pv_1_true = np.array([1, 1, np.sqrt(2)/2, 1, np.sqrt(2)/2, 1, np.sqrt(2)/2,
+                          np.sqrt(2)/2])
+    pv_2_true = np.array([0.25, 0.25, 0.25, 0.25])
+    pv_true.append(pv_1_true)
+    pv_true.append(pv_2_true)
+
+    # test boundary
     for i in range(3):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
         assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
-    
-    # TODO: call get_circumcenters, get_primal_volumes, get_dual_volumes and
-    # check the results
+
+    # test circumcenters
+    assert (np.linalg.norm(S.circ[1] - circ_true[1]) < 10**-8)
+    assert (np.linalg.norm(S.circ[2] - circ_true[2]) < 10**-8)
+
+    # test primal volumes
+    assert (np.linalg.norm(S.primal_volumes[1] - pv_true[1]) < 10**-8)
+    assert (np.linalg.norm(S.primal_volumes[2] - pv_true[2]) < 10**-8)
+
+    # TODO: call get_dual_volumes and check the results
 
 
 if __name__ == "__main__":

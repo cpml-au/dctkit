@@ -36,21 +36,14 @@ class SimplicialComplex:
 
         self.S = [None] * (self.dim + 1)
         self.S[-1] = tet_node_tags
-
-        self.boundary = sl.ShiftedList([None] * self.dim, -1)
-        self.circ = sl.ShiftedList([None] * (self.dim), -1)
-        self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
-        self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
-        self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
-
-        self.B = sl.ShiftedList([None] * self.dim, -1)
-
         # populate boundary operators
         self.__get_boundary()
 
     def __get_boundary(self):
         """Compute all the COO representations of the boundary matrices.
         """
+        self.boundary = sl.ShiftedList([None] * self.dim, -1)
+        self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
             boundary, vals, B = compute_boundary_COO(self.S[self.dim - p])
 
@@ -61,6 +54,8 @@ class SimplicialComplex:
     def get_circumcenters(self):
         """Compute all the circumcenters.
         """
+        self.circ = sl.ShiftedList([None] * (self.dim), -1)
+        self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
             C = np.empty((S.shape[0], self.node_coord.shape[1]))
@@ -75,7 +70,8 @@ class SimplicialComplex:
         """Compute all the primal volumes.
         """
         # loop over all p-simplices (1..dim + 1)
-        # (volume of 1-simplices is 1, we do not store it)
+        # (volume of 0-simplices is 1, we do not store it)
+        self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
             num_p_simplices, _ = S.shape
@@ -91,6 +87,7 @@ class SimplicialComplex:
     def get_dual_volumes(self):
         """Compute all the dual volumes.
         """
+        self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
         # loop over simplices at all dimensions
         # for p in range(self.dim + 1):
         p = 2
