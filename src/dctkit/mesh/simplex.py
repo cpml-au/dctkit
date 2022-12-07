@@ -49,7 +49,8 @@ class SimplicialComplex:
         dict = {'boundary': self.boundary[key - 1],
                 'circumcenters': self.circ[key - 1],
                 'barycentric_circumcenters': self.bary_circ[key - 1],
-                'primal_volumes': self.primal_volumes[key-1]}
+                'primal_volumes': self.primal_volumes[key-1],
+                'dual_volumes': self.dual_volumes[key-1]}
         if key >= 2:
             dict['boundary_simplices'] = self.boundary_simplices[key-2]
         else:
@@ -66,6 +67,8 @@ class SimplicialComplex:
             self.bary_circ[key - 1] = value
         elif arg == 'primal_volumes':
             self.primal_volumes[key - 1] = value
+        elif arg == 'dual_volumes':
+            self.dual_volumes[key - 1] = value
         elif arg == 'boundary_simplices':
             self.boundary_simplices[key - 2] = value
 
@@ -127,29 +130,35 @@ class SimplicialComplex:
         # Loop over simplices at all dimensions
         # for p in range(self.dim + 1):
         p = 1
-        num_p, num_bnd_simplices = self.boundary_simplices[p].shape
-        num_pm1, _ = self.boundary_simplices[p-1].shape
-        self.dual_volumes[p-1] = np.zeros(num_pm1)
+        boundary_simplex_1 = self.__getitem__(p+1)['boundary_simplices']
+        num_p, num_bnd_simplices = boundary_simplex_1.shape
+        boundary_simplex_2 = self.__getitem__(p)['boundary_simplices']
+        num_pm1, _ = boundary_simplex_2.shape
+        dv = np.zeros(num_pm1)
+        # self.dual_volumes[p-1] = np.zeros(num_pm1)
         # Loop over p-simplices
         for i in range(num_p):
             # Loop over boundary simplices of the p-simplex
             for j in range(num_bnd_simplices):
                 # ID of the boundary (p-1)-simplex
-                index = self.boundary_simplices[p][i, j]
+                index = boundary_simplex_1[i, j]
                 # Distance between circumcenters of the p-simplex
                 # and the boundary (p-1)-simplex
-                length = np.linalg.norm(self.circ[p][i, :]-self.circ[p-1][index, :])
+                length = np.linalg.norm(self.__getitem__(p+1)['circumcenters'][i, :] -
+                                        self.__getitem__(p)['circumcenters'][index, :])
                 # Find opposite vertex to the (p-1)-simplex
                 opp_vert = list(set(self.S_p[p+1][i, :])-set(self.S_p[p][index, :]))[0]
                 opp_vert_index = list(self.S_p[p+1][i, :]).index(opp_vert)
                 # Sign of the dual volume of the boundary (p-1)-simplex = sign of the
                 # barycentric coordinate of the circumcenter of the parent p-simplex
                 # relative to the opposite vertex
-                sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
+                sign = np.copysign(1, self.__getitem__(p+1)['barycentric_circumcenters']
+                                   [i, opp_vert_index])
                 # Update dual volume of the boundary (p-1)-simplex
-                self.dual_volumes[p-1][index] += sign*length
+                dv[index] += sign*length
 
-        print(self.dual_volumes[p-1])
+        self.__setitem__('dual_volumes', (p, dv))
+        print(self.__getitem__(p)['dual_volumes'])
 
 
 def simplex_array_parity(s):
@@ -331,5 +340,6 @@ def compute_boundary_COO(S_p):
             # update b_sim in position indices
             b_sim[position] = i
         b_sim = b_sim.reshape(edge.shape[0] // faces_per_simplex, faces_per_simplex)
+        b_sim = b_sim.astype(int)
         return boundary_COO, vals, b_sim
     return boundary_COO, vals
