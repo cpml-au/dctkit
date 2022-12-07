@@ -24,10 +24,12 @@ def circumcenter(s, node_coord):
     A = np.bmat([[2*np.dot(simplex_coord, simplex_coord.T), np.ones((rows, 1))],
                 [np.ones((1, rows)) ,  np.zeros((1, 1))]])
     b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1), np.ones((1))))
+
     # barycentric coordinates x of the circumcenter are the solution
     # of the linear sistem Ax = b
     bary_coords = np.linalg.solve(A, b)
     bary_coords = bary_coords[:-1]
+
     # compute the coordinates of the circumcenter
     circumcenter = np.dot(bary_coords, simplex_coord)
 
