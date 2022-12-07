@@ -31,11 +31,13 @@ def test_dual_volumes():
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
     K = simplex.SimplicialComplex(S_2, node_coord)
-    K.boundary_simplices[1] = np.array([[0, 2, 4], [1, 2, 6], [3, 4, 7], [5, 6, 7]],
-                                       dtype=np.int32)
-    K.boundary_simplices[0] = np.array([[0, 1], [0, 2], [0, 4], [1, 3], [1, 4], [2, 3],
-                                        [2, 4], [3, 4]], dtype=np.int32)
-    print(K.circ[0], K.circ[1])
+    # K.boundary_simplices[1] = np.array([[0, 2, 4], [1, 2, 6], [3, 4, 7], [5, 6, 7]],
+    # dtype=np.int32)
+    # K.boundary_simplices[0] = np.array([[0, 1], [0, 2], [0, 4],
+    # [1, 3], [1, 4], [2, 3],
+    # [2, 4], [3, 4]], dtype=np.int32)
+    # print(K.circ[0], K.circ[1])
+    K.get_circumcenters()
     K.get_dual_volumes()
 
 
