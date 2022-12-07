@@ -51,7 +51,11 @@ def test_simplicial_complex():
     for i in range(3):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
         assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
+    
+    # TODO: call get_circumcenters, get_primal_volumes, get_dual_volumes and
+    # check the results
 
 
 if __name__ == "__main__":
+    test_boundary_COO()
     test_simplicial_complex()
