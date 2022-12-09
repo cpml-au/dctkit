@@ -82,12 +82,10 @@ class SimplicialComplex:
             S = self.S[p]
             num_p_simplices, _ = S.shape
             primal_volumes = np.empty(num_p_simplices)
-            for i in range(num_p_simplices):
-                # TODO: vectorization of signed_volume and unsigned_volume
-                if p == self.embedded_dim:
-                    primal_volumes[i] = volume.signed_volume(S[i, :], self.node_coord)
-                else:
-                    primal_volumes[i] = volume.unsigned_volume(S[i, :], self.node_coord)
+            if p == self.embedded_dim:
+                primal_volumes = volume.signed_volume(S, self.node_coord)
+            else:
+                primal_volumes = volume.unsigned_volume(S, self.node_coord)
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):
