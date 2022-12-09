@@ -21,9 +21,14 @@ class SimplicialComplex:
         boundary (list): list of the boundary matrices at all dimensions (0..dim-1).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
         nodes (rows) of the simplicial complex.
-        primal_volumes ():
-        dual_volumes ():
-        B ():
+        primal_volumes (list): list where each entry p is an array containing all the
+                             volumes of the primal p-simplices.
+        dual_volumes (list): list where each entry p is an array containing all the
+                             volumes of the dual p-simplices.
+        B (list): list where each entry p is a matrix containing the IDs of the
+                            (p-1)-simplices (cols) belonging to each p-simplex (rows).
+        hodge_star (list): list where each entry p is an array containing the diagonal
+                          of the p-hodge star matrix.
     """
 
     def __init__(self, tet_node_tags, node_coord):
@@ -91,12 +96,12 @@ class SimplicialComplex:
         self.dual_volumes[self.dim] = np.ones(self.S[self.dim - 1].shape[0])
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
-            # p = 2
             num_p, num_bnd_simplices = self.B[p].shape
             num_pm1, _ = self.S[p - 1].shape
             dv = np.zeros(num_pm1)
             if p == 1:
-                # FIXME: commenta qui
+                # circ_pm1 = circumcenters of the (p-1)-simplices and the
+                # circumcenters of the nodes (0-simplices) are the nodes itself.
                 circ_pm1 = self.node_coord
             else:
                 circ_pm1 = self.circ[p - 1]
