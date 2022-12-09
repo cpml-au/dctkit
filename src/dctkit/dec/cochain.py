@@ -1,3 +1,5 @@
+import numpy as np
+
 from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
 
@@ -19,7 +21,8 @@ class Cochain():
         vec (np.array): vectorial representation of the cochain.
     """
 
-    def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
+                 coeffs=None):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
@@ -48,3 +51,35 @@ def coboundary(c):
         # FIXME: transpose is not enough to compute the dual coboundary op
         dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False)
     return dc
+
+
+def star(c):
+    """Implements the hodge star operator.
+
+    Args:
+        c (Cochain): a primal cochain.
+    Returns:
+        star_c (Cochain): the dual cochain *c obtained applying the hodge star operator.
+    """
+    star_c = Cochain(dim=c.complex.dim - c.dim, is_primal=False, complex=c.complex)
+    star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
+    return star_c
+
+
+def inner_product(c_1, c_2):
+    """Implements the inner product between two primal cochains.
+
+    Args:
+        c_1 (Cochain): a primal cochain.
+        c_2 (Cochain): a primal cochain.
+    Returns:
+        inner_product (float): inner product between c_1 and c_2
+    """
+    star_c_2 = star(c_2)
+    n = c_1.complex.dim
+
+    # dimension of the complexes must agree
+    assert (n == c_2.complex.dim)
+
+    inner_product = 1/n*np.sum(c_1.coeffs*star_c_2.coeffs)
+    return inner_product
