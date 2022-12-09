@@ -88,40 +88,45 @@ class SimplicialComplex:
         """Compute all the dual volumes.
         """
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
+        prec_dv = np.ones(self.S[self.dim - 1].shape[0])
         # loop over simplices at all dimensions
-        # for p in range(self.dim + 1):
-        p = 2
-        num_p, num_bnd_simplices = self.B[p].shape
-        num_pm1, _ = self.S[p - 1].shape
-        dv = np.zeros(num_pm1)
+        for p in range(self.dim, 0, -1):
+            # p = 2
+            num_p, num_bnd_simplices = self.B[p].shape
+            num_pm1, _ = self.S[p - 1].shape
+            dv = np.zeros(num_pm1)
+            if p == 1:
+                circ_pm1 = self.node_coord
+            else:
+                circ_pm1 = self.circ[p - 1]
+            # Loop over p-simplices
+            for i in range(num_p):
+                # Loop over boundary simplices of the p-simplex
 
-        # Loop over p-simplices
-        for i in range(num_p):
-            # Loop over boundary simplices of the p-simplex
+                for j in range(num_bnd_simplices):
+                    # ID of the boundary (p-1)-simplex
+                    index = self.B[p][i, j]
 
-            for j in range(num_bnd_simplices):
-                # ID of the boundary (p-1)-simplex
-                index = self.B[p][i, j]
+                    # Distance between circumcenters of the p-simplex and the
+                    # boundary (p-1)-simplex
+                    length = np.linalg.norm(self.circ[p][i, :] -
+                                            circ_pm1[index, :])
 
-                # Distance between circumcenters of the p-simplex and the
-                # boundary (p-1)-simplex
-                length = np.linalg.norm(self.circ[p][i, :] -
-                                        self.circ[p - 1][index, :])
+                    # Find opposite vertex to the (p-1)-simplex
+                    opp_vert = list(
+                        set(self.S[p][i]) - set(self.S[p - 1][index]))[0]
+                    opp_vert_index = list(self.S[p][i]).index(opp_vert)
 
-                # Find opposite vertex to the (p-1)-simplex
-                opp_vert = list(
-                    set(self.S[p][i, :]) - set(self.S[p - 1][index, :]))[0]
-                opp_vert_index = list(self.S[p][i, :]).index(opp_vert)
+                    # Sign of the dual volume of the boundary (p-1)-simplex = sign
+                    # of the barycentric coordinate of the circumcenter of the
+                    # parent p-simplex relative to the opposite vertex
+                    sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
 
-                # Sign of the dual volume of the boundary (p-1)-simplex = sign
-                # of the barycentric coordinate of the circumcenter of the
-                # parent p-simplex relative to the opposite vertex
-                sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
+                    # Update dual volume of the boundary (p-1)-simplex
+                    dv[index] += sign * (length*prec_dv[i]/(self.dim - p + 1))
 
-                # Update dual volume of the boundary (p-1)-simplex
-                dv[index] += sign * length
-
-        self.dual_volumes[p - 1] = dv
+            self.dual_volumes[p - 1] = dv
+            prec_dv = dv
 
 
 def simplex_array_parity(s):
