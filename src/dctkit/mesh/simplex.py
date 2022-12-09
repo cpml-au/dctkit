@@ -34,6 +34,7 @@ class SimplicialComplex:
     def __init__(self, tet_node_tags, node_coord):
         # store the coordinates of the nodes
         self.node_coord = node_coord
+        self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
 
         # compute complex dimension from top-level simplices
@@ -63,7 +64,7 @@ class SimplicialComplex:
         self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            C = np.empty((S.shape[0], self.node_coord.shape[1]))
+            C = np.empty((S.shape[0], self.embedded_dim))
             B = np.empty((S.shape[0], S.shape[1]))
             for i in range(S.shape[0]):
                 C[i, :], B[i, :] = circ.circumcenter(S[i, :],
@@ -93,7 +94,8 @@ class SimplicialComplex:
         """Compute all the dual volumes.
         """
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
-        self.dual_volumes[self.dim] = np.ones(self.S[self.dim - 1].shape[0])
+        self.dual_volumes[self.dim] = np.ones(self.S[self.embedded_dim - self.dim].
+                                              shape[0])
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             num_p, num_bnd_simplices = self.B[p].shape
@@ -141,12 +143,12 @@ class SimplicialComplex:
         for p in range(self.dim + 1):
             if p == 0:
                 # volumes of vertices are 1 by definition
-                pv = np.ones(self.node_coord.shape[0])
+                pv = 1
                 dv = self.dual_volumes[self.dim - p]
             elif p == self.dim:
                 pv = self.primal_volumes[p]
                 # volumes of vertices are 1 by definition
-                dv = np.ones(self.S[self.dim].shape[0])
+                dv = 1
             else:
                 pv = self.primal_volumes[p]
                 dv = self.dual_volumes[self.dim - p]
