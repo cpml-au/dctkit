@@ -88,7 +88,7 @@ class SimplicialComplex:
         """Compute all the dual volumes.
         """
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
-        prec_dv = np.ones(self.S[self.dim - 1].shape[0])
+        self.dual_volumes[self.dim] = np.ones(self.S[self.dim - 1].shape[0])
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             # p = 2
@@ -96,6 +96,7 @@ class SimplicialComplex:
             num_pm1, _ = self.S[p - 1].shape
             dv = np.zeros(num_pm1)
             if p == 1:
+                # FIXME: commenta qui
                 circ_pm1 = self.node_coord
             else:
                 circ_pm1 = self.circ[p - 1]
@@ -123,10 +124,28 @@ class SimplicialComplex:
                     sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
 
                     # Update dual volume of the boundary (p-1)-simplex
-                    dv[index] += sign * (length*prec_dv[i]/(self.dim - p + 1))
+                    dv[index] += sign * (length*self.dual_volumes[p][i] /
+                                         (self.dim - p + 1))
 
             self.dual_volumes[p - 1] = dv
-            prec_dv = dv
+
+    def get_hodge_star(self):
+        """Compute all the hodge stars.
+        """
+        self.hodge_star = [None]*(self.dim + 1)
+        for p in range(self.dim + 1):
+            if p == 0:
+                # volumes of vertices are 1 by definition
+                pv = np.ones(self.node_coord.shape[0])
+                dv = self.dual_volumes[self.dim - p]
+            elif p == self.dim:
+                pv = self.primal_volumes[p]
+                # volumes of vertices are 1 by definition
+                dv = np.ones(self.S[self.dim].shape[0])
+            else:
+                pv = self.primal_volumes[p]
+                dv = self.dual_volumes[self.dim - p]
+            self.hodge_star[p] = dv/pv
 
 
 def simplex_array_parity(s):
