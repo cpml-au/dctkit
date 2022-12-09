@@ -42,6 +42,8 @@ def test_simplicial_complex():
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
+    S.get_hodge_star()
+    print(S.boundary)
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4])
@@ -79,6 +81,15 @@ def test_simplicial_complex():
     dv_true.append(dv_1_true)
     dv_true.append(dv_2_true)
 
+    # define true hodge star values
+    hodge_true = []
+    hodge_0_true = np.array([1/8, 1/8, 1/8, 1/8, 1/2])
+    hodge_1_true = np.array([0, 0, 1, 0, 1, 0, 1, 1])
+    hodge_2_true = np.array([4, 4, 4, 4])
+    hodge_true.append(hodge_0_true)
+    hodge_true.append(hodge_1_true)
+    hodge_true.append(hodge_2_true)
+
     # test boundary
     for i in range(3):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
@@ -95,6 +106,10 @@ def test_simplicial_complex():
     # test dual volumes
     assert (np.linalg.norm(S.dual_volumes[1] - dv_true[1]) < 10**-8)
     assert (np.linalg.norm(S.dual_volumes[2] - dv_true[2]) < 10**-8)
+
+    # test hodge star
+    for i in range(3):
+        assert (np.linalg.norm(S.hodge_star[i] - hodge_true[i]) < 10**-8)
 
 
 if __name__ == "__main__":
