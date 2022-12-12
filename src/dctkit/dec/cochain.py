@@ -40,15 +40,14 @@ def coboundary(c):
     # initialize dc
     dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
 
-    # get the appropriate (primal) boundary matrix
-    t = c.complex.boundary[c.dim + 1]
-
     # apply coboundary matrix (transpose of the primal boundary matrix) to the
     # array of coefficients of the cochain.
     if c.is_primal:
+        # get the appropriate (primal) boundary matrix
+        t = c.complex.boundary[c.dim + 1]
         dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=True)
     else:
-        # FIXME: transpose is not enough to compute the dual coboundary op
+        t = c.complex.boundary[c.complex.dim - c.dim]
         dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False)
     return dc
 

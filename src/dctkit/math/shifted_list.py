@@ -1,7 +1,7 @@
 class ShiftedList(list):
-    """List with indices shifted by an offset. Subclass of list.    
+    """List with indices shifted by an offset. Subclass of list.
         Args:
-            iterable: iterable used to initialize the list. 
+            iterable: iterable used to initialize the list.
             off (int): offset.
     """
     def __init__(self, iterable, off):
