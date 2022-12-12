@@ -1,4 +1,5 @@
 import numpy as np
+import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl
 from dctkit.math import volume
@@ -78,16 +79,13 @@ class SimplicialComplex:
         # loop over all p-simplices (1..dim + 1)
         # (volume of 0-simplices is 1, we do not store it)
         self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
+        node_coord = dctkit.jax.numpy.asarray(self.node_coord)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            num_p_simplices, _ = S.shape
-            primal_volumes = np.empty(num_p_simplices)
-            for i in range(num_p_simplices):
-                # TODO: vectorization of signed_volume and unsigned_volume
-                if p == self.embedded_dim:
-                    primal_volumes[i] = volume.signed_volume(S[i, :], self.node_coord)
-                else:
-                    primal_volumes[i] = volume.unsigned_volume(S[i, :], self.node_coord)
+            if p == self.embedded_dim:
+                primal_volumes = volume.signed_volume(S, self.node_coord)
+            else:
+                primal_volumes = volume.batch_unsigned_vol(S, node_coord)
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):

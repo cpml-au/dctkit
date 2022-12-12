@@ -1,4 +1,7 @@
 import sys
+import jax
+# Running computations on CPU (default = GPU)
+jax.config.update('jax_platform_name', 'cpu')
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
