@@ -1,41 +1,57 @@
 import numpy as np
 
 
-def unsigned_volume(s, node_coord):
-    """Compute the unsigned volume of a simplex.
+def unsigned_volume(S, node_coord):
+    """Compute the unsigned volume of a set of simplices S.
 
     Args:
-        s (np.array): array containing the IDs of the nodes beloging to s.
+        S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
         node_coord (np.array): coordinates of every node of the cell complex
                                in which s is defined.
     Returns:
         vol (float): unsigned volume of the simplex.
     """
-    # store the coordinates of the nodes in s
-    simplex_coord = node_coord[s[:]]
-    rows, _ = simplex_coord.shape
-    if rows == 1:
-        return 1.0
-    V = simplex_coord[1:, :] - simplex_coord[0, :]
+    # store the coordinates of the nodes of every simplex in S
+    S_coord = node_coord[S]
+    rows = S_coord.shape[1]
+
+    # indices to extract the matrix with rows equal to the rows of S with indices
+    # non-congruent to 0 modulo rows-1
+    index = 1 + np.array(range(rows-1))
+
+    # compute the matrix of matrices V
+    V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
+
+    # compute the transpose of V with respect to the last two axes
+    transpose_V = np.transpose(V, [0, 2, 1])
+
+    VTV = np.matmul(V, transpose_V)
     # math formula to compute the unsigned volume of a simplex
-    vol = np.sqrt(np.abs(np.linalg.det(np.dot(V, V.T)))) / np.math.factorial(rows-1)
+    vol = np.sqrt(np.abs(np.linalg.det(VTV)))/np.math.factorial(rows - 1)
     return vol
 
 
-def signed_volume(s, node_coord):
-    """Compute the signed volume of an n-simplex in an n-simplicial complex.
+def signed_volume(S, node_coord):
+    """Compute the signed volume of a set of n-simplices in an n-simplicial complex.
 
     Args:
-        s (np.array): array containing the IDs of the nodes beloging to s.
+        S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
         node_coord (np.array): coordinates of every node of the cell complex
                                in which s is defined.
     Returns:
         vol (float): signed volume of the simplex.
     """
-    simplex_coord = node_coord[s[:]]
-    rows, cols = simplex_coord.shape
+    S_coord = node_coord[S]
+    _, rows, cols = S_coord.shape
+
     assert (rows == cols + 1)
-    V = simplex_coord[1:, :] - simplex_coord[0, :]
+    # indices to extract the matrix with rows equal to the rows of S with indices
+    # non-congruent to 0 modulo rows-1
+    index = 1 + np.array(range(rows-1))
+
+    # compute the matrix of matrices V
+    V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
+
     # math formula to compute the signed volume of a simplex
     vol = np.linalg.det(V) / np.math.factorial(rows-1)
     return vol
