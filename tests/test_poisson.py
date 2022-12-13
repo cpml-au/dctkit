@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 from dctkit.mesh import simplex, util
-from examples import poisson as p
+from dctkit.apps import poisson as p
 import os
 
 cwd = os.path.dirname(simplex.__file__)
