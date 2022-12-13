@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import fmin_cg
 from dctkit.mesh import simplex, util
 from examples import poisson as p
 import os
@@ -25,17 +25,16 @@ def test_poisson():
     # TODO: initialize diffusivity
     k = 1
     # TODO: initialize boundary_values
-    boundary_values = (np.array([0, 1, 2, 3]), np.arange(4))
-    pos, values = boundary_values
+    boundary_values = (np.array([0, 1, 2, 3]), np.ones(4))
     # TODO: initialize external sources
     dim_0 = node_coord.shape[0]
     f = np.zeros(dim_0)
-    u_0 = np.ones(5)
-    u_0[-1] = 5
-    args = (f, S, k, boundary_values, 1)
-    u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='CG', jac=p.grad_poisson,
-                 options={"disp": True})
-    print(u)
+    u_0 = np.random.randint(100, size=(5, 1))
+    gamma = 10000
+    args = (f, S, k, boundary_values, gamma)
+    u = fmin_cg(p.obj_poisson, u_0, args=args, fprime=p.grad_poisson, disp=1,
+                full_output=True)
+    assert (u[1] < 10**-3)
 
 
 if __name__ == '__main__':
