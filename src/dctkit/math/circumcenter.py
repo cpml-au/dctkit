@@ -22,7 +22,7 @@ def circumcenter(s, node_coord):
 
     # construct the matrix A
     A = np.bmat([[2*np.dot(simplex_coord, simplex_coord.T), np.ones((rows, 1))],
-                [np.ones((1, rows)) ,  np.zeros((1, 1))]])
+                [np.ones((1, rows)),  np.zeros((1, 1))]])
     b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1), np.ones((1))))
 
     # barycentric coordinates x of the circumcenter are the solution
