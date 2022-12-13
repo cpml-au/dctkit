@@ -5,21 +5,25 @@ from dctkit.apps import poisson as p
 import os
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-# import gmsh
+
+from icecream import ic
+import gmsh
 
 
 cwd = os.path.dirname(simplex.__file__)
 
 
 def test_poisson():
-    filename = "test1.msh"
+    filename = "test3.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
-    print(f"The vectorization of the face matrix is \n {S_2}")
 
-    # bc1, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+    bnodes -= 1
+
+    ic(bnodes)
 
     triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
 
@@ -32,18 +36,26 @@ def test_poisson():
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
+
     # TODO: initialize diffusivity
     k = 1
     # TODO: initialize boundary_values
-    boundary_values = (np.array([0, 1, 2, 3]), np.ones(4))
+    boundary_values = (np.array(bnodes), np.zeros(len(bnodes)))
     # TODO: initialize external sources
-    dim_0 = node_coord.shape[0]
-    f = np.zeros(dim_0)
-    u_0 = np.array([1, 5, 20, 2, 5])
-    gamma = 3000
+    dim_0 = S.num_nodes
+    f = np.ones(dim_0)
+    u_0 = np.random.rand(dim_0)
+
+    gamma = 10000
     args = (f, S, k, boundary_values, gamma)
-    u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='CG', jac=p.grad_poisson)
-    assert (u.fun < 1e-3)
+    u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='CG',
+                 jac=p.grad_poisson, options={'disp': 1})
+
+    ic(u.x)
+    plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
+    plt.triplot(triang, 'ko-')
+    plt.colorbar()
+    plt.show()
 
 
 if __name__ == '__main__':

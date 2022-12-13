@@ -2,35 +2,18 @@ import numpy as np
 from dctkit.dec import cochain as C
 
 
-def poisson(c, k, boundary_values):
+def poisson(c, k):
     """Implements a routine to compute the LHS of the Poisson equation in DEC framework.
 
     Args:
         c (Cochain): A primal 0-cochain.
         k (float): The diffusitivity coefficient.
-        boundary_values (tuple): tuple of two np.arrays in which the first encodes the
-            positions of boundary values, while the last encodes the boundary
-            values themselves.
     Returns:
         Cochain: A dual 2-cochain obtained from the application of the
         discrete laplacian.
     """
     # c must be a primal 0-cochain
     assert (c.dim == 0 and c.is_primal)
-
-    # extract boundary values and their positions
-    pos, value = boundary_values
-
-    # create a new cochain that takes in account boundary values
-    c_new = C.Cochain(c.dim, c.is_primal, c.complex,
-                      np.empty(len(c.coeffs) + len(pos)))
-
-    # create a mask to track indexes other than pos
-    mask = np.ones(len(pos) + len(c.coeffs), bool)
-    mask[pos] = False
-    c_new.coeffs[pos] = value
-    c_new.coeffs[mask] = c.coeffs
-    c = c_new
 
     # compute the coboundary
     c_1 = C.coboundary(c)
@@ -51,7 +34,7 @@ def poisson(c, k, boundary_values):
     return p
 
 
-def poisson_vec_operator(x, S, k, boundary_values):
+def poisson_vec_operator(x, S, k):
     """Discrete laplacian starting from a vector instead of a cochain.
 
     Args:
@@ -59,15 +42,12 @@ def poisson_vec_operator(x, S, k, boundary_values):
             apply Poisson.
         S (SimplicialComplex): a simplicial complex in which we define Poisson.
         k (float): the diffusitivity coefficient.
-        boundary_values (tuple): tuple of two np.arrays in which the first
-            encodes the positions of boundary values, while the last encodes the
-            boundary values themselves.
     Returns:
         np.array: vector of coefficients of the cochain obtained through the
         discrete laplacian operator.
     """
     c = C.Cochain(0, True, S, x)
-    p = poisson(c, k, boundary_values)
+    p = poisson(c, k)
     w = p.coeffs
     return w
 
@@ -89,7 +69,7 @@ def obj_poisson(x, f, S, k, boundary_values, gamma):
         float: the value of the objective function at x.
     """
     pos, value = boundary_values
-    Ax = poisson_vec_operator(x, S, k, boundary_values)
+    Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
@@ -114,10 +94,12 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
         np.array: the value of the gradient of the objective function at x.
     """
     pos, value = boundary_values
-    Ax = poisson_vec_operator(x, S, k, boundary_values)
+    Ax = poisson_vec_operator(x, S, k)
     # gradient of the residual = A(Ax - f) since A is symmetric
-    grad_r = poisson_vec_operator(Ax - f, S, k, boundary_values)
+    grad_r = poisson_vec_operator(Ax - f, S, k)
     grad_penalty = np.zeros(len(Ax))
     grad_penalty[pos] = x[pos] - value
+    print(grad_penalty)
     grad_energy = grad_r + gamma*grad_penalty
+    print(np.linalg.norm(grad_energy))
     return grad_energy

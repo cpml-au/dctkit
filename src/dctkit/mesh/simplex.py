@@ -51,7 +51,7 @@ class SimplicialComplex:
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
-            boundary, vals, B = __compute_boundary_COO(self.S[self.dim - p])
+            boundary, vals, B = compute_boundary_COO(self.S[self.dim - p])
 
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
@@ -186,7 +186,7 @@ def __simplex_array_parity(s):
     return trans
 
 
-def __compute_boundary_COO(S):
+def compute_boundary_COO(S):
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
