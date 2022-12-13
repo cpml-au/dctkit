@@ -38,15 +38,17 @@ def test_poisson():
     S.get_hodge_star()
 
     # TODO: initialize diffusivity
-    k = 1
+    k = 1.
     # TODO: initialize boundary_values
     boundary_values = (np.array(bnodes), np.zeros(len(bnodes)))
     # TODO: initialize external sources
     dim_0 = S.num_nodes
-    f = np.ones(dim_0)
-    u_0 = np.random.rand(dim_0)
+    f = 1*np.ones(dim_0)
+    u_0 = 0.01*np.random.rand(dim_0)
+    # u_0 = np.zeros(dim_0)
+    ic(u_0)
 
-    gamma = 10000
+    gamma = 10.
     args = (f, S, k, boundary_values, gamma)
     u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='CG',
                  jac=p.grad_poisson, options={'disp': 1})

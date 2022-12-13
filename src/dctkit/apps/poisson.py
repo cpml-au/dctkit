@@ -74,6 +74,7 @@ def obj_poisson(x, f, S, k, boundary_values, gamma):
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
     energy = 0.5*np.linalg.norm(r)**2 + 0.5*gamma*penalty
+    print(energy)
     return energy
 
 
@@ -99,7 +100,5 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
     grad_r = poisson_vec_operator(Ax - f, S, k)
     grad_penalty = np.zeros(len(Ax))
     grad_penalty[pos] = x[pos] - value
-    print(grad_penalty)
     grad_energy = grad_r + gamma*grad_penalty
-    print(np.linalg.norm(grad_energy))
     return grad_energy
