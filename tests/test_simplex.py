@@ -96,20 +96,20 @@ def test_simplicial_complex():
         assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
 
     # test circumcenters
-    assert (np.linalg.norm(S.circ[1] - circ_true[1]) < 10**-8)
-    assert (np.linalg.norm(S.circ[2] - circ_true[2]) < 10**-8)
+    assert np.allclose(S.circ[1], circ_true[1])
+    assert np.allclose(S.circ[2], circ_true[2])
 
     # test primal volumes
-    assert (np.linalg.norm(S.primal_volumes[1] - pv_true[1]) < 10**-8)
-    assert (np.linalg.norm(S.primal_volumes[2] - pv_true[2]) < 10**-8)
+    assert np.allclose(S.primal_volumes[1], pv_true[1])
+    assert np.allclose(S.primal_volumes[2], pv_true[2])
 
     # test dual volumes
-    assert (np.linalg.norm(S.dual_volumes[1] - dv_true[1]) < 10**-8)
-    assert (np.linalg.norm(S.dual_volumes[2] - dv_true[2]) < 10**-8)
+    assert np.allclose(S.dual_volumes[1], dv_true[1])
+    assert np.allclose(S.dual_volumes[2], dv_true[2])
 
     # test hodge star
     for i in range(3):
-        assert (np.linalg.norm(S.hodge_star[i] - hodge_true[i]) < 10**-8)
+        assert np.allclose(S.hodge_star[i], hodge_true[i])
 
 
 if __name__ == "__main__":
