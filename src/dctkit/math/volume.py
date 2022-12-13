@@ -6,10 +6,10 @@ def unsigned_volume(S, node_coord):
 
     Args:
         S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
-        node_coord (np.array): coordinates of every node of the cell complex
-                               in which s is defined.
+        node_coord (np.array): coordinates of every node of the cell complex in
+            which s is defined.
     Returns:
-        vol (float): unsigned volume of the simplex.
+        float: unsigned volume of the simplex.
     """
     # store the coordinates of the nodes of every simplex in S
     S_coord = node_coord[S]
@@ -36,10 +36,10 @@ def signed_volume(S, node_coord):
 
     Args:
         S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
-        node_coord (np.array): coordinates of every node of the cell complex
-                               in which s is defined.
+        node_coord (np.array): coordinates of every node of the cell complex in
+            which s is defined.
     Returns:
-        vol (float): signed volume of the simplex.
+        float: signed volume of the simplex.
     """
     S_coord = node_coord[S]
     _, rows, cols = S_coord.shape

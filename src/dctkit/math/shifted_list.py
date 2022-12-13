@@ -1,5 +1,5 @@
 class ShiftedList(list):
-    """List with indices shifted by an offset. Subclass of list.
+    """List with indices shifted by an offset.
 
         Args:
             iterable: iterable used to initialize the list.

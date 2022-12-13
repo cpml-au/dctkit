@@ -5,19 +5,19 @@ from dctkit.math import spmv
 
 
 class Cochain():
-    """Cochain associated to a simplicial complex
+    """Cochain associated to a simplicial complex.
 
     Args:
         dim (int): dimension of the chains in which the cochain is defined.
-        is_primal (bool): boolean which is True if the cochain is primal
-                          and it is False if it is dual.
+        is_primal (bool): boolean which is True if the cochain is primal and it
+            is False if it is dual.
         node_tags (np.array): np.array matrix of node tags.
-        vec (np.array): vectorial representation of the cochain
+        vec (np.array): vectorial representation of the cochain.
     Attributes:
         dim (int): dimension of the chains in which the cochain is defined.
-        is_primal (bool): boolean which is True if the cochain is primal
-                          and it is False if it is dual.
-        node_tags (np.array): inherited from the class simplicial_complex
+        is_primal (bool): boolean which is True if the cochain is primal and it
+            is False if it is dual.
+        node_tags (np.array): inherited from the class simplicial_complex.
         vec (np.array): vectorial representation of the cochain.
     """
 
@@ -72,7 +72,7 @@ def inner_product(c_1, c_2):
         c_1 (Cochain): a primal cochain.
         c_2 (Cochain): a primal cochain.
     Returns:
-        inner_product (float): inner product between c_1 and c_2
+        inner_product (float): inner product between c_1 and c_2.
     """
     star_c_2 = star(c_2)
     n = c_1.complex.dim

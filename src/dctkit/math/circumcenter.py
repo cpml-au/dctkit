@@ -2,17 +2,16 @@ import numpy as np
 
 
 def circumcenter(s, node_coord):
-    """Compute the circumcenter of a given simplex s.
-
-       (References: Bell, Hirani, PyDEC: Software and Algorithms
-       for Discretization of Exterior Calculus, 2012, Section 10.1)
+    """Compute the circumcenter of a given simplex s. (References: Bell, Hirani,
+        PyDEC: Software and Algorithms for Discretization of Exterior Calculus,
+        2012, Section 10.1).
 
         Args:
             s (np.array): array containing the IDs of the nodes beloging to s.
             node_coord (np.array): coordinates of every node of the cell complex
-                                   in which s is defined.
+                in which s is defined.
         Returns:
-            circumcenter (np.array): coordinates of the circumcenter of s.
+            np.array: coordinates of the circumcenter of s.
     """
     # store the coordinates of the nodes in s
     simplex_coord = node_coord[s[:]]

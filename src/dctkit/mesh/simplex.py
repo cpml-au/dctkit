@@ -9,26 +9,26 @@ class SimplicialComplex:
 
     Args:
         tet_node_tags (int32 np.array): matrix containing the IDs of the nodes
-        (cols) belonging to each tetrahedron or top-level simplex (rows).
+            (cols) belonging to each tetrahedron or top-level simplex (rows).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
         nodes (rows) of the simplicial complex.
     Attributes:
-        dim (int32): dimension of the complex
-        S (list): list where each entry p is a matrix containing the
-                    IDs of the nodes belonging to each p-simplex.
+        dim (int32): dimension of the complex.
+        S (list): list where each entry p is a matrix containing the IDs of the
+            nodes belonging to each p-simplex.
         circ (list): list where each entry p is a matrix containing the
-        coordinates of the circumcenters (cols) of all the p-simplexes (rows).
+            coordinates of the circumcenters (cols) of all the p-simplexes (rows).
         boundary (list): list of the boundary matrices at all dimensions (0..dim-1).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
-        nodes (rows) of the simplicial complex.
+            nodes (rows) of the simplicial complex.
         primal_volumes (list): list where each entry p is an array containing all the
-                             volumes of the primal p-simplices.
-        dual_volumes (list): list where each entry p is an array containing all the
-                             volumes of the dual p-simplices.
+            volumes of the primal p-simplices.
+        dual_volumes (list): list where each entry p is an array containing all
+            the volumes of the dual p-simplices.
         B (list): list where each entry p is a matrix containing the IDs of the
-                            (p-1)-simplices (cols) belonging to each p-simplex (rows).
-        hodge_star (list): list where each entry p is an array containing the diagonal
-                          of the p-hodge star matrix.
+            (p-1)-simplices (cols) belonging to each p-simplex (rows).
+        hodge_star (list): list where each entry p is an array containing the
+            diagonal of the p-hodge star matrix.
     """
 
     def __init__(self, tet_node_tags, node_coord):
@@ -51,7 +51,7 @@ class SimplicialComplex:
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
-            boundary, vals, B = compute_boundary_COO(self.S[self.dim - p])
+            boundary, vals, B = __compute_boundary_COO(self.S[self.dim - p])
 
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
@@ -153,17 +153,15 @@ class SimplicialComplex:
             self.hodge_star[p] = dv/pv
 
 
-def simplex_array_parity(s):
-    """Compute the number of transpositions needed to sort the array
-       in ascending order modulo 2.
-
-       (Copied from PyDEC, dec/simplex_array.py)
+def __simplex_array_parity(s):
+    """Compute the number of transpositions needed to sort the array in
+       ascending order modulo 2. (Copied from PyDEC, dec/simplex_array.py)
 
         Args:
             s (np.array): array of the simplices.
 
         Returns:
-            trans (np.array): array of the transpositions needed modulo 2.
+            np.array: array of the transpositions needed modulo 2.
 
     """
     s = s.copy()
@@ -188,15 +186,15 @@ def simplex_array_parity(s):
     return trans
 
 
-def compute_boundary_COO(S):
+def __compute_boundary_COO(S):
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
         S (int32 np.array): matrix of the IDs of the nodes (cols) belonging to
-        each p-simplex (rows).
+            each p-simplex (rows).
     Returns:
-        boundary_COO (tuple): tuple with the COO representation of the boundary.
-        vals (int32 np.array): np.array matrix of node tags per (p-1)-face
+        tuple: tuple with the COO representation of the boundary.
+        int32 np.array: np.array matrix of node tags per (p-1)-face
         ordered lexicographically.
     """
     # number of p-simplices
@@ -211,7 +209,7 @@ def compute_boundary_COO(S):
 
     # compute array of relative orientations of the (p-1)-faces wrt the
     # p-simplices
-    orientations = 1 - 2 * simplex_array_parity(S)
+    orientations = 1 - 2 * __simplex_array_parity(S)
 
     # sort the rows of S lexicographically
     # FIXME: avoid making a copy and sorting every time

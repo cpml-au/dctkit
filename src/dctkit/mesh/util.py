@@ -3,10 +3,10 @@ import numpy as np
 
 
 def read_mesh(filename, format="gmsh"):
-    """Reads mesh from file.
+    """Reads a mesh from file.
 
     Args:
-        filename: name of the file containing the mesh
+        filename: name of the file containing the mesh.
     Returns:
         numNodes: number of mesh points.
     """

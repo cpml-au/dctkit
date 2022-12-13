@@ -3,6 +3,10 @@ from scipy.optimize import minimize
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 import os
+import matplotlib.pyplot as plt
+import matplotlib.tri as tri
+# import gmsh
+
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -11,10 +15,16 @@ def test_poisson():
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
-
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The vectorization of the face matrix is \n {S_2}")
+
+    # bc1, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+
+    triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
+
+    plt.triplot(triang)
+    plt.show()
 
     # initialize simplicial complex
     S = simplex.SimplicialComplex(S_2, node_coord)
@@ -33,7 +43,7 @@ def test_poisson():
     gamma = 3000
     args = (f, S, k, boundary_values, gamma)
     u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='CG', jac=p.grad_poisson)
-    assert (u.fun < 10**-3)
+    assert (u.fun < 1e-3)
 
 
 if __name__ == '__main__':
