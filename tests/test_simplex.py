@@ -15,7 +15,7 @@ def test_boundary_COO():
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    boundary_tuple, _, _ = simplex.__compute_boundary_COO(
+    boundary_tuple, _, _ = simplex.compute_boundary_COO(
         S_2)
     print(f"The row index vector is \n {boundary_tuple[0]}")
     print(f"The column index vector is \n {boundary_tuple[1]}")

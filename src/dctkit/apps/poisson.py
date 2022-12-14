@@ -71,10 +71,11 @@ def obj_poisson(x, f, S, k, boundary_values, gamma):
     pos, value = boundary_values
     Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
+    # zero residual on dual cells at the boundary where nodal values are imposed
+    r_proj = r.at[pos].set(0.)
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
-    energy = 0.5*np.linalg.norm(r)**2 + 0.5*gamma*penalty
-    print(energy)
+    energy = 0.5*np.linalg.norm(r_proj)**2 + 0.5*gamma*penalty
     return energy
 
 
@@ -96,8 +97,12 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
     """
     pos, value = boundary_values
     Ax = poisson_vec_operator(x, S, k)
-    # gradient of the residual = A(Ax - f) since A is symmetric
-    grad_r = poisson_vec_operator(Ax - f, S, k)
+    r = Ax - f
+    # zero residual on dual cells at the boundary where nodal values are imposed
+    r_proj = r.at[pos].set(0.)
+
+    # gradient of the projected residual = A^T r_proj = A r_proj, since A is symmetric
+    grad_r = poisson_vec_operator(r_proj, S, k)
     grad_penalty = np.zeros(len(Ax))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_r + gamma*grad_penalty
