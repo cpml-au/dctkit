@@ -6,6 +6,7 @@ from dctkit.dec import cochain as C
 import os
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
+from icecream import ic
 
 import gmsh
 
@@ -74,7 +75,7 @@ def test_poisson():
 
 
 def test_energy_poisson():
-    filename = "test3.msh"
+    filename = "test2.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
     print(f"The number of nodes in the mesh is {numNodes}")
@@ -98,32 +99,43 @@ def test_energy_poisson():
     # TODO: initialize diffusivity
     k = 1.
 
+    dim_0 = S.num_nodes
+
     # exact solution
     u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
-    # b_values = u_true[bnodes]
+    b_values = u_true[bnodes]
+
+    # TODO: initialize boundary_values
+    boundary_values = (np.array(bnodes), b_values)
+    # TODO: initialize external sources
+    f = 4.*np.ones(dim_0)
 
     plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
     plt.triplot(triang, 'ko-')
     plt.colorbar()
     plt.show()
 
-    # TODO: initialize boundary_values
-    # boundary_values = (np.array(bnodes), b_values)
-    # TODO: initialize external sources
-    dim_0 = S.num_nodes
-    f = 4.*np.ones(dim_0)
-
     # initial guess
     u_0 = 0.01*np.random.rand(dim_0)
 
-    args = (f, S, k)
+    # penalty factor on boundary conditions
+    gamma = 10000.
+
+    args = (f, S, k, boundary_values, gamma)
     u = minimize(fun=p.energy_poisson, x0=u_0, args=args, method='BFGS',
                  jac=p.grad_energy_poisson, options={'disp': 1})
+
     plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
     plt.triplot(triang, 'ko-')
     plt.colorbar()
     plt.show()
 
+    ic(np.linalg.norm(u.x-u_true))
+    ic(np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
+    assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
+    assert np.allclose(u.x, u_true, atol=1e-6)
+
 
 if __name__ == '__main__':
+    # test_poisson()
     test_energy_poisson()
