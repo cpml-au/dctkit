@@ -107,3 +107,22 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_r + gamma*grad_penalty
     return grad_energy
+
+
+def energy_poisson(x, f, S, k):
+    f = C.Cochain(0, True, S, f)
+    u = C.Cochain(0, True, S, x)
+    du = C.coboundary(u)
+    norm_grad = -k/2*C.inner_product(du, du)
+    bound_term = C.inner_product(u, f)
+    return (norm_grad - bound_term)
+
+
+def grad_energy_poisson(x, f, S, k):
+    f = C.Cochain(0, True, S, f)
+    n = S.dim
+    # TODO: add comments
+    grad_1 = poisson_vec_operator(x, S, k)
+    star_f = C.star(f)
+    grad_2 = star_f.coeffs
+    return 1/n*(grad_1 - grad_2)

@@ -73,5 +73,57 @@ def test_poisson():
     plt.show()
 
 
+def test_energy_poisson():
+    filename = "test3.msh"
+    full_path = os.path.join(cwd, filename)
+    numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
+    print(f"The number of nodes in the mesh is {numNodes}")
+    print(f"The number of faces in the mesh is {numElements}")
+
+    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+    bnodes -= 1
+
+    triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
+
+    plt.triplot(triang)
+    plt.show()
+
+    # initialize simplicial complex
+    S = simplex.SimplicialComplex(S_2, node_coord)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+    S.get_dual_volumes()
+    S.get_hodge_star()
+
+    # TODO: initialize diffusivity
+    k = 1.
+
+    # exact solution
+    u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
+    # b_values = u_true[bnodes]
+
+    plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
+    plt.triplot(triang, 'ko-')
+    plt.colorbar()
+    plt.show()
+
+    # TODO: initialize boundary_values
+    # boundary_values = (np.array(bnodes), b_values)
+    # TODO: initialize external sources
+    dim_0 = S.num_nodes
+    f = 4.*np.ones(dim_0)
+
+    # initial guess
+    u_0 = 0.01*np.random.rand(dim_0)
+
+    args = (f, S, k)
+    u = minimize(fun=p.energy_poisson, x0=u_0, args=args, method='BFGS',
+                 jac=p.grad_energy_poisson, options={'disp': 1})
+    plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
+    plt.triplot(triang, 'ko-')
+    plt.colorbar()
+    plt.show()
+
+
 if __name__ == '__main__':
-    test_poisson()
+    test_energy_poisson()
