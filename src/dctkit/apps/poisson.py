@@ -155,12 +155,11 @@ def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
     """
     pos, value = boundary_values
     f = C.Cochain(0, True, S, f)
-    n = S.dim
-    # grad_1(x) = 1/(2n) * (A + A^T) x = 1/n * Ax since A=A^T
-    grad_1 = -1/n*poisson_vec_operator(x, S, k)
+    # grad_1(x) = 1/2 * (A + A^T) x = Ax since A=A^T
+    grad_1 = -poisson_vec_operator(x, S, k)
     star_f = C.star(f)
-    # grad_2(x) = 1/n Hx, where H is the hodge star matrix
-    grad_2 = 1/n * star_f.coeffs
+    # grad_2(x) = Hx, where H is the hodge star matrix
+    grad_2 = star_f.coeffs
     grad_penalty = np.zeros(len(grad_1))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_1 + grad_2 + gamma*grad_penalty

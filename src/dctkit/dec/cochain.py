@@ -80,5 +80,5 @@ def inner_product(c_1, c_2):
     # dimension of the complexes must agree
     assert (n == c_2.complex.dim)
 
-    inner_product = 1/n*np.sum(c_1.coeffs*star_c_2.coeffs)
+    inner_product = np.sum(c_1.coeffs*star_c_2.coeffs)
     return inner_product

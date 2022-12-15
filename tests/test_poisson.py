@@ -119,7 +119,7 @@ def test_energy_poisson():
     u_0 = 0.01*np.random.rand(dim_0)
 
     # penalty factor on boundary conditions
-    gamma = 10000.
+    gamma = 100000.
 
     args = (f, S, k, boundary_values, gamma)
     u = minimize(fun=p.energy_poisson, x0=u_0, args=args, method='BFGS',
