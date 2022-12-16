@@ -2,6 +2,7 @@ import numpy as np
 from dctkit.dec import cochain as C
 
 
+# @profile
 def poisson(c, k):
     """Implements a routine to compute the LHS of the Poisson equation in DEC framework.
 
@@ -34,6 +35,7 @@ def poisson(c, k):
     return p
 
 
+# @profile
 def poisson_vec_operator(x, S, k):
     """Discrete laplacian starting from a vector instead of a cochain.
 
@@ -52,7 +54,8 @@ def poisson_vec_operator(x, S, k):
     return w
 
 
-def obj_poisson(x, f, S, k, boundary_values, gamma):
+# @profile
+def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Objective function of the Poisson optimization problem.
 
     Args:
@@ -72,16 +75,17 @@ def obj_poisson(x, f, S, k, boundary_values, gamma):
     Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
     # zero residual on dual cells at the boundary where nodal values are imposed
-    r_proj = r.at[pos].set(0.)
+    # r_proj = r.at[pos].set(0.)
 
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
-    energy = 0.5*np.linalg.norm(r_proj)**2 + 0.5*gamma*penalty
+    energy = 0.5*np.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
     print(energy)
     return energy
 
 
-def grad_poisson(x, f, S, k, boundary_values, gamma):
+# @profile
+def grad_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Gradient of the objective function of the Poisson optimization problem.
 
     Args:
@@ -101,10 +105,10 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
     Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
     # zero residual on dual cells at the boundary where nodal values are imposed
-    r_proj = r.at[pos].set(0.)
+    # r_proj = r.at[pos].set(0.)
 
     # gradient of the projected residual = A^T r_proj = A r_proj, since A is symmetric
-    grad_r = poisson_vec_operator(r_proj, S, k)
+    grad_r = poisson_vec_operator(r*mask, S, k)
     grad_penalty = np.zeros(len(Ax))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_r + gamma*grad_penalty

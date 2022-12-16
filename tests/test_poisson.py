@@ -21,7 +21,7 @@ def test_poisson():
     history = []
     history_boundary = []
     final_energy = []
-    for j in range(3):
+    for j in range(4):
         M = util.Mesh(full_path)
         if j == 0:
             M.initialize_mesh()
@@ -69,15 +69,19 @@ def test_poisson():
         f = C.Cochain(0, True, S, 4.*np.ones(dim_0))
         star_f = C.star(f)
 
+        mask = np.ones(dim_0)
+        mask[bnodes] = 0
+
         # initial guess
         u_0 = 0.01*np.random.rand(dim_0)
 
         # penalty factor on boundary conditions
         gamma = 1000.
-        args = (star_f.coeffs, S, k, boundary_values, gamma)
+        args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
+        ic()
         u = minimize(fun=p.obj_poisson, x0=u_0, args=args, method='BFGS',
                      jac=p.grad_poisson, options={'disp': 1})
-
+        ic()
         # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
         # assert np.allclose(u.x, u_true, atol=1e-6)
 
@@ -179,4 +183,4 @@ def test_energy_poisson():
 
 if __name__ == '__main__':
     test_poisson()
-    test_energy_poisson()
+    # test_energy_poisson()
