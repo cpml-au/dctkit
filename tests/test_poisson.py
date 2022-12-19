@@ -9,7 +9,9 @@ import matplotlib.tri as tri
 from icecream import ic
 import nlopt
 import time
-
+import jax.numpy as jnp
+from jax import jit
+import jaxopt
 import gmsh
 
 
@@ -284,6 +286,97 @@ def test_poisson_nlopt(energy_bool):
     plt.show()
 
 
+def test_poisson_jax():
+    gmsh.initialize()
+    history = []
+    final_energy = []
+    lc = 1.0
+    i = 5
+    for j in range(i):
+        numNodes, numElements, S_2, node_coord = generate_mesh(lc)
+        bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+        bnodes -= 1
+
+        triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
+
+        plt.triplot(triang)
+        plt.show()
+
+        # initialize simplicial complex
+        S = simplex.SimplicialComplex(S_2, node_coord)
+        S.get_circumcenters()
+        S.get_primal_volumes()
+        S.get_dual_volumes()
+        S.get_hodge_star()
+
+        # TODO: initialize diffusivity
+        k = 1.
+
+        # exact solution
+        u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
+        sol_true = jnp.array(u_true)
+        b_values = u_true[bnodes]
+
+        plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
+        plt.triplot(triang, 'ko-')
+        plt.colorbar()
+        plt.show()
+
+        # TODO: initialize boundary_values
+        boundary_values = (np.array(bnodes), b_values)
+        # TODO: initialize external sources
+        dim_0 = S.num_nodes
+        f_vec = 4.*np.ones(dim_0)
+        f = C.Cochain(0, True, S, f_vec)
+        star_f = C.star(f)
+
+        mask = np.ones(dim_0)
+        mask[bnodes] = 0.
+
+        u_0 = 0.01*np.random.rand(dim_0)
+        gamma = 10000.
+        args = (star_f.coeffs, k, boundary_values, gamma, mask)
+        # gf = grad(p.obj_poisson, argnums=0)
+        # ic(gf(u_0, star_f.coeffs, S, k, boundary_values, gamma, mask))
+        # ic(p.grad_poisson(u_0, star_f.coeffs, S, k, boundary_values, gamma, mask))
+
+        def obj_poisson(x, f, k, boundary_values, gamma, mask):
+            # f, k, boundary_values, gamma, mask = tuple
+            x = jnp.array(x)
+            pos, value = boundary_values
+            Ax = p.poisson_vec_operator(x, S, k)
+            r = Ax - f
+            # zero residual on dual cells at the boundary where nodal values are imposed
+            # r_proj = r.at[pos].set(0.)
+
+            # \sum_i (x_i - value_i)^2
+            r = jnp.array(r)
+            penalty = np.sum((x[pos] - value)**2)
+            penalty = jnp.array(penalty)
+            energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+            return energy
+
+        obj = jit(obj_poisson)
+        solver = jaxopt.NonlinearCG(obj)
+        sol = solver.run(u_0, *args)
+        ic(sol.params, sol.state)
+        lc = lc/np.sqrt(2)
+        history.append(jnp.linalg.norm(sol.params - sol_true))
+        final_energy.append(sol.state.value)
+
+    ic(history)
+    ic(final_energy)
+
+    plt.plot(range(i), history, label="Error")
+    plt.legend(loc="upper left")
+    plt.show()
+
+    plt.plot(range(i), final_energy, label="Final Energy")
+    plt.legend(loc="upper right")
+    plt.show()
+
+
 if __name__ == '__main__':
-    test_poisson_nlopt(False)
+    # test_poisson_nlopt(False)
     # test_poisson(False)
+    test_poisson_jax()
