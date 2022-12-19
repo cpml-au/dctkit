@@ -7,6 +7,8 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 from icecream import ic
+import nlopt
+import time
 
 import gmsh
 
@@ -67,7 +69,7 @@ def test_poisson(energy_bool):
     history_boundary = []
     final_energy = []
     lc = 1.0
-    i = 2
+    i = 7
     for j in range(i):
         _, _, S_2, node_coord = generate_mesh(lc)
 
@@ -140,7 +142,134 @@ def test_poisson(energy_bool):
         history.append(np.linalg.norm(u.x-u_true))
         history_boundary.append(np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
         final_energy.append(u.fun)
-        lc = lc/np.sqrt(2)
+        lc = lc/2
+
+        # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
+        # assert np.allclose(u.x, u_true, atol=1e-6)
+
+    plt.plot(range(i), history, label="Error")
+    plt.plot(range(i), history_boundary, label="Boundary Error")
+    plt.legend(loc="upper left")
+    plt.show()
+
+    plt.plot(range(i), final_energy, label="Final Energy")
+    plt.legend(loc="upper right")
+    plt.show()
+
+
+def test_poisson_nlopt(energy_bool):
+    # tested with test1.msh, test2.msh and test3.msh
+    # filename = "test1.msh"
+    # full_path = os.path.join(cwd, filename)
+    gmsh.initialize()
+    history = []
+    history_boundary = []
+    final_energy = []
+    lc = 1.0
+    i = 7
+    for j in range(i):
+        ic(j)
+        numNodes, numElements, S_2, node_coord = generate_mesh(lc)
+
+        # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
+
+        bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+        bnodes -= 1
+
+        '''
+        triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
+
+        plt.triplot(triang)
+        plt.show()
+        '''
+
+        # initialize simplicial complex
+        S = simplex.SimplicialComplex(S_2, node_coord)
+        S.get_circumcenters()
+        S.get_primal_volumes()
+        S.get_dual_volumes()
+        S.get_hodge_star()
+
+        # TODO: initialize diffusivity
+        k = 1.
+
+        # exact solution
+        u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
+        b_values = u_true[bnodes]
+
+        # plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
+        # plt.triplot(triang, 'ko-')
+        # plt.colorbar()
+        # plt.show()
+
+        # TODO: initialize boundary_values
+        boundary_values = (np.array(bnodes), b_values)
+        # TODO: initialize external sources
+        dim_0 = S.num_nodes
+        f_vec = 4.*np.ones(dim_0)
+
+        mask = np.ones(dim_0)
+        mask[bnodes] = 0.
+
+        if energy_bool:
+            obj = p.energy_poisson
+            gradfun = p.grad_energy_poisson
+            gamma = 10000.
+            args = (f_vec, S, k, boundary_values, gamma)
+        else:
+            obj = p.obj_poisson
+            gradfun = p.grad_poisson
+            f = C.Cochain(0, True, S, f_vec)
+            star_f = C.star(f)
+            # penalty factor on boundary conditions
+            gamma = 100.
+            args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
+
+        # initial guess
+        u_0 = 0.01*np.random.rand(dim_0)
+
+        def f2(x, grad):
+            if grad.size > 0:
+                grad[:] = gradfun(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
+
+            return obj(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
+            # NOTE: this casting to double is crucial to work with NLOpt
+            # return np.double(fjax(x))
+
+        # The second argument is the number of optimization parameters
+        opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
+        # opt = nlopt.opt(nlopt.LD_SLSQP, dim_0)
+        # opt.set_lower_bounds([-float('inf'), 0])
+
+        # Set objective function to minimize
+        opt.set_min_objective(f2)
+
+        opt.set_ftol_abs(1e-8)
+        xinit = u_0
+
+        tic = time.time()
+        x = opt.optimize(xinit)
+        toc = time.time()
+
+        minf = opt.last_optimum_value()
+        print("minimum value = ", minf)
+        print("result code = ", opt.last_optimize_result())
+        print("Time elapsed ", toc - tic)
+
+        ic(np.linalg.norm(x-u_true))
+        ic(np.linalg.norm(x[bnodes]-u_true[bnodes]))
+
+        '''
+        plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
+        plt.triplot(triang, 'ko-')
+        plt.colorbar()
+        plt.show()
+        '''
+
+        history.append(np.linalg.norm(x-u_true))
+        history_boundary.append(np.linalg.norm(x[bnodes]-u_true[bnodes]))
+        final_energy.append(minf)
+        lc = lc/2
 
         # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
         # assert np.allclose(u.x, u_true, atol=1e-6)
@@ -156,4 +285,5 @@ def test_poisson(energy_bool):
 
 
 if __name__ == '__main__':
-    test_poisson(True)
+    test_poisson_nlopt(False)
+    # test_poisson(False)
