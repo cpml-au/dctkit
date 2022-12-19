@@ -215,7 +215,9 @@ def compute_boundary_COO(S):
     # FIXME: avoid making a copy and sorting every time
     F = S.copy()
     F.sort(axis=1)
-
+    # ic(F)
+    # F_2 = S[np.lexsort(S.T[::-1])]
+    # ic(F_2)
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
     S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=np.int64)
 
@@ -253,14 +255,8 @@ def compute_boundary_COO(S):
         # initialize the matrix of the boundary simplex as an array
         B = np.empty(faces.shape[0], dtype=np.int64)
 
-        for i, v in enumerate(vals):
-            # find position of vector v in faces_ordered_last[:, :-2]
-            position = np.where(
-                (faces_ordered_last[:, :-2] == v).all(axis=1))[0]
-
-            # update B in position indices
-            B[position] = i
-
+        # compute B
+        _, B = np.unique(faces_ordered_last[:, :-2], axis=0, return_inverse=True)
         B = B.reshape(faces.shape[0] // nodes_per_simplex, nodes_per_simplex)
 
     # for edges, B_1 = S_1

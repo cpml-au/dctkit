@@ -2,6 +2,7 @@ import numpy as np
 
 from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
+from icecream import ic
 
 
 class Cochain():
@@ -29,6 +30,7 @@ class Cochain():
         self.coeffs = coeffs
 
 
+# @profile
 def coboundary(c):
     """Implements the coboundary operator.
 
@@ -45,10 +47,12 @@ def coboundary(c):
     if c.is_primal:
         # get the appropriate (primal) boundary matrix
         t = c.complex.boundary[c.dim + 1]
-        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=True)
+        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=True,
+                                  shape=c.complex.S[c.dim+1].shape[0])
     else:
         t = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False)
+        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False,
+                                  shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
     return dc
 
 
@@ -80,5 +84,5 @@ def inner_product(c_1, c_2):
     # dimension of the complexes must agree
     assert (n == c_2.complex.dim)
 
-    inner_product = 1/n*np.sum(c_1.coeffs*star_c_2.coeffs)
+    inner_product = np.sum(c_1.coeffs*star_c_2.coeffs)
     return inner_product

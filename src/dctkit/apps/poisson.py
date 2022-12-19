@@ -2,6 +2,7 @@ import numpy as np
 from dctkit.dec import cochain as C
 
 
+# @profile
 def poisson(c, k):
     """Implements a routine to compute the LHS of the Poisson equation in DEC framework.
 
@@ -34,6 +35,7 @@ def poisson(c, k):
     return p
 
 
+# @profile
 def poisson_vec_operator(x, S, k):
     """Discrete laplacian starting from a vector instead of a cochain.
 
@@ -52,7 +54,8 @@ def poisson_vec_operator(x, S, k):
     return w
 
 
-def obj_poisson(x, f, S, k, boundary_values, gamma):
+# @profile
+def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Objective function of the Poisson optimization problem.
 
     Args:
@@ -72,18 +75,20 @@ def obj_poisson(x, f, S, k, boundary_values, gamma):
     Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
     # zero residual on dual cells at the boundary where nodal values are imposed
-    r_proj = r.at[pos].set(0.)
+    # r_proj = r.at[pos].set(0.)
+
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
-    energy = 0.5*np.linalg.norm(r_proj)**2 + 0.5*gamma*penalty
+    energy = 0.5*np.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
     return energy
 
 
-def grad_poisson(x, f, S, k, boundary_values, gamma):
+# @profile
+def grad_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Gradient of the objective function of the Poisson optimization problem.
 
     Args:
-        x (np.array): vector in which we want to evaluate the objective function.
+        x (np.array): vector in which we want to evaluate the gradient.
         f (np.array): vector of external sources (constant term of the system).
         S (SimplicialComplex): a simplicial complex in which we define the
             cochain to apply Poisson.
@@ -99,11 +104,67 @@ def grad_poisson(x, f, S, k, boundary_values, gamma):
     Ax = poisson_vec_operator(x, S, k)
     r = Ax - f
     # zero residual on dual cells at the boundary where nodal values are imposed
-    r_proj = r.at[pos].set(0.)
+    # r_proj = r.at[pos].set(0.)
 
     # gradient of the projected residual = A^T r_proj = A r_proj, since A is symmetric
-    grad_r = poisson_vec_operator(r_proj, S, k)
+    grad_r = poisson_vec_operator(r*mask, S, k)
     grad_penalty = np.zeros(len(Ax))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_r + gamma*grad_penalty
+    return grad_energy
+
+
+def energy_poisson(x, f, S, k, boundary_values, gamma):
+    """Implementation of the Dirichlet energy.
+
+    Args:
+        x (np.array): vector in which we want to evaluate the objective function.
+        f (np.array): vector of external sources (constant term of the system).
+        S (SimplicialComplex): a simplicial complex in which we define the
+            cochain to apply Poisson.
+        k (float): the diffusitivity coefficient.
+        boundary_values (tuple): tuple of two np.arrays in which the first
+            encodes the positions of boundary values, while the last encodes the
+            boundary values themselves.
+        gamma (float): penalty factor.
+    Returns:
+        float: the value of the objective function at x.
+    """
+    pos, value = boundary_values
+    f = C.Cochain(0, True, S, f)
+    u = C.Cochain(0, True, S, x)
+    du = C.coboundary(u)
+    norm_grad = k/2*C.inner_product(du, du)
+    bound_term = C.inner_product(u, f)
+    penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
+    energy = norm_grad + bound_term + penalty
+    return energy
+
+
+def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
+    """Gradient of the Dirichlet energy.
+
+    Args:
+        x (np.array): vector in which we want to evaluate the gradient.
+        f (np.array): vector of external sources (constant term of the system).
+        S (SimplicialComplex): a simplicial complex in which we define the
+            cochain to apply Poisson.
+        k (float): the diffusitivity coefficient.
+        boundary_values (tuple): tuple of two np.arrays in which the first
+            encodes the positions of boundary values, while the last encodes the
+            boundary values themselves.
+        gamma (float): penalty factor.
+    Returns:
+        np.array: the value of the gradient of the objective function at x.
+    """
+    pos, value = boundary_values
+    f = C.Cochain(0, True, S, f)
+    # grad_1(x) = 1/2 * (A + A^T) x = Ax since A=A^T
+    grad_1 = -poisson_vec_operator(x, S, k)
+    star_f = C.star(f)
+    # grad_2(x) = Hx, where H is the hodge star matrix
+    grad_2 = star_f.coeffs
+    grad_penalty = np.zeros(len(grad_1))
+    grad_penalty[pos] = x[pos] - value
+    grad_energy = grad_1 + grad_2 + gamma*grad_penalty
     return grad_energy
