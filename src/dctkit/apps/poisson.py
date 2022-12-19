@@ -80,7 +80,6 @@ def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     # \sum_i (x_i - value_i)^2
     penalty = np.sum((x[pos] - value)**2)
     energy = 0.5*np.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
-    print(energy)
     return energy
 
 
@@ -139,7 +138,6 @@ def energy_poisson(x, f, S, k, boundary_values, gamma):
     bound_term = C.inner_product(u, f)
     penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
     energy = norm_grad + bound_term + penalty
-    print(energy)
     return energy
 
 

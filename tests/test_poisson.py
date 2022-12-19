@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from dctkit.mesh import simplex, util
+from dctkit.mesh import simplex
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
 import os
@@ -67,30 +67,29 @@ def test_poisson(energy_bool):
     history_boundary = []
     final_energy = []
     lc = 1.0
-    i = 6
+    i = 2
     for j in range(i):
-        ic(j)
-        numNodes, numElements, S_2, node_coord = generate_mesh(lc)
+        _, _, S_2, node_coord = generate_mesh(lc)
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
         bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
         bnodes -= 1
 
-        '''
         triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
 
         plt.triplot(triang)
         plt.show()
-        '''
 
         # initialize simplicial complex
+        ic()
         S = simplex.SimplicialComplex(S_2, node_coord)
+        ic()
         S.get_circumcenters()
         S.get_primal_volumes()
         S.get_dual_volumes()
         S.get_hodge_star()
-
+        ic()
         # TODO: initialize diffusivity
         k = 1.
 
@@ -98,10 +97,10 @@ def test_poisson(energy_bool):
         u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
         b_values = u_true[bnodes]
 
-        # plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
-        # plt.triplot(triang, 'ko-')
-        # plt.colorbar()
-        # plt.show()
+        plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
+        plt.triplot(triang, 'ko-')
+        plt.colorbar()
+        plt.show()
 
         # TODO: initialize boundary_values
         boundary_values = (np.array(bnodes), b_values)
@@ -115,7 +114,7 @@ def test_poisson(energy_bool):
         if energy_bool:
             obj = p.energy_poisson
             grad = p.grad_energy_poisson
-            gamma = 10000.
+            gamma = 100000.
             args = (f_vec, S, k, boundary_values, gamma)
         else:
             obj = p.obj_poisson
@@ -123,7 +122,7 @@ def test_poisson(energy_bool):
             f = C.Cochain(0, True, S, f_vec)
             star_f = C.star(f)
             # penalty factor on boundary conditions
-            gamma = 10.
+            gamma = 10000.
             args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
 
         # initial guess
@@ -132,31 +131,29 @@ def test_poisson(energy_bool):
         u = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
                      jac=grad, options={'disp': 1})
 
-        ic(np.linalg.norm(u.x-u_true))
-        ic(np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
-
-        '''
         plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
         plt.triplot(triang, 'ko-')
         plt.colorbar()
         plt.show()
-        '''
 
+        ic(np.linalg.norm(u.x-u_true), np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
         history.append(np.linalg.norm(u.x-u_true))
         history_boundary.append(np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
         final_energy.append(u.fun)
         lc = lc/np.sqrt(2)
 
-        #assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
-        #assert np.allclose(u.x, u_true, atol=1e-6)
+        # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
+        # assert np.allclose(u.x, u_true, atol=1e-6)
 
-    plt.plot(range(i), history)
-    plt.plot(range(i), history_boundary)
+    plt.plot(range(i), history, label="Error")
+    plt.plot(range(i), history_boundary, label="Boundary Error")
+    plt.legend(loc="upper left")
     plt.show()
 
-    plt.plot(range(i), final_energy)
+    plt.plot(range(i), final_energy, label="Final Energy")
+    plt.legend(loc="upper right")
     plt.show()
 
 
 if __name__ == '__main__':
-    test_poisson(False)
+    test_poisson(True)
