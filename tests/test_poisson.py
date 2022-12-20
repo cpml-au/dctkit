@@ -101,7 +101,7 @@ def test_poisson(energy_bool, optimizer):
         S, bnodes, triang = get_complex(S_2, node_coord)
         # TODO: initialize diffusivity
         k = 1.
-
+        ic()
         # exact solution
         u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
         b_values = u_true[bnodes]
@@ -184,17 +184,21 @@ def test_poisson(energy_bool, optimizer):
 
         elif optimizer == "jaxopt":
             sol_true = jnp.array(u_true)
+            u_0 = jnp.array(u_0)
+            f_vec = jnp.array(f_vec)
+            bnodes = jnp.array(bnodes)
+            b_values = jnp.array(b_values)
+            boundary_values = (bnodes, b_values)
 
             if energy_bool:
                 def energy_poisson(x, f, k, boundary_values, gamma):
                     pos, value = boundary_values
-                    f = C.Cochain(0, True, S, f)
-                    u = C.Cochain(0, True, S, x)
+                    f = C.Cochain(0, True, S, f, "jax")
+                    u = C.Cochain(0, True, S, x, "jax")
                     du = C.coboundary(u)
                     norm_grad = k/2*C.inner_product(du, du)
                     bound_term = C.inner_product(u, f)
-                    penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
-                    penalty = jnp.array(penalty)
+                    penalty = 0.5*gamma*jnp.sum((x[pos] - value)**2)
                     energy = norm_grad + bound_term + penalty
                     return energy
 
@@ -211,9 +215,7 @@ def test_poisson(energy_bool, optimizer):
                     # imposed
 
                     # \sum_i (x_i - value_i)^2
-                    r = jnp.array(r)
-                    penalty = np.sum((x[pos] - value)**2)
-                    penalty = jnp.array(penalty)
+                    penalty = jnp.sum((x[pos] - value)**2)
                     energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                     return energy
 
@@ -248,4 +250,4 @@ def test_poisson(energy_bool, optimizer):
 
 
 if __name__ == '__main__':
-    test_poisson(True, "jaxopt")
+    test_poisson(False, "jaxopt")
