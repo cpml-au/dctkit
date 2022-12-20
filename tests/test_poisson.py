@@ -11,9 +11,11 @@ import nlopt
 import time
 import jax.numpy as jnp
 from jax import jit
+from jax.config import config
 import jaxopt
 import gmsh
 
+config.update("jax_enable_x64", True)
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -62,8 +64,26 @@ def generate_mesh(lc):
     return numNodes, numElements, nodeTagsPerElem, node_coords
 
 
-def test_poisson(energy_bool):
+def get_complex(S_p, node_coords):
+    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
+    bnodes -= 1
+    triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
+    # initialize simplicial complex
+    S = simplex.SimplicialComplex(S_p, node_coords)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+    S.get_dual_volumes()
+    S.get_hodge_star()
+
+    return S, bnodes, triang
+
+
+def test_poisson(energy_bool, optimizer):
+    # FIXME: the case test_poisson(True, "nlopt") doesnt work because it wasnt
+    # implemented
+
     # tested with test1.msh, test2.msh and test3.msh
+
     # filename = "test1.msh"
     # full_path = os.path.join(cwd, filename)
     gmsh.initialize()
@@ -71,29 +91,14 @@ def test_poisson(energy_bool):
     history_boundary = []
     final_energy = []
     lc = 1.0
-    i = 7
-    for j in range(i):
+    j = 3
+    for i in range(j):
+        ic(i)
         _, _, S_2, node_coord = generate_mesh(lc)
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
-        bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-        bnodes -= 1
-
-        triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
-
-        plt.triplot(triang)
-        plt.show()
-
-        # initialize simplicial complex
-        ic()
-        S = simplex.SimplicialComplex(S_2, node_coord)
-        ic()
-        S.get_circumcenters()
-        S.get_primal_volumes()
-        S.get_dual_volumes()
-        S.get_hodge_star()
-        ic()
+        S, bnodes, triang = get_complex(S_2, node_coord)
         # TODO: initialize diffusivity
         k = 1.
 
@@ -105,104 +110,6 @@ def test_poisson(energy_bool):
         plt.triplot(triang, 'ko-')
         plt.colorbar()
         plt.show()
-
-        # TODO: initialize boundary_values
-        boundary_values = (np.array(bnodes), b_values)
-        # TODO: initialize external sources
-        dim_0 = S.num_nodes
-        f_vec = 4.*np.ones(dim_0)
-
-        mask = np.ones(dim_0)
-        mask[bnodes] = 0.
-
-        if energy_bool:
-            obj = p.energy_poisson
-            grad = p.grad_energy_poisson
-            gamma = 100000.
-            args = (f_vec, S, k, boundary_values, gamma)
-        else:
-            obj = p.obj_poisson
-            grad = p.grad_poisson
-            f = C.Cochain(0, True, S, f_vec)
-            star_f = C.star(f)
-            # penalty factor on boundary conditions
-            gamma = 10000.
-            args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
-
-        # initial guess
-        u_0 = 0.01*np.random.rand(dim_0)
-
-        u = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
-                     jac=grad, options={'disp': 1})
-
-        plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
-        plt.triplot(triang, 'ko-')
-        plt.colorbar()
-        plt.show()
-
-        ic(np.linalg.norm(u.x-u_true), np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
-        history.append(np.linalg.norm(u.x-u_true))
-        history_boundary.append(np.linalg.norm(u.x[bnodes]-u_true[bnodes]))
-        final_energy.append(u.fun)
-        lc = lc/2
-
-        # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
-        # assert np.allclose(u.x, u_true, atol=1e-6)
-
-    plt.plot(range(i), history, label="Error")
-    plt.plot(range(i), history_boundary, label="Boundary Error")
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.plot(range(i), final_energy, label="Final Energy")
-    plt.legend(loc="upper right")
-    plt.show()
-
-
-def test_poisson_nlopt(energy_bool):
-    # tested with test1.msh, test2.msh and test3.msh
-    # filename = "test1.msh"
-    # full_path = os.path.join(cwd, filename)
-    gmsh.initialize()
-    history = []
-    history_boundary = []
-    final_energy = []
-    lc = 1.0
-    i = 7
-    for j in range(i):
-        ic(j)
-        numNodes, numElements, S_2, node_coord = generate_mesh(lc)
-
-        # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
-
-        bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-        bnodes -= 1
-
-        '''
-        triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
-
-        plt.triplot(triang)
-        plt.show()
-        '''
-
-        # initialize simplicial complex
-        S = simplex.SimplicialComplex(S_2, node_coord)
-        S.get_circumcenters()
-        S.get_primal_volumes()
-        S.get_dual_volumes()
-        S.get_hodge_star()
-
-        # TODO: initialize diffusivity
-        k = 1.
-
-        # exact solution
-        u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
-        b_values = u_true[bnodes]
-
-        # plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
-        # plt.triplot(triang, 'ko-')
-        # plt.colorbar()
-        # plt.show()
 
         # TODO: initialize boundary_values
         boundary_values = (np.array(bnodes), b_values)
@@ -216,7 +123,7 @@ def test_poisson_nlopt(energy_bool):
         if energy_bool:
             obj = p.energy_poisson
             gradfun = p.grad_energy_poisson
-            gamma = 10000.
+            gamma = 100000.
             args = (f_vec, S, k, boundary_values, gamma)
         else:
             obj = p.obj_poisson
@@ -224,159 +131,121 @@ def test_poisson_nlopt(energy_bool):
             f = C.Cochain(0, True, S, f_vec)
             star_f = C.star(f)
             # penalty factor on boundary conditions
-            gamma = 100.
+            gamma = 10000.
             args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
 
         # initial guess
         u_0 = 0.01*np.random.rand(dim_0)
 
-        def f2(x, grad):
-            if grad.size > 0:
-                grad[:] = gradfun(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
+        if optimizer == "scipy":
+            u = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
+                         jac=gradfun, options={'disp': 1})
 
-            return obj(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
+            plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
+            plt.triplot(triang, 'ko-')
+            plt.colorbar()
+            plt.show()
+            x = u.x
+            minf = u.fun
+            current_history = np.linalg.norm(x-u_true)
+            current_history_boundary = np.linalg.norm(x[bnodes]-u_true[bnodes])
+
+        elif optimizer == "nlopt":
+            def f2(x, grad):
+                if grad.size > 0:
+                    grad[:] = gradfun(x, star_f.coeffs, S, k,
+                                      boundary_values, gamma, mask)
+
+                return obj(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
             # NOTE: this casting to double is crucial to work with NLOpt
             # return np.double(fjax(x))
 
-        # The second argument is the number of optimization parameters
-        opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
-        # opt = nlopt.opt(nlopt.LD_SLSQP, dim_0)
-        # opt.set_lower_bounds([-float('inf'), 0])
+            # The second argument is the number of optimization parameters
+            opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
+            # opt = nlopt.opt(nlopt.LD_SLSQP, dim_0)
+            # opt.set_lower_bounds([-float('inf'), 0])
 
-        # Set objective function to minimize
-        opt.set_min_objective(f2)
+            # Set objective function to minimize
+            opt.set_min_objective(f2)
 
-        opt.set_ftol_abs(1e-8)
-        xinit = u_0
+            opt.set_ftol_abs(1e-8)
+            xinit = u_0
 
-        tic = time.time()
-        x = opt.optimize(xinit)
-        toc = time.time()
+            tic = time.time()
+            x = opt.optimize(xinit)
+            toc = time.time()
 
-        minf = opt.last_optimum_value()
-        print("minimum value = ", minf)
-        print("result code = ", opt.last_optimize_result())
-        print("Time elapsed ", toc - tic)
+            minf = opt.last_optimum_value()
+            print("minimum value = ", minf)
+            print("result code = ", opt.last_optimize_result())
+            print("Time elapsed ", toc - tic)
+            current_history = np.linalg.norm(x-u_true)
+            current_history_boundary = np.linalg.norm(x[bnodes]-u_true[bnodes])
 
-        ic(np.linalg.norm(x-u_true))
-        ic(np.linalg.norm(x[bnodes]-u_true[bnodes]))
+        elif optimizer == "jaxopt":
+            sol_true = jnp.array(u_true)
 
-        '''
-        plt.tricontourf(triang, u.x, cmap='RdBu', levels=20)
-        plt.triplot(triang, 'ko-')
-        plt.colorbar()
-        plt.show()
-        '''
+            if energy_bool:
+                def energy_poisson(x, f, k, boundary_values, gamma):
+                    pos, value = boundary_values
+                    f = C.Cochain(0, True, S, f)
+                    u = C.Cochain(0, True, S, x)
+                    du = C.coboundary(u)
+                    norm_grad = k/2*C.inner_product(du, du)
+                    bound_term = C.inner_product(u, f)
+                    penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
+                    penalty = jnp.array(penalty)
+                    energy = norm_grad + bound_term + penalty
+                    return energy
 
-        history.append(np.linalg.norm(x-u_true))
-        history_boundary.append(np.linalg.norm(x[bnodes]-u_true[bnodes]))
+                new_args = (f_vec, k, boundary_values, gamma)
+                obj = jit(energy_poisson)
+
+            else:
+                def obj_poisson(x, f, k, boundary_values, gamma, mask):
+                    # f, k, boundary_values, gamma, mask = tuple
+                    pos, value = boundary_values
+                    Ax = p.poisson_vec_operator(x, S, k)
+                    r = Ax - f
+                    # zero residual on dual cells at the boundary where nodal values are
+                    # imposed
+
+                    # \sum_i (x_i - value_i)^2
+                    r = jnp.array(r)
+                    penalty = np.sum((x[pos] - value)**2)
+                    penalty = jnp.array(penalty)
+                    energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                    return energy
+
+                new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
+                obj = jit(obj_poisson)
+
+            solver = jaxopt.BFGS(obj)
+            sol = solver.run(u_0, *new_args)
+            ic(sol.params, sol.state.value, jnp.linalg.norm(
+                sol.params[bnodes]-sol_true[bnodes]))
+            x = sol.params
+            minf = sol.state.value
+            current_history = jnp.linalg.norm(x-sol_true)
+            current_history_boundary = jnp.linalg.norm(x[bnodes]-sol_true[bnodes])
+
+        history.append(current_history)
+        history_boundary.append(current_history_boundary)
         final_energy.append(minf)
         lc = lc/2
 
         # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
         # assert np.allclose(u.x, u_true, atol=1e-6)
 
-    plt.plot(range(i), history, label="Error")
-    plt.plot(range(i), history_boundary, label="Boundary Error")
+    plt.plot(range(j), history, label="Error")
+    plt.plot(range(j), history_boundary, label="Boundary Error")
     plt.legend(loc="upper left")
     plt.show()
 
-    plt.plot(range(i), final_energy, label="Final Energy")
-    plt.legend(loc="upper right")
-    plt.show()
-
-
-def test_poisson_jax():
-    gmsh.initialize()
-    history = []
-    final_energy = []
-    lc = 1.0
-    i = 5
-    for j in range(i):
-        numNodes, numElements, S_2, node_coord = generate_mesh(lc)
-        bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-        bnodes -= 1
-
-        triang = tri.Triangulation(node_coord[:, 0], node_coord[:, 1])
-
-        plt.triplot(triang)
-        plt.show()
-
-        # initialize simplicial complex
-        S = simplex.SimplicialComplex(S_2, node_coord)
-        S.get_circumcenters()
-        S.get_primal_volumes()
-        S.get_dual_volumes()
-        S.get_hodge_star()
-
-        # TODO: initialize diffusivity
-        k = 1.
-
-        # exact solution
-        u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
-        sol_true = jnp.array(u_true)
-        b_values = u_true[bnodes]
-
-        plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
-        plt.triplot(triang, 'ko-')
-        plt.colorbar()
-        plt.show()
-
-        # TODO: initialize boundary_values
-        boundary_values = (np.array(bnodes), b_values)
-        # TODO: initialize external sources
-        dim_0 = S.num_nodes
-        f_vec = 4.*np.ones(dim_0)
-        f = C.Cochain(0, True, S, f_vec)
-        star_f = C.star(f)
-
-        mask = np.ones(dim_0)
-        mask[bnodes] = 0.
-
-        u_0 = 0.01*np.random.rand(dim_0)
-        gamma = 10000.
-        args = (star_f.coeffs, k, boundary_values, gamma, mask)
-        # gf = grad(p.obj_poisson, argnums=0)
-        # ic(gf(u_0, star_f.coeffs, S, k, boundary_values, gamma, mask))
-        # ic(p.grad_poisson(u_0, star_f.coeffs, S, k, boundary_values, gamma, mask))
-
-        def obj_poisson(x, f, k, boundary_values, gamma, mask):
-            # f, k, boundary_values, gamma, mask = tuple
-            x = jnp.array(x)
-            pos, value = boundary_values
-            Ax = p.poisson_vec_operator(x, S, k)
-            r = Ax - f
-            # zero residual on dual cells at the boundary where nodal values are imposed
-            # r_proj = r.at[pos].set(0.)
-
-            # \sum_i (x_i - value_i)^2
-            r = jnp.array(r)
-            penalty = np.sum((x[pos] - value)**2)
-            penalty = jnp.array(penalty)
-            energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
-            return energy
-
-        obj = jit(obj_poisson)
-        solver = jaxopt.NonlinearCG(obj)
-        sol = solver.run(u_0, *args)
-        ic(sol.params, sol.state)
-        lc = lc/np.sqrt(2)
-        history.append(jnp.linalg.norm(sol.params - sol_true))
-        final_energy.append(sol.state.value)
-
-    ic(history)
-    ic(final_energy)
-
-    plt.plot(range(i), history, label="Error")
-    plt.legend(loc="upper left")
-    plt.show()
-
-    plt.plot(range(i), final_energy, label="Final Energy")
+    plt.plot(range(j), final_energy, label="Final Energy")
     plt.legend(loc="upper right")
     plt.show()
 
 
 if __name__ == '__main__':
-    # test_poisson_nlopt(False)
-    # test_poisson(False)
-    test_poisson_jax()
+    test_poisson(True, "jaxopt")
