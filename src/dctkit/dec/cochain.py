@@ -88,7 +88,7 @@ def inner_product(c_1, c_2):
     assert (c_1.type == c_2.type)
 
     if c_1.type == "numpy":
-        inner_product = np.sum(c_1.coeffs*star_c_2.coeffs)
+        inner_product = np.dot(c_1.coeffs, star_c_2.coeffs)
     elif c_1.type == "jax":
-        inner_product = jnp.sum(c_1.coeffs*star_c_2.coeffs)
+        inner_product = jnp.dot(c_1.coeffs, star_c_2.coeffs)
     return inner_product

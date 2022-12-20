@@ -6,16 +6,12 @@ from dctkit.dec import cochain as C
 import os
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-from icecream import ic
 import nlopt
 import time
 import jax.numpy as jnp
-from jax import jit
-from jax.config import config
 import jaxopt
 import gmsh
 
-config.update("jax_enable_x64", True)
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -78,9 +74,7 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def test_poisson(energy_bool, optimizer):
-    # FIXME: the case test_poisson(True, "nlopt") doesnt work because it wasnt
-    # implemented
+def test_poisson(energy_bool=True, optimizer="jaxopt"):
 
     # tested with test1.msh, test2.msh and test3.msh
 
@@ -93,7 +87,7 @@ def test_poisson(energy_bool, optimizer):
     lc = 1.0
     j = 15
     for i in range(j):
-        ic(i)
+        print("i = ", i)
         _, _, S_2, node_coord = generate_mesh(lc)
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
@@ -101,7 +95,7 @@ def test_poisson(energy_bool, optimizer):
         S, bnodes, triang = get_complex(S_2, node_coord)
         # TODO: initialize diffusivity
         k = 1.
-        ic()
+
         # exact solution
         u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
         b_values = u_true[bnodes]
@@ -151,12 +145,16 @@ def test_poisson(energy_bool, optimizer):
             current_history_boundary = np.linalg.norm(x[bnodes]-u_true[bnodes])
 
         elif optimizer == "nlopt":
+            obj = p.energy_poisson
+            gradfun = p.grad_energy_poisson
+            gamma = 1000.
+
             def f2(x, grad):
                 if grad.size > 0:
-                    grad[:] = gradfun(x, star_f.coeffs, S, k,
-                                      boundary_values, gamma, mask)
+                    grad[:] = gradfun(x, f_vec, S, k,
+                                      boundary_values, gamma)
 
-                return obj(x, star_f.coeffs, S, k, boundary_values, gamma, mask)
+                return np.double(obj(x, f_vec, S, k, boundary_values, gamma))
             # NOTE: this casting to double is crucial to work with NLOpt
             # return np.double(fjax(x))
 
@@ -178,7 +176,7 @@ def test_poisson(energy_bool, optimizer):
             minf = opt.last_optimum_value()
             print("minimum value = ", minf)
             print("result code = ", opt.last_optimize_result())
-            print("Time elapsed ", toc - tic)
+            print("Elapsed time = ", toc - tic)
             current_history = np.linalg.norm(x-u_true)
             current_history_boundary = np.linalg.norm(x[bnodes]-u_true[bnodes])
 
@@ -203,13 +201,13 @@ def test_poisson(energy_bool, optimizer):
                     return energy
 
                 new_args = (f_vec, k, boundary_values, gamma)
-                obj = jit(energy_poisson)
+                obj = energy_poisson
 
             else:
                 def obj_poisson(x, f, k, boundary_values, gamma, mask):
                     # f, k, boundary_values, gamma, mask = tuple
                     pos, value = boundary_values
-                    Ax = p.poisson_vec_operator(x, S, k)
+                    Ax = p.poisson_vec_operator(x, S, k, "jax")
                     r = Ax - f
                     # zero residual on dual cells at the boundary where nodal values are
                     # imposed
@@ -220,11 +218,14 @@ def test_poisson(energy_bool, optimizer):
                     return energy
 
                 new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
-                obj = jit(obj_poisson)
+                obj = obj_poisson
 
             solver = jaxopt.LBFGS(obj, maxiter=5000)
+            tic = time.time()
             sol = solver.run(u_0, *new_args)
-            ic(sol.params, sol.state.value, jnp.linalg.norm(
+            toc = time.time()
+            print("Elapsed time = ", toc-tic)
+            print(sol.params, sol.state.value, jnp.linalg.norm(
                 sol.params[bnodes]-sol_true[bnodes]))
             x = sol.params
             minf = sol.state.value
@@ -250,4 +251,4 @@ def test_poisson(energy_bool, optimizer):
 
 
 if __name__ == '__main__':
-    test_poisson(False, "jaxopt")
+    test_poisson(True, "jaxopt")
