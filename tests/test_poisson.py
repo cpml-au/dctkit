@@ -91,7 +91,7 @@ def test_poisson(energy_bool, optimizer):
     history_boundary = []
     final_energy = []
     lc = 1.0
-    j = 3
+    j = 15
     for i in range(j):
         ic(i)
         _, _, S_2, node_coord = generate_mesh(lc)
@@ -105,12 +105,12 @@ def test_poisson(energy_bool, optimizer):
         # exact solution
         u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
         b_values = u_true[bnodes]
-
+        '''
         plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
         plt.triplot(triang, 'ko-')
         plt.colorbar()
         plt.show()
-
+        '''
         # TODO: initialize boundary_values
         boundary_values = (np.array(bnodes), b_values)
         # TODO: initialize external sources
@@ -123,7 +123,7 @@ def test_poisson(energy_bool, optimizer):
         if energy_bool:
             obj = p.energy_poisson
             gradfun = p.grad_energy_poisson
-            gamma = 100000.
+            gamma = 1000.
             args = (f_vec, S, k, boundary_values, gamma)
         else:
             obj = p.obj_poisson
@@ -220,7 +220,7 @@ def test_poisson(energy_bool, optimizer):
                 new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
                 obj = jit(obj_poisson)
 
-            solver = jaxopt.BFGS(obj)
+            solver = jaxopt.LBFGS(obj, maxiter=5000)
             sol = solver.run(u_0, *new_args)
             ic(sol.params, sol.state.value, jnp.linalg.norm(
                 sol.params[bnodes]-sol_true[bnodes]))
@@ -232,7 +232,7 @@ def test_poisson(energy_bool, optimizer):
         history.append(current_history)
         history_boundary.append(current_history_boundary)
         final_energy.append(minf)
-        lc = lc/2
+        lc = lc/np.sqrt(2)
 
         # assert np.allclose(u.x[bnodes], u_true[bnodes], atol=1e-6)
         # assert np.allclose(u.x, u_true, atol=1e-6)
