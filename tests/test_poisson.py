@@ -209,7 +209,7 @@ def test_poisson(energy_bool, optimizer):
                 def obj_poisson(x, f, k, boundary_values, gamma, mask):
                     # f, k, boundary_values, gamma, mask = tuple
                     pos, value = boundary_values
-                    Ax = p.poisson_vec_operator(x, S, k)
+                    Ax = p.poisson_vec_operator(x, S, k, "jax")
                     r = Ax - f
                     # zero residual on dual cells at the boundary where nodal values are
                     # imposed
@@ -223,7 +223,10 @@ def test_poisson(energy_bool, optimizer):
                 obj = jit(obj_poisson)
 
             solver = jaxopt.LBFGS(obj, maxiter=5000)
+            tic = time.time()
             sol = solver.run(u_0, *new_args)
+            toc = time.time()
+            print("Time elapsed ", toc - tic)
             ic(sol.params, sol.state.value, jnp.linalg.norm(
                 sol.params[bnodes]-sol_true[bnodes]))
             x = sol.params
@@ -250,4 +253,4 @@ def test_poisson(energy_bool, optimizer):
 
 
 if __name__ == '__main__':
-    test_poisson(False, "jaxopt")
+    test_poisson(True, "jaxopt")
