@@ -60,14 +60,14 @@ def generate_mesh(lc):
     return numNodes, numElements, nodeTagsPerElem, node_coords
 
 
-def get_complex(S_p, node_coords, type="float64"):
+def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
     if type != "float64":
         bnodes = np.array(bnodes, dtype=np.int32)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
-    S = simplex.SimplicialComplex(S_p, node_coords)
+    S = simplex.SimplicialComplex(S_p, node_coords, float_dtype, int_dtype)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
@@ -76,7 +76,8 @@ def get_complex(S_p, node_coords, type="float64"):
     return S, bnodes, triang
 
 
-def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
+def test_poisson(energy_bool=True, optimizer="jaxopt", float_dtype="float64",
+                 int_dtype="int64"):
 
     # tested with test1.msh, test2.msh and test3.msh
 
@@ -94,12 +95,12 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
-        S, bnodes, triang = get_complex(S_2, node_coord, type)
+        S, bnodes, triang = get_complex(S_2, node_coord, float_dtype, int_dtype)
         # TODO: initialize diffusivity
         k = 1.
 
         # exact solution
-        u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]**2, dtype=type)
+        u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]**2, dtype=float_dtype)
         b_values = u_true[bnodes]
         '''
         plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
@@ -111,9 +112,9 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
         boundary_values = (np.array(bnodes), b_values)
         # TODO: initialize external sources
         dim_0 = S.num_nodes
-        f_vec = 4.*np.ones(dim_0, dtype=type)
+        f_vec = 4.*np.ones(dim_0, dtype=float_dtype)
 
-        mask = np.ones(dim_0, dtype=type)
+        mask = np.ones(dim_0, dtype=float_dtype)
         mask[bnodes] = 0.
 
         if energy_bool:
@@ -227,6 +228,7 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
             sol = solver.run(u_0, *new_args)
             toc = time.time()
             print("Elapsed time = ", toc-tic)
+            print(sol.state.iter_num)
             print(sol.params, sol.state.value, jnp.linalg.norm(
                 sol.params[bnodes]-sol_true[bnodes]))
             x = sol.params
@@ -253,4 +255,4 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
 
 
 if __name__ == '__main__':
-    test_poisson(True, "jaxopt", "float32")
+    test_poisson(True, "jaxopt", "float32", "int32")

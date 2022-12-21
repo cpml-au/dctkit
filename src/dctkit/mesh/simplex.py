@@ -31,15 +31,16 @@ class SimplicialComplex:
             diagonal of the p-hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, type="float64"):
+    def __init__(self, tet_node_tags, node_coord, float_dtype="float64",
+                 int_dtype="int64"):
         # store the coordinates of the nodes
-        if type != "float64":
-            node_coord = np.array(node_coord, dtype=type)
-            tet_node_tags = np.array(tet_node_tags, dtype=type)
+        node_coord = np.array(node_coord, dtype=float_dtype)
+        tet_node_tags = np.array(tet_node_tags, dtype=int_dtype)
         self.node_coord = node_coord
         self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
-        self.type = type
+        self.float_dtype = float_dtype
+        self.int_dtype = int_dtype
 
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
@@ -56,7 +57,8 @@ class SimplicialComplex:
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
-            boundary, vals, B = compute_boundary_COO(self.S[self.dim - p], self.type)
+            boundary, vals, B = compute_boundary_COO(
+                self.S[self.dim - p], self.int_dtype)
 
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
@@ -69,11 +71,11 @@ class SimplicialComplex:
         self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            C = np.empty((S.shape[0], self.embedded_dim), dtype=self.type)
-            B = np.empty((S.shape[0], S.shape[1]), dtype=self.type)
+            C = np.empty((S.shape[0], self.embedded_dim), dtype=self.float_dtype)
+            B = np.empty((S.shape[0], S.shape[1]), dtype=self.float_dtype)
             for i in range(S.shape[0]):
                 C[i, :], B[i, :] = circ.circumcenter(S[i, :],
-                                                     self.node_coord, self.type)
+                                                     self.node_coord, self.float_dtype)
             self.circ[p] = C
             self.bary_circ[p] = B
 
@@ -86,11 +88,13 @@ class SimplicialComplex:
         for p in range(1, self.dim + 1):
             S = self.S[p]
             num_p_simplices, _ = S.shape
-            primal_volumes = np.empty(num_p_simplices, dtype=self.type)
+            primal_volumes = np.empty(num_p_simplices, dtype=self.float_dtype)
             if p == self.embedded_dim:
-                primal_volumes = volume.signed_volume(S, self.node_coord, self.type)
+                primal_volumes = volume.signed_volume(
+                    S, self.node_coord, self.int_dtype)
             else:
-                primal_volumes = volume.unsigned_volume(S, self.node_coord, self.type)
+                primal_volumes = volume.unsigned_volume(
+                    S, self.node_coord, self.int_dtype)
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):
@@ -98,7 +102,7 @@ class SimplicialComplex:
         """
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
         self.dual_volumes[self.dim] = np.ones(self.S[self.embedded_dim - self.dim].
-                                              shape[0], dtype=self.type)
+                                              shape[0], dtype=self.float_dtype)
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             num_p, num_bnd_simplices = self.B[p].shape
@@ -191,7 +195,7 @@ def __simplex_array_parity(s):
     return trans
 
 
-def compute_boundary_COO(S, type="float64"):
+def compute_boundary_COO(S, float_dtype="float64", int_dtype="int64"):
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
@@ -224,10 +228,7 @@ def compute_boundary_COO(S, type="float64"):
     # F_2 = S[np.lexsort(S.T[::-1])]
     # ic(F_2)
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
-    if type == "float64":
-        S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=np.int64)
-    elif type == "float32":
-        S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=np.int32)
+    S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=int_dtype)
 
     # find the node IDs of the (p-1)-simplices and store their relative
     # orientations wrt the parent simplex
@@ -261,10 +262,7 @@ def compute_boundary_COO(S, type="float64"):
         faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
 
         # initialize the matrix of the boundary simplex as an array
-        if type == "float64":
-            B = np.empty(faces.shape[0], dtype=np.int64)
-        elif type == "float32":
-            B = np.empty(faces.shape[0], dtype=np.int32)
+        B = np.empty(faces.shape[0], dtype=int_dtype)
 
         # compute B
         _, B = np.unique(faces_ordered_last[:, :-2], axis=0, return_inverse=True)
