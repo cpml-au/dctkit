@@ -60,9 +60,11 @@ def generate_mesh(lc):
     return numNodes, numElements, nodeTagsPerElem, node_coords
 
 
-def get_complex(S_p, node_coords):
+def get_complex(S_p, node_coords, type="float64"):
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
+    if type != "float64":
+        bnodes = np.array(bnodes, dtype=np.int32)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
     S = simplex.SimplicialComplex(S_p, node_coords)
@@ -74,7 +76,7 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def test_poisson(energy_bool=True, optimizer="jaxopt"):
+def test_poisson(energy_bool=True, optimizer="jaxopt", type="float64"):
 
     # tested with test1.msh, test2.msh and test3.msh
 
@@ -92,12 +94,12 @@ def test_poisson(energy_bool=True, optimizer="jaxopt"):
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 
-        S, bnodes, triang = get_complex(S_2, node_coord)
+        S, bnodes, triang = get_complex(S_2, node_coord, type)
         # TODO: initialize diffusivity
         k = 1.
 
         # exact solution
-        u_true = node_coord[:, 0]**2 + node_coord[:, 1]**2
+        u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]**2, dtype=type)
         b_values = u_true[bnodes]
         '''
         plt.tricontourf(triang, u_true, cmap='RdBu', levels=20)
@@ -109,9 +111,9 @@ def test_poisson(energy_bool=True, optimizer="jaxopt"):
         boundary_values = (np.array(bnodes), b_values)
         # TODO: initialize external sources
         dim_0 = S.num_nodes
-        f_vec = 4.*np.ones(dim_0)
+        f_vec = 4.*np.ones(dim_0, dtype=type)
 
-        mask = np.ones(dim_0)
+        mask = np.ones(dim_0, dtype=type)
         mask[bnodes] = 0.
 
         if energy_bool:
@@ -251,4 +253,4 @@ def test_poisson(energy_bool=True, optimizer="jaxopt"):
 
 
 if __name__ == '__main__':
-    test_poisson(True, "jaxopt")
+    test_poisson(True, "jaxopt", "float32")

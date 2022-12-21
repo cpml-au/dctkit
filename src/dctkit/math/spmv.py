@@ -1,9 +1,9 @@
 from functools import partial
 from jax import jit
 import jax.ops as ops
-from jax.config import config
+# from jax.config import config
 # config.update('jax_platform_name', 'cpu')
-config.update("jax_enable_x64", True)
+# config.update("jax_enable_x64", True)
 
 
 # @profile

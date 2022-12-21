@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def unsigned_volume(S, node_coord):
+def unsigned_volume(S, node_coord, type="float64"):
     """Compute the unsigned volume of a set of simplices S.
 
     Args:
@@ -17,7 +17,10 @@ def unsigned_volume(S, node_coord):
 
     # indices to extract the matrix with rows equal to the rows of S with indices
     # non-congruent to 0 modulo rows-1
-    index = 1 + np.array(range(rows-1))
+    if type == "float64":
+        index = 1 + np.array(range(rows-1), dtype=np.int64)
+    elif type == "float32":
+        index = 1 + np.array(range(rows-1), dtype=np.int32)
 
     # compute the matrix of matrices V
     V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
@@ -31,7 +34,7 @@ def unsigned_volume(S, node_coord):
     return vol
 
 
-def signed_volume(S, node_coord):
+def signed_volume(S, node_coord, type="float64"):
     """Compute the signed volume of a set of n-simplices in an n-simplicial complex.
 
     Args:
@@ -47,7 +50,10 @@ def signed_volume(S, node_coord):
     assert (rows == cols + 1)
     # indices to extract the matrix with rows equal to the rows of S with indices
     # non-congruent to 0 modulo rows-1
-    index = 1 + np.array(range(rows-1))
+    if type == "float64":
+        index = 1 + np.array(range(rows-1), dtype=np.int64)
+    elif type == "float32":
+        index = 1 + np.array(range(rows-1), dtype=np.int32)
 
     # compute the matrix of matrices V
     V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
