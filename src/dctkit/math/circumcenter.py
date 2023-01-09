@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def circumcenter(s, node_coord):
+def circumcenter(s, node_coord, float_dtype="float64"):
     """Compute the circumcenter of a given simplex s. (References: Bell, Hirani,
         PyDEC: Software and Algorithms for Discretization of Exterior Calculus,
         2012, Section 10.1).
@@ -21,9 +21,10 @@ def circumcenter(s, node_coord):
 
     # construct the matrix A
     A = np.bmat([[2*np.dot(simplex_coord, simplex_coord.T), np.ones((rows, 1))],
-                [np.ones((1, rows)),  np.zeros((1, 1))]])
-    b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1), np.ones((1))))
-
+                 [np.ones((1, rows), dtype=float_dtype),
+                  np.zeros((1, 1), dtype=float_dtype)]])
+    b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1),
+                   np.ones((1), dtype=float_dtype)))
     # barycentric coordinates x of the circumcenter are the solution
     # of the linear sistem Ax = b
     bary_coords = np.linalg.solve(A, b)

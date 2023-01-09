@@ -24,7 +24,7 @@ def poisson(c, k):
 
     # constitutive relation for the flux
     h = C.Cochain(star_c_1.dim, star_c_1.is_primal, star_c_1.complex,
-                  -k*star_c_1.coeffs)
+                  -k*star_c_1.coeffs, star_c_1.type)
 
     # coboundary again to obtain a dual 2-cochain
     p = C.coboundary(h)
@@ -36,7 +36,7 @@ def poisson(c, k):
 
 
 # @profile
-def poisson_vec_operator(x, S, k):
+def poisson_vec_operator(x, S, k, type="numpy"):
     """Discrete laplacian starting from a vector instead of a cochain.
 
     Args:
@@ -48,7 +48,7 @@ def poisson_vec_operator(x, S, k):
         np.array: vector of coefficients of the cochain obtained through the
         discrete laplacian operator.
     """
-    c = C.Cochain(0, True, S, x)
+    c = C.Cochain(0, True, S, x, type)
     p = poisson(c, k)
     w = p.coeffs
     return w

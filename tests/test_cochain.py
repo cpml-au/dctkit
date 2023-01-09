@@ -50,7 +50,7 @@ def test_cochain():
     v_0_2 = np.array([5, 6, 7, 8, 9])
     c_0_2 = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0_2)
     inner_product = cochain.inner_product(c_0, c_0_2)
-    inner_product_true = 1/2*(5/8 + 3/2 + 21/8 + 4 + 45/2)
+    inner_product_true = 5/8 + 3/2 + 21/8 + 4 + 45/2
     assert (np.linalg.norm(inner_product - inner_product_true) < 10**-8)
 
 

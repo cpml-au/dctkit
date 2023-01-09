@@ -2,7 +2,7 @@ import numpy as np
 
 from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
-from icecream import ic
+import jax.numpy as jnp
 
 
 class Cochain():
@@ -23,11 +23,12 @@ class Cochain():
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
-                 coeffs=None):
+                 coeffs=None, type="numpy"):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
         self.coeffs = coeffs
+        self.type = type
 
 
 # @profile
@@ -40,7 +41,7 @@ def coboundary(c):
         dc (Cochain): the cochain obtained taking the coboundary of c.
     """
     # initialize dc
-    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
+    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex, type=c.type)
 
     # apply coboundary matrix (transpose of the primal boundary matrix) to the
     # array of coefficients of the cochain.
@@ -76,7 +77,7 @@ def inner_product(c_1, c_2):
         c_1 (Cochain): a primal cochain.
         c_2 (Cochain): a primal cochain.
     Returns:
-        inner_product (float): inner product between c_1 and c_2.
+        float: inner product between c_1 and c_2.
     """
     star_c_2 = star(c_2)
     n = c_1.complex.dim
@@ -84,5 +85,10 @@ def inner_product(c_1, c_2):
     # dimension of the complexes must agree
     assert (n == c_2.complex.dim)
 
-    inner_product = np.sum(c_1.coeffs*star_c_2.coeffs)
+    assert (c_1.type == c_2.type)
+
+    if c_1.type == "numpy":
+        inner_product = np.dot(c_1.coeffs, star_c_2.coeffs)
+    elif c_1.type == "jax":
+        inner_product = jnp.dot(c_1.coeffs, star_c_2.coeffs)
     return inner_product
