@@ -31,7 +31,103 @@ class Cochain():
         self.type = type
 
 
-# @profile
+class CochainP(Cochain):
+    "Class for primal cochains"
+
+    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None,
+                 type="numpy"):
+        super().__init__(dim, True, complex, coeffs, type)
+
+
+class CochainD(Cochain):
+    "Class for dual cochains"
+
+    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None,
+                 type="numpy"):
+        super().__init__(dim, False, complex, coeffs, type)
+
+
+class CochainP0(CochainP):
+    """Class for primal 0-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(0, complex, coeffs, type)
+
+
+class CochainP1(CochainP):
+    """Class for primal 1-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(1, complex, coeffs, type)
+
+
+class CochainP2(CochainP):
+    """Class for primal 2-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(2, complex, coeffs, type)
+
+
+class CochainD0(CochainD):
+    """Class for dual 0-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(0, complex, coeffs, type)
+
+
+class CochainD1(CochainD):
+    """Class for dual 1-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(1, complex, coeffs, type)
+
+
+class CochainD2(CochainD):
+    """Class for dual 2-cochains"""
+
+    def __init__(self, complex: spx.SimplicialComplex, coeffs=None, type="numpy"):
+        super().__init__(2, complex, coeffs, type)
+
+
+def add(c_1, c_2):
+    """Implements the sum operator for two cochains of the same dimension.
+
+    Args:
+        c_1 (Cochain): a cochain
+        c_2 (Cochain): another cochain with the same dimension of c_1
+    Returns:
+        Cochain: c_1 + c_2
+    """
+    c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs + c_2.coeffs, c_1.type)
+    return c
+
+
+def scalar_mul(c, k):
+    """Implements the scalar multiplication operator.
+
+    Args:
+        c (Cochain): a cochain.
+        k (float): a float.
+    Returns:
+        Cochain: cochain with coefficients equal to k*(c.coeffs)
+
+    """
+    C = Cochain(c.dim, c.is_primal, c.complex, k*c.coeffs, c.type)
+    return C
+
+
+def identity(c):
+    """Implements the identity operator.
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: the same cochain.
+
+    """
+    return c
+
+
 def coboundary(c):
     """Implements the coboundary operator.
 
