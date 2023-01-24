@@ -16,7 +16,9 @@ def spmv_coo(A, v, transpose=False, shape=None):
         A: tuple (rows,cols,values) representing the sparse matrix in
             COO format. Each of the elements of the tuple is a numpy.array or
             jax.array.
-        v: vector (numpy.array or jax.array)
+        v: vector (numpy.array or jax.array).
+        transpose (bool): whether to transpose A before multiplication.
+        shape 
 
     Returns:
         the vector resulting from the matrix-vector product.
