@@ -2,6 +2,9 @@ import numpy as np
 from dctkit.mesh import simplex, util
 from dctkit.math import shifted_list as sl
 import os
+import matplotlib.tri as tri
+import matplotlib.pyplot as plt
+
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -110,6 +113,24 @@ def test_simplicial_complex():
     # test hodge star
     for i in range(3):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
+
+    # test hodge star inverse
+    _, _, S_2_new, node_coords_new = util.generate_mesh(0.4)
+    triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
+
+    plt.triplot(triang, 'ko-')
+    plt.show()
+
+    cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
+    cpx_new.get_circumcenters()
+    cpx_new.get_primal_volumes()
+    cpx_new.get_dual_volumes()
+    cpx_new.get_hodge_star()
+    n = cpx_new. dim
+    for p in range(3):
+        assert np.allclose(
+            cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
+                p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
 
 
 if __name__ == "__main__":
