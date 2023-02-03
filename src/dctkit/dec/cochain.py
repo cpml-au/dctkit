@@ -161,8 +161,13 @@ def star(c):
     Returns:
         star_c (Cochain): the dual cochain *c obtained applying the hodge star operator.
     """
-    star_c = Cochain(dim=c.complex.dim - c.dim, is_primal=False, complex=c.complex)
-    star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
+    star_c = Cochain(dim=c.complex.dim - c.dim,
+                     is_primal=not c.is_primal, complex=c.complex)
+    if c.is_primal:
+        star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
+    else:
+        # NOTE: this step only works with well-centered meshes!
+        star_c.coeffs = c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs
     return star_c
 
 
@@ -188,3 +193,21 @@ def inner_product(c_1, c_2):
     elif c_1.type == "jax":
         inner_product = jnp.dot(c_1.coeffs, star_c_2.coeffs)
     return inner_product
+
+
+def codifferential(c):
+    """Implements the discrete codifferential.
+
+    Args:
+        c: a cochain.
+    Returns:
+        (Cochain): the discrete codifferential of c.
+    """
+    k = c.dim
+    n = c.complex.dim
+    cob = coboundary(star(c))
+    d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1)**(n*(k-1)+1)*star(cob).coeffs)
+    # NOTE: since for us the dual coboundary is just the transpose, we have to adjust
+    # the sign multiplying d_star_c with (-1)^k
+    d_star_c.coeffs *= (-1)**k
+    return d_star_c
