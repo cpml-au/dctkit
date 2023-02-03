@@ -206,7 +206,8 @@ def codifferential(c):
     k = c.dim
     n = c.complex.dim
     cob = coboundary(star(c))
-    d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1)**(n*(k-1)+1)*star(cob).coeffs)
+    d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1) **
+                       (n*(k-1)+1)*star(cob).coeffs, type=c.type)
     # NOTE: since for us the dual coboundary is just the transpose, we have to adjust
     # the sign multiplying d_star_c with (-1)^k
     d_star_c.coeffs *= (-1)**k

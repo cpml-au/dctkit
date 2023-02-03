@@ -44,6 +44,7 @@ def read_mesh(filename, format="gmsh"):
 
 
 def generate_mesh(lc):
+    gmsh.initialize()
     gmsh.model.add("t1")
     gmsh.model.geo.addPoint(1, 0, 0, lc, 1)
     gmsh.model.geo.addPoint(0, 0, 0, lc, 2)
