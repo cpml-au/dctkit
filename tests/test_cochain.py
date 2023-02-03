@@ -2,6 +2,9 @@ import numpy as np
 from dctkit.mesh import simplex, util
 from dctkit.dec import cochain
 import os
+import matplotlib.tri as tri
+import matplotlib.pyplot as plt
+
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -45,6 +48,30 @@ def test_cochain():
     coeffs_1_true = np.array([0, 0, 3, 0, 5, 0, 7, 8])
     assert (np.linalg.norm(coeffs_0 - coeffs_0_true) < 10**-8)
     assert (np.linalg.norm(coeffs_1 - coeffs_1_true) < 10**-8)
+
+    # codifferential test (we need a well-centered mesh)
+
+    _, _, S_2_new, node_coords_new = util.generate_mesh(0.4)
+    triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
+
+    plt.triplot(triang, 'ko-')
+    plt.show()
+
+    cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
+    cpx_new.get_circumcenters()
+    cpx_new.get_primal_volumes()
+    cpx_new.get_dual_volumes()
+    cpx_new.get_hodge_star()
+
+    num_0 = cpx_new.S[1].shape[0]
+    num_1 = cpx_new.S[2].shape[0]
+    v = np.random.rand(num_0)
+    w = np.random.rand(num_1)
+    c = cochain.Cochain(dim=1, is_primal=True, complex=cpx_new, coeffs=v)
+    d = cochain.Cochain(dim=2, is_primal=True, complex=cpx_new, coeffs=w)
+    inner_product_standard = cochain.inner_product(cochain.coboundary(c), d)
+    inner_product_codiff = cochain.inner_product(c, cochain.codifferential(d))
+    assert inner_product_standard - inner_product_codiff < 10**-5
 
     # inner product test
     v_0_2 = np.array([5, 6, 7, 8, 9])
