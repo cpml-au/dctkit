@@ -27,8 +27,8 @@ class SimplicialComplex:
             the volumes of the dual p-simplices.
         B (list): list where each entry p is a matrix containing the IDs of the
             (p-1)-simplices (cols) belonging to each p-simplex (rows).
-        hodge_star (list): list where each entry p is an array containing the
-            diagonal of the p-hodge star matrix.
+        hodge_star (list): list where each entry is an array containing the
+            diagonal of the Hodge star matrix.
     """
 
     def __init__(self, tet_node_tags, node_coord, is_well_centered=False,
@@ -190,7 +190,7 @@ def __simplex_array_parity(s):
     seq = np.arange(M)
 
     # count the transpositions
-    for i in range(N - 1):
+    for _ in range(N - 1):
         pos = s.argmin(axis=1)
         s[seq, pos] = s[:, 0]
         pos.clip(0, 1, pos)
@@ -203,7 +203,7 @@ def __simplex_array_parity(s):
     return trans
 
 
-def compute_boundary_COO(S, float_dtype="float64", int_dtype="int64"):
+def compute_boundary_COO(S, int_dtype="int64"):
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
@@ -221,7 +221,6 @@ def compute_boundary_COO(S, float_dtype="float64", int_dtype="int64"):
 
     dim = nodes_per_simplex - 1
 
-    # TODO: is there an appropriate name for this?
     N = num_simplices * nodes_per_simplex
 
     # compute array of relative orientations of the (p-1)-faces wrt the
@@ -235,6 +234,7 @@ def compute_boundary_COO(S, float_dtype="float64", int_dtype="int64"):
     # ic(F)
     # F_2 = S[np.lexsort(S.T[::-1])]
     # ic(F_2)
+
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
     S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=int_dtype)
 
@@ -260,6 +260,7 @@ def compute_boundary_COO(S, float_dtype="float64", int_dtype="int64"):
     column_index = faces_ordered[:, -1]
     faces = faces_ordered[:, :-2]
 
+    # FIXME: explain the meaming of vals and give a more descriptive name
     # compute vals and rows_index
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
     boundary_COO = (rows_index, column_index, values)

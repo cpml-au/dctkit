@@ -20,7 +20,8 @@ def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
         bnodes = np.array(bnodes, dtype=np.int32)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
-    S = simplex.SimplicialComplex(S_p, node_coords, float_dtype, int_dtype)
+    S = simplex.SimplicialComplex(
+        S_p, node_coords, float_dtype=float_dtype, int_dtype=int_dtype)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()

@@ -32,12 +32,12 @@ def unsigned_volume(S, node_coord, int_dtype="int64"):
 
 
 def signed_volume(S, node_coord, int_dtype="int64"):
-    """Compute the signed volume of a set of n-simplices in an n-simplicial complex.
+    """Compute the signed volume of a set of n-simplices.
 
     Args:
-        S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
-        node_coord (np.array): coordinates of every node of the cell complex in
-            which s is defined.
+        S (np.array): matrix containing the IDs (cols) of the nodes belonging to each
+        simplex (rows).
+        node_coord (np.array): coordinates of every node of the cell complex.
     Returns:
         float: signed volume of the simplex.
     """
@@ -45,6 +45,7 @@ def signed_volume(S, node_coord, int_dtype="int64"):
     _, rows, cols = S_coord.shape
 
     assert (rows == cols + 1)
+
     # indices to extract the matrix with rows equal to the rows of S with indices
     # non-congruent to 0 modulo rows-1
     index = 1 + np.array(range(rows-1), dtype=int_dtype)
@@ -52,6 +53,6 @@ def signed_volume(S, node_coord, int_dtype="int64"):
     # compute the matrix of matrices V
     V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
 
-    # math formula to compute the signed volume of a simplex
+    # formula to compute the signed volume of a simplex (see Bell et al.)
     vol = np.linalg.det(V) / np.math.factorial(rows-1)
     return vol

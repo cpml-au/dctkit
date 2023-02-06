@@ -6,20 +6,15 @@ import jax.numpy as jnp
 
 
 class Cochain():
-    """Cochain associated to a simplicial complex.
+    """Cochain class.
 
     Args:
-        dim (int): dimension of the chains in which the cochain is defined.
-        is_primal (bool): boolean which is True if the cochain is primal and it
-            is False if it is dual.
-        node_tags (np.array): np.array matrix of node tags.
-        vec (np.array): vectorial representation of the cochain.
-    Attributes:
-        dim (int): dimension of the chains in which the cochain is defined.
-        is_primal (bool): boolean which is True if the cochain is primal and it
-            is False if it is dual.
-        node_tags (np.array): inherited from the class simplicial_complex.
-        vec (np.array): vectorial representation of the cochain.
+        dim (int): dimension of the complex where the cochain is defined.
+        is_primal (bool): True if the cochain is primal, False otherwise.
+        complex: a SimplicialComplex object.
+        coeffs: array of the coefficients of the cochain.
+        type (str): either "numpy" of "jax" according to the type (numpy array or jax
+            array) of the coefficients.
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
@@ -90,27 +85,27 @@ class CochainD2(CochainD):
 
 
 def add(c_1, c_2):
-    """Implements the sum operator for two cochains of the same dimension.
+    """Adds two p-cochains.
 
     Args:
-        c_1 (Cochain): a cochain
-        c_2 (Cochain): another cochain with the same dimension of c_1
+        c_1 (Cochain): a p-cochain.
+        c_2 (Cochain): a p-cochain.
     Returns:
         Cochain: c_1 + c_2
     """
+    assert (c_1.type == c_2.type)
     c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs + c_2.coeffs, c_1.type)
     return c
 
 
 def scalar_mul(c, k):
-    """Implements the scalar multiplication operator.
+    """Multiplies a cochain by a scalar.
 
     Args:
         c (Cochain): a cochain.
-        k (float): a float.
+        k (float): a scalar.
     Returns:
         Cochain: cochain with coefficients equal to k*(c.coeffs)
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, k*c.coeffs, c.type)
     return C
@@ -123,7 +118,6 @@ def identity(c):
         c (Cochain): a cochain.
     Returns:
         Cochain: the same cochain.
-
     """
     return c
 
@@ -159,7 +153,7 @@ def star(c):
     Args:
         c (Cochain): a primal cochain.
     Returns:
-        star_c (Cochain): the dual cochain *c obtained applying the hodge star operator.
+        (Cochain): the dual cochain obtained applying the hodge star operator.
     """
     star_c = Cochain(dim=c.complex.dim - c.dim,
                      is_primal=not c.is_primal, complex=c.complex)
@@ -172,7 +166,7 @@ def star(c):
 
 
 def inner_product(c_1, c_2):
-    """Implements the inner product between two primal cochains.
+    """Computes the inner product between two primal cochains.
 
     Args:
         c_1 (Cochain): a primal cochain.
