@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 cwd = os.path.dirname(simplex.__file__)
 
-
+# FIXME: tests should involve different dimensions (of cochains and complex)
 def test_cochain():
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
@@ -71,7 +71,9 @@ def test_cochain():
     d = cochain.Cochain(dim=2, is_primal=True, complex=cpx_new, coeffs=w)
     inner_product_standard = cochain.inner_product(cochain.coboundary(c), d)
     inner_product_codiff = cochain.inner_product(c, cochain.codifferential(d))
-    assert inner_product_standard - inner_product_codiff < 10**-5
+    print(inner_product_codiff)
+    print(inner_product_standard)
+    assert abs(inner_product_standard - inner_product_codiff) < 10**-5
 
     # inner product test
     v_0_2 = np.array([5, 6, 7, 8, 9])

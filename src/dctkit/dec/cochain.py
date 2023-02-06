@@ -128,7 +128,7 @@ def coboundary(c):
     Args:
         c (Cochain): a cochain.
     Returns:
-        dc (Cochain): the cochain obtained taking the coboundary of c.
+        Cochain: the cochain obtained by taking the coboundary of c.
     """
     # initialize dc
     dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex, type=c.type)
@@ -142,8 +142,8 @@ def coboundary(c):
                                   shape=c.complex.S[c.dim+1].shape[0])
     else:
         t = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = spmv.spmv_coo(t, c.coeffs, transpose=False,
-                                  shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
+        dc.coeffs = (-1)**(c.complex.dim - c.dim - 1) * spmv.spmv_coo(t, c.coeffs,
+                                                                      transpose=False, shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
     return dc
 
 
@@ -153,7 +153,7 @@ def star(c):
     Args:
         c (Cochain): a primal cochain.
     Returns:
-        (Cochain): the dual cochain obtained applying the hodge star operator.
+        Cochain: the dual cochain obtained applying the hodge star operator.
     """
     star_c = Cochain(dim=c.complex.dim - c.dim,
                      is_primal=not c.is_primal, complex=c.complex)
@@ -161,6 +161,7 @@ def star(c):
         star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
     else:
         # NOTE: this step only works with well-centered meshes!
+        assert c.complex.is_well_centered
         star_c.coeffs = c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs
     return star_c
 
@@ -195,14 +196,11 @@ def codifferential(c):
     Args:
         c: a cochain.
     Returns:
-        (Cochain): the discrete codifferential of c.
+        Cochain: the discrete codifferential of c.
     """
     k = c.dim
     n = c.complex.dim
     cob = coboundary(star(c))
     d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1) **
                        (n*(k-1)+1)*star(cob).coeffs, type=c.type)
-    # NOTE: since for us the dual coboundary is just the transpose, we have to adjust
-    # the sign multiplying d_star_c with (-1)^k
-    d_star_c.coeffs *= (-1)**k
     return d_star_c

@@ -56,6 +56,8 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
     dim_0 = S.num_nodes
     f_vec = 4.*np.ones(dim_0, dtype=float_dtype)
+    f = C.Cochain(0, True, S, f_vec)
+    star_f = C.star(f)
 
     mask = np.ones(dim_0, dtype=float_dtype)
     mask[bnodes] = 0.
@@ -76,8 +78,6 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
             print("Solving Poisson equation...")
             obj = p.obj_poisson
             gradfun = p.grad_poisson
-            f = C.Cochain(0, True, S, f_vec)
-            star_f = C.star(f)
             gamma = 10000.
             args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
 
@@ -161,4 +161,4 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
 
 if __name__ == "__main__":
-    test_poisson()
+    test_poisson(energy_formulation=False, optimizer="jaxopt")
