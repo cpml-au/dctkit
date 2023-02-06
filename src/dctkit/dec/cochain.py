@@ -142,8 +142,9 @@ def coboundary(c):
                                   shape=c.complex.S[c.dim+1].shape[0])
     else:
         t = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = (-1)**(c.complex.dim - c.dim - 1) * spmv.spmv_coo(t, c.coeffs,
-                                                                      transpose=False, shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
+        dc.coeffs = (-1)**(c.complex.dim - c.dim) * spmv.spmv_coo(t, c.coeffs,
+                                                                  transpose=False,
+                                                                  shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
     return dc
 
 

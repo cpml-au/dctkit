@@ -16,7 +16,7 @@ cwd = os.path.dirname(simplex.__file__)
 def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
-    if type != "float64":
+    if int_dtype != "int64":
         bnodes = np.array(bnodes, dtype=np.int32)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
@@ -37,7 +37,6 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
     # tested with test1.msh, test2.msh and test3.msh
 
-    gmsh.initialize()
     np.random.seed(42)
 
     lc = 0.5
@@ -64,6 +63,7 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
     # initial guess
     u_0 = 0.01*np.random.rand(dim_0)
+    u_0 = np.array(u_0, dtype=float_dtype)
 
     if optimizer == "scipy":
         print("Using SciPy optimizer...")
@@ -149,6 +149,7 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
                 energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
+            star_f.type = "jax"
             new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
             obj = obj_poisson
 
@@ -161,4 +162,5 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
 
 if __name__ == "__main__":
-    test_poisson(energy_formulation=False, optimizer="jaxopt")
+    test_poisson(energy_formulation=False, optimizer="jaxopt",
+                 float_dtype="float32", int_dtype="int32")

@@ -24,7 +24,7 @@ def poisson(c, k):
 
     # constitutive relation for the flux
     h = C.Cochain(star_c_1.dim, star_c_1.is_primal, star_c_1.complex,
-                  -k*star_c_1.coeffs, star_c_1.type)
+                  k*star_c_1.coeffs, star_c_1.type)
 
     # coboundary again to obtain a dual 2-cochain
     p = C.coboundary(h)
