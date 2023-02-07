@@ -54,7 +54,7 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
     boundary_values = (np.array(bnodes, dtype=int_dtype), b_values)
 
     dim_0 = S.num_nodes
-    f_vec = 4.*np.ones(dim_0, dtype=float_dtype)
+    f_vec = -4.*np.ones(dim_0, dtype=float_dtype)
     f = C.Cochain(0, True, S, f_vec)
     star_f = C.star(f)
 
