@@ -21,7 +21,8 @@ def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
     S = simplex.SimplicialComplex(
-        S_p, node_coords, float_dtype=float_dtype, int_dtype=int_dtype)
+        S_p, node_coords, is_well_centered=True, float_dtype=float_dtype,
+        int_dtype=int_dtype)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
@@ -47,7 +48,7 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
 
     k = 1.
 
-    # exact solution
+    # NOTE: exact solution of Delta u = -f
     u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]**2, dtype=float_dtype)
     b_values = u_true[bnodes]
 
@@ -140,7 +141,7 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
                 # f, k, boundary_values, gamma, mask = tuple
                 pos, value = boundary_values
                 Ax = p.poisson_vec_operator(x, S, k, "jax")
-                r = Ax - f
+                r = Ax + f
                 # zero residual on dual cells at the boundary where nodal values are
                 # imposed
 
@@ -149,13 +150,37 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
                 energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
+            def obj_laplacian_poisson(x, f, k, boundary_values, gamma, mask):
+                pos, value = boundary_values
+                c = C.Cochain(0, True, S, x, type)
+                # define laplacian
+                laplacian = C.laplacian(c)
+                # laplacian on forms is minus laplacian on vector fields
+                laplacian.coeffs *= -k
+                # proceed as obj_poisson
+                r = laplacian.coeffs + f
+                penalty = jnp.sum((x[pos] - value)**2)
+                energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                return energy
+
             star_f.type = "jax"
             new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
+            # since to build laplacian we must do another star, we have to do another
+            # star also to star_f
+            new_lap_args = (C.star(star_f).coeffs, k, boundary_values, gamma, mask)
             obj = obj_poisson
+            obj_lap = obj_laplacian_poisson
 
         solver = jaxopt.LBFGS(obj, maxiter=5000)
         sol = solver.run(u_0, *new_args)
         u = sol.params
+
+        solver_lap = jaxopt.LBFGS(obj_lap, maxiter=5000)
+        sol_lap = solver_lap.run(u_0, *new_lap_args)
+        u_lap = sol_lap.params
+
+        assert np.allclose(u_lap[bnodes], u_true[bnodes], atol=1e-2)
+        assert np.allclose(u_lap, u_true, atol=1e-2)
 
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
     assert np.allclose(u, u_true, atol=1e-2)

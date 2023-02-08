@@ -142,9 +142,10 @@ def coboundary(c):
                                   shape=c.complex.S[c.dim+1].shape[0])
     else:
         t = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = (-1)**(c.complex.dim - c.dim) * spmv.spmv_coo(t, c.coeffs,
-                                                                  transpose=False,
-                                                                  shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
+        dc.coeffs = spmv.spmv_coo(t, c.coeffs,
+                                  transpose=False,
+                                  shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
+        dc.coeffs *= (-1)**(c.complex.dim - c.dim)
     return dc
 
 
@@ -205,3 +206,18 @@ def codifferential(c):
     d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1) **
                        (n*(k-1)+1)*star(cob).coeffs, type=c.type)
     return d_star_c
+
+
+def laplacian(c):
+    """Implements the discrete laplacian operator.
+
+    Args:
+        c: a k-cochain.
+    Returns:
+        Cochain: a k-cochain obtained taking the discrete laplacian of c.
+    """
+    if c.dim == 0:
+        laplacian = codifferential(coboundary(c))
+    else:
+        laplacian = codifferential(coboundary(c)) + coboundary(codifferential(c))
+    return laplacian
