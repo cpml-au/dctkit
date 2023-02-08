@@ -29,6 +29,9 @@ def poisson(c, k):
     # coboundary again to obtain a dual 2-cochain
     p = C.coboundary(h)
 
+    # change sign in order to have positive flux when it is leaving
+    p.coeffs *= -1
+
     # p must be a dual 2-cochain
     assert (p.dim == 2 and not p.is_primal)
 
@@ -73,7 +76,7 @@ def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     """
     pos, value = boundary_values
     Ax = poisson_vec_operator(x, S, k)
-    r = Ax - f
+    r = Ax + f
     # zero residual on dual cells at the boundary where nodal values are imposed
     # r_proj = r.at[pos].set(0.)
 
@@ -102,7 +105,7 @@ def grad_poisson(x, f, S, k, boundary_values, gamma, mask):
     """
     pos, value = boundary_values
     Ax = poisson_vec_operator(x, S, k)
-    r = Ax - f
+    r = Ax + f
     # zero residual on dual cells at the boundary where nodal values are imposed
     # r_proj = r.at[pos].set(0.)
 
