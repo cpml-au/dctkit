@@ -33,8 +33,8 @@ def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
 # FIXME: make data types consistent during computation (float32)
 
 
-def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float64",
-                 int_dtype="int64"):
+def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype="float32",
+                 int_dtype="int32"):
 
     # tested with test1.msh, test2.msh and test3.msh
 
@@ -171,21 +171,20 @@ def test_poisson(energy_formulation=True, optimizer="jaxopt", float_dtype="float
             obj = obj_poisson
             obj_lap = obj_laplacian_poisson
 
+            solver_lap = jaxopt.LBFGS(obj_lap, maxiter=5000)
+            sol_lap = solver_lap.run(u_0, *new_lap_args)
+            u_lap = sol_lap.params
+
+            assert np.allclose(u_lap[bnodes], u_true[bnodes], atol=1e-2)
+            assert np.allclose(u_lap, u_true, atol=1e-2)
+
         solver = jaxopt.LBFGS(obj, maxiter=5000)
         sol = solver.run(u_0, *new_args)
         u = sol.params
-
-        solver_lap = jaxopt.LBFGS(obj_lap, maxiter=5000)
-        sol_lap = solver_lap.run(u_0, *new_lap_args)
-        u_lap = sol_lap.params
-
-        assert np.allclose(u_lap[bnodes], u_true[bnodes], atol=1e-2)
-        assert np.allclose(u_lap, u_true, atol=1e-2)
 
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
     assert np.allclose(u, u_true, atol=1e-2)
 
 
 if __name__ == "__main__":
-    test_poisson(energy_formulation=False, optimizer="jaxopt",
-                 float_dtype="float32", int_dtype="int32")
+    test_poisson()
