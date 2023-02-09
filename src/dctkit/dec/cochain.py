@@ -98,6 +98,20 @@ def add(c_1, c_2):
     return c
 
 
+def sub(c_1, c_2):
+    """Subtracts two p-cochains.
+
+    Args:
+        c_1 (Cochain): a p-cochain.
+        c_2 (Cochain): a p-cochain.
+    Returns:
+        Cochain: c_1 - c_2
+    """
+    assert (c_1.type == c_2.type)
+    c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs - c_2.coeffs, c_1.type)
+    return c
+
+
 def scalar_mul(c, k):
     """Multiplies a cochain by a scalar.
 
