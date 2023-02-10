@@ -1,7 +1,8 @@
 import numpy as np
+import dctkit
 
 
-def unsigned_volume(S, node_coord, int_dtype="int64"):
+def unsigned_volume(S, node_coord):
     """Compute the unsigned volume of a set of simplices S.
 
     Args:
@@ -11,6 +12,8 @@ def unsigned_volume(S, node_coord, int_dtype="int64"):
     Returns:
         float: unsigned volume of the simplex.
     """
+    int_dtype = dctkit.int_dtype
+
     # store the coordinates of the nodes of every simplex in S
     S_coord = node_coord[S]
     rows = S_coord.shape[1]
@@ -31,7 +34,7 @@ def unsigned_volume(S, node_coord, int_dtype="int64"):
     return vol
 
 
-def signed_volume(S, node_coord, int_dtype="int64"):
+def signed_volume(S, node_coord):
     """Compute the signed volume of a set of n-simplices.
 
     Args:
@@ -41,6 +44,8 @@ def signed_volume(S, node_coord, int_dtype="int64"):
     Returns:
         float: signed volume of the simplex.
     """
+    int_dtype = dctkit.int_dtype
+
     S_coord = node_coord[S]
     _, rows, cols = S_coord.shape
 

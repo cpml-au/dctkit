@@ -1,4 +1,7 @@
 import numpy as np
+from icecream import ic
+# from dctkit import float_dtype, int_dtype
+import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl
 from dctkit.math import volume
@@ -31,16 +34,16 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, is_well_centered=False,
-                 float_dtype="float64", int_dtype="int64"):
+    def __init__(self, tet_node_tags, node_coord, is_well_centered=False):
+
         # store the coordinates of the nodes
-        node_coord = np.array(node_coord, dtype=float_dtype)
-        tet_node_tags = np.array(tet_node_tags, dtype=int_dtype)
+        node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
+        tet_node_tags = np.array(tet_node_tags, dtype=dctkit.int_dtype)
         self.node_coord = node_coord
         self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
-        self.float_dtype = float_dtype
-        self.int_dtype = int_dtype
+        self.float_dtype = dctkit.float_dtype
+        self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
 
         # compute complex dimension from top-level simplices
@@ -58,8 +61,7 @@ class SimplicialComplex:
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
-            boundary, vals, B = compute_boundary_COO(
-                self.S[self.dim - p], self.int_dtype)
+            boundary, vals, B = compute_boundary_COO(self.S[self.dim - p])
 
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
@@ -75,8 +77,7 @@ class SimplicialComplex:
             C = np.empty((S.shape[0], self.embedded_dim), dtype=self.float_dtype)
             B = np.empty((S.shape[0], S.shape[1]), dtype=self.float_dtype)
             for i in range(S.shape[0]):
-                C[i, :], B[i, :] = circ.circumcenter(S[i, :],
-                                                     self.node_coord, self.float_dtype)
+                C[i, :], B[i, :] = circ.circumcenter(S[i, :], self.node_coord)
             self.circ[p] = C
             self.bary_circ[p] = B
 
@@ -89,13 +90,11 @@ class SimplicialComplex:
         for p in range(1, self.dim + 1):
             S = self.S[p]
             num_p_simplices, _ = S.shape
-            primal_volumes = np.empty(num_p_simplices, dtype=self.float_dtype)
+            primal_volumes = np.empty(num_p_simplices)
             if p == self.embedded_dim:
-                primal_volumes = volume.signed_volume(
-                    S, self.node_coord, self.int_dtype)
+                primal_volumes = volume.signed_volume(S, self.node_coord)
             else:
-                primal_volumes = volume.unsigned_volume(
-                    S, self.node_coord, self.int_dtype)
+                primal_volumes = volume.unsigned_volume(S, self.node_coord)
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):
@@ -108,7 +107,7 @@ class SimplicialComplex:
         for p in range(self.dim, 0, -1):
             num_p, num_bnd_simplices = self.B[p].shape
             num_pm1, _ = self.S[p - 1].shape
-            dv = np.zeros(num_pm1)
+            dv = np.zeros(num_pm1, dtype=self.float_dtype)
             if p == 1:
                 # circ_pm1 = circumcenters of the (p-1)-simplices and the
                 # circumcenters of the nodes (0-simplices) are the nodes itself.
@@ -203,7 +202,7 @@ def __simplex_array_parity(s):
     return trans
 
 
-def compute_boundary_COO(S, int_dtype="int64"):
+def compute_boundary_COO(S):
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
@@ -236,7 +235,7 @@ def compute_boundary_COO(S, int_dtype="int64"):
     # ic(F_2)
 
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
-    S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=int_dtype)
+    S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=dctkit.int_dtype)
 
     # find the node IDs of the (p-1)-simplices and store their relative
     # orientations wrt the parent simplex
@@ -263,6 +262,7 @@ def compute_boundary_COO(S, int_dtype="int64"):
     # FIXME: explain the meaming of vals and give a more descriptive name
     # compute vals and rows_index
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
+    rows_index = rows_index.astype(dtype=dctkit.int_dtype)
     boundary_COO = (rows_index, column_index, values)
 
     # for triangles and tets, compute B explicitly
@@ -271,7 +271,7 @@ def compute_boundary_COO(S, int_dtype="int64"):
         faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
 
         # initialize the matrix of the boundary simplex as an array
-        B = np.empty(faces.shape[0], dtype=int_dtype)
+        B = np.empty(faces.shape[0], dtype=dctkit.int_dtype)
 
         # compute B
         _, B = np.unique(faces_ordered_last[:, :-2], axis=0, return_inverse=True)
@@ -280,5 +280,6 @@ def compute_boundary_COO(S, int_dtype="int64"):
     # for edges, B_1 = S_1
     else:
         B = S
+    B.astype(dtype=dctkit.int_dtype)
 
     return boundary_COO, vals, B

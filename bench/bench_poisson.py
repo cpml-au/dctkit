@@ -47,7 +47,7 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", float_dtype="float64",
     j = 15
     for i in range(j):
         print("i = ", i)
-        _, _, S_2, node_coord = util.generate_mesh(lc)
+        _, _, S_2, node_coord = util.generate_square_mesh(lc)
 
         # numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 

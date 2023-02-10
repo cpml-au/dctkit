@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
+from dctkit import config
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
@@ -36,13 +37,15 @@ def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
 def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype="float32",
                  int_dtype="int32"):
 
+    config()
+
     # tested with test1.msh, test2.msh and test3.msh
 
     np.random.seed(42)
 
     lc = 0.5
 
-    _, _, S_2, node_coord = util.generate_mesh(lc)
+    _, _, S_2, node_coord = util.generate_square_mesh(lc)
 
     S, bnodes, triang = get_complex(S_2, node_coord, float_dtype, int_dtype)
 
