@@ -2,7 +2,6 @@ import numpy as np
 from dctkit.dec import cochain as C
 
 
-# @profile
 def poisson(c, k):
     """Implements a routine to compute the LHS of the Poisson equation in DEC framework.
 
@@ -38,7 +37,6 @@ def poisson(c, k):
     return p
 
 
-# @profile
 def poisson_vec_operator(x, S, k, type="numpy"):
     """Discrete laplacian starting from a vector instead of a cochain.
 
@@ -57,7 +55,6 @@ def poisson_vec_operator(x, S, k, type="numpy"):
     return w
 
 
-# @profile
 def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Objective function of the Poisson optimization problem.
 

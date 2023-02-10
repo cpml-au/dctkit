@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
+import dctkit
 from dctkit import config
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
@@ -14,16 +15,13 @@ import gmsh
 cwd = os.path.dirname(simplex.__file__)
 
 
-def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
+def get_complex(S_p, node_coords):
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
-    if int_dtype != "int64":
-        bnodes = np.array(bnodes, dtype=np.int32)
+    bnodes = bnodes.astype(dctkit.int_dtype)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
-    S = simplex.SimplicialComplex(
-        S_p, node_coords, is_well_centered=True, float_dtype=float_dtype,
-        int_dtype=int_dtype)
+    S = simplex.SimplicialComplex(S_p, node_coords, is_well_centered=True)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
@@ -31,13 +29,10 @@ def get_complex(S_p, node_coords, float_dtype="float64", int_dtype="int64"):
 
     return S, bnodes, triang
 
-# FIXME: make data types consistent during computation (float32)
 
+def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32):
 
-def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype="float32",
-                 int_dtype="int32"):
-
-    config()
+    config(fdtype=float_dtype, idtype=int_dtype)
 
     # tested with test1.msh, test2.msh and test3.msh
 
@@ -47,27 +42,28 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype="floa
 
     _, _, S_2, node_coord = util.generate_square_mesh(lc)
 
-    S, bnodes, triang = get_complex(S_2, node_coord, float_dtype, int_dtype)
+    S, bnodes, triang = get_complex(S_2, node_coord)
 
     k = 1.
 
-    # NOTE: exact solution of Delta u = -f
-    u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]**2, dtype=float_dtype)
+    # NOTE: exact solution of -Delta u + f = 0
+    u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]
+                      ** 2, dtype=dctkit.float_dtype)
     b_values = u_true[bnodes]
 
-    boundary_values = (np.array(bnodes, dtype=int_dtype), b_values)
+    boundary_values = (np.array(bnodes, dtype=dctkit.int_dtype), b_values)
 
     dim_0 = S.num_nodes
-    f_vec = -4.*np.ones(dim_0, dtype=float_dtype)
+    f_vec = -4.*np.ones(dim_0, dtype=dctkit.float_dtype)
     f = C.Cochain(0, True, S, f_vec)
     star_f = C.star(f)
 
-    mask = np.ones(dim_0, dtype=float_dtype)
+    mask = np.ones(dim_0, dtype=dctkit.float_dtype)
     mask[bnodes] = 0.
 
     # initial guess
     u_0 = 0.01*np.random.rand(dim_0)
-    u_0 = np.array(u_0, dtype=float_dtype)
+    u_0 = np.array(u_0, dtype=dctkit.float_dtype)
 
     if optimizer == "scipy":
         print("Using SciPy optimizer...")
@@ -185,9 +181,12 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype="floa
         sol = solver.run(u_0, *new_args)
         u = sol.params
 
+    assert u.dtype == dctkit.float_dtype
+    assert u_true.dtype == u.dtype
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
     assert np.allclose(u, u_true, atol=1e-2)
 
 
 if __name__ == "__main__":
-    test_poisson()
+    test_poisson(float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32)
+    test_poisson(float_dtype=dctkit.FloatDtype.float64, int_dtype=dctkit.IntDtype.int64)

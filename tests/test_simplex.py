@@ -157,5 +157,5 @@ def test_simplicial_complex(float_dtype=dctkit.FloatDtype.float64, int_dtype=dct
 if __name__ == "__main__":
     test_boundary_COO(dctkit.IntDtype.int32)
     test_boundary_COO(dctkit.IntDtype.int64)
-    test_simplicial_complex(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
     test_simplicial_complex(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
+    test_simplicial_complex(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)

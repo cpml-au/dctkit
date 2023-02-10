@@ -32,5 +32,5 @@ def test_circumcenter(float_dtype=FloatDtype.float32):
 
 
 if __name__ == '__main__':
-    test_circumcenter(float_dtype=FloatDtype.float32)
     test_circumcenter(float_dtype=FloatDtype.float64)
+    test_circumcenter(float_dtype=FloatDtype.float32)
