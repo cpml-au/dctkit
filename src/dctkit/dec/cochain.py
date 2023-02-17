@@ -172,7 +172,7 @@ def star(c):
         Cochain: the dual cochain obtained applying the hodge star operator.
     """
     star_c = Cochain(dim=c.complex.dim - c.dim,
-                     is_primal=not c.is_primal, complex=c.complex)
+                     is_primal=not c.is_primal, complex=c.complex, type=c.type)
     if c.is_primal:
         star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
     else:
