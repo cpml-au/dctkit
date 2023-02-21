@@ -168,6 +168,54 @@ def cos(c: Cochain):
     return C
 
 
+def exp(c: Cochain):
+    """Compute the exp of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to exp(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.exp(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.exp(c.coeffs), c.type)
+    return C
+
+
+def log(c: Cochain):
+    """Compute the natural log of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to log(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.log(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.log(c.coeffs), c.type)
+    return C
+
+
+def sqrt(c: Cochain):
+    """Compute the sqrt of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to (c.coeffs)^(1/2).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.sqrt(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.sqrt(c.coeffs), c.type)
+    return C
+
+
 def coboundary(c: Cochain):
     """Implements the coboundary operator.
 
