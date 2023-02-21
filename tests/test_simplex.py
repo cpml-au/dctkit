@@ -39,7 +39,7 @@ def test_boundary_COO(int_dtype=dctkit.IntDtype.int32):
     assert np.alltrue(boundary_tuple[2] == boundary_true[2])
 
 
-def test_simplicial_complex(float_dtype=dctkit.FloatDtype.float64, int_dtype=dctkit.IntDtype.int64):
+def test_simplicial_complex(float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32):
     dctkit.float_dtype = float_dtype.name
     dctkit.int_dtype = int_dtype.name
     filename = "test1.msh"

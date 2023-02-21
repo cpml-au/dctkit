@@ -1,6 +1,4 @@
 import numpy as np
-from icecream import ic
-# from dctkit import float_dtype, int_dtype
 import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl

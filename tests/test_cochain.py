@@ -13,7 +13,7 @@ cwd = os.path.dirname(simplex.__file__)
 # FIXME: tests should involve different dimensions (of cochains and complex)
 
 
-def test_cochain(fdtype=FloatDtype.float64, idtype=IntDtype.int64):
+def test_cochain(fdtype=FloatDtype.float32, idtype=IntDtype.int32):
     config(fdtype=fdtype, idtype=idtype)
 
     filename = "test1.msh"
