@@ -7,7 +7,7 @@ from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
 import os
 import matplotlib.tri as tri
-import nlopt
+# import nlopt
 import jax.numpy as jnp
 import jaxopt
 import gmsh
@@ -85,31 +85,31 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
                      jac=gradfun, options={'disp': 1})
         u = u.x
 
-    elif optimizer == "nlopt":
-        print("Using NLOpt optimizer (only energy formulation)...")
-        obj = p.energy_poisson
-        gradfun = p.grad_energy_poisson
-        gamma = 1000.
+    # elif optimizer == "nlopt":
+    #     print("Using NLOpt optimizer (only energy formulation)...")
+    #     obj = p.energy_poisson
+    #     gradfun = p.grad_energy_poisson
+    #     gamma = 1000.
 
-        def f2(x, grad):
-            if grad.size > 0:
-                grad[:] = gradfun(x, f_vec, S, k,
-                                  boundary_values, gamma)
+    #     def f2(x, grad):
+    #         if grad.size > 0:
+    #             grad[:] = gradfun(x, f_vec, S, k,
+    #                               boundary_values, gamma)
 
-            return np.double(obj(x, f_vec, S, k, boundary_values, gamma))
-            # NOTE: this casting to double is crucial to work with NLOpt
-            # return np.double(fjax(x))
+    #         return np.double(obj(x, f_vec, S, k, boundary_values, gamma))
+    #         # NOTE: this casting to double is crucial to work with NLOpt
+    #         # return np.double(fjax(x))
 
-        # The second argument is the number of optimization parameters
-        opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
+    #     # The second argument is the number of optimization parameters
+    #     opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
 
-        # Set objective function to minimize
-        opt.set_min_objective(f2)
+    #     # Set objective function to minimize
+    #     opt.set_min_objective(f2)
 
-        opt.set_ftol_abs(1e-8)
-        xinit = u_0
+    #     opt.set_ftol_abs(1e-8)
+    #     xinit = u_0
 
-        u = opt.optimize(xinit)
+    #     u = opt.optimize(xinit)
 
     elif optimizer == "jaxopt":
         print("Using jaxopt optimizer...")

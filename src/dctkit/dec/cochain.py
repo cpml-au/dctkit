@@ -182,7 +182,7 @@ def star(c):
     return star_c
 
 
-def inner_product(c_1, c_2):
+def inner_product(c_1: Cochain, c_2: Cochain) -> float:
     """Computes the inner product between two primal cochains.
 
     Args:
