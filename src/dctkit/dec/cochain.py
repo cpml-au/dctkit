@@ -84,7 +84,7 @@ class CochainD2(CochainD):
         super().__init__(2, complex, coeffs, type)
 
 
-def add(c_1, c_2):
+def add(c_1: Cochain, c_2: Cochain):
     """Adds two p-cochains.
 
     Args:
@@ -98,7 +98,7 @@ def add(c_1, c_2):
     return c
 
 
-def sub(c_1, c_2):
+def sub(c_1: Cochain, c_2: Cochain):
     """Subtracts two p-cochains.
 
     Args:
@@ -112,20 +112,20 @@ def sub(c_1, c_2):
     return c
 
 
-def scalar_mul(c, k):
+def scalar_mul(c: Cochain, k: float):
     """Multiplies a cochain by a scalar.
 
     Args:
         c (Cochain): a cochain.
         k (float): a scalar.
     Returns:
-        Cochain: cochain with coefficients equal to k*(c.coeffs)
+        Cochain: cochain with coefficients equal to k*(c.coeffs).
     """
     C = Cochain(c.dim, c.is_primal, c.complex, k*c.coeffs, c.type)
     return C
 
 
-def identity(c):
+def identity(c: Cochain):
     """Implements the identity operator.
 
     Args:
@@ -136,7 +136,87 @@ def identity(c):
     return c
 
 
-def coboundary(c):
+def sin(c: Cochain):
+    """Compute the sin of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to sin(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.sin(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.sin(c.coeffs), c.type)
+    return C
+
+
+def cos(c: Cochain):
+    """Compute the cos of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to cos(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.cos(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.cos(c.coeffs), c.type)
+    return C
+
+
+def exp(c: Cochain):
+    """Compute the exp of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to exp(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.exp(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.exp(c.coeffs), c.type)
+    return C
+
+
+def log(c: Cochain):
+    """Compute the natural log of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to log(c.coeffs).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.log(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.log(c.coeffs), c.type)
+    return C
+
+
+def sqrt(c: Cochain):
+    """Compute the sqrt of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to (c.coeffs)^(1/2).
+
+    """
+    if c.type == "numpy":
+        C = Cochain(c.dim, c.is_primal, c.complex, np.sqrt(c.coeffs), c.type)
+    elif c.type == "jax":
+        C = Cochain(c.dim, c.is_primal, c.complex, jnp.sqrt(c.coeffs), c.type)
+    return C
+
+
+def coboundary(c: Cochain):
     """Implements the coboundary operator.
 
     Args:
@@ -163,7 +243,7 @@ def coboundary(c):
     return dc
 
 
-def star(c):
+def star(c: Cochain):
     """Implements the hodge star operator.
 
     Args:
@@ -182,7 +262,7 @@ def star(c):
     return star_c
 
 
-def inner_product(c_1: Cochain, c_2: Cochain) -> float:
+def inner_product(c_1: CochainP, c_2: CochainP) -> float:
     """Computes the inner product between two primal cochains.
 
     Args:
@@ -206,7 +286,7 @@ def inner_product(c_1: Cochain, c_2: Cochain) -> float:
     return inner_product
 
 
-def codifferential(c):
+def codifferential(c: Cochain):
     """Implements the discrete codifferential.
 
     Args:
@@ -222,7 +302,7 @@ def codifferential(c):
     return d_star_c
 
 
-def laplacian(c):
+def laplacian(c: Cochain):
     """Implements the discrete laplacian operator.
 
     Args:
