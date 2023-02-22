@@ -1,16 +1,18 @@
 import numpy as np
 import dctkit
+from dctkit import FloatDtype, IntDtype
 from dctkit.mesh import simplex, util
 from dctkit.math import shifted_list as sl
 import os
 import matplotlib.tri as tri
 import matplotlib.pyplot as plt
-
+import pytest
 
 cwd = os.path.dirname(simplex.__file__)
 
 
-def test_boundary_COO(int_dtype=dctkit.IntDtype.int32):
+@pytest.mark.parametrize('int_dtype', [IntDtype.int32, IntDtype.int64])
+def test_boundary_COO(int_dtype):
     dctkit.int_dtype = int_dtype.name
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
@@ -39,7 +41,8 @@ def test_boundary_COO(int_dtype=dctkit.IntDtype.int32):
     assert np.alltrue(boundary_tuple[2] == boundary_true[2])
 
 
-def test_simplicial_complex(float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32):
+@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32, IntDtype.int32], [FloatDtype.float64, IntDtype.int64]])
+def test_simplicial_complex(float_dtype, int_dtype):
     dctkit.float_dtype = float_dtype.name
     dctkit.int_dtype = int_dtype.name
     filename = "test1.msh"

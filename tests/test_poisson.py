@@ -1,16 +1,17 @@
 import numpy as np
-from scipy.optimize import minimize
+import jax
 import dctkit
-from dctkit import config
+from scipy.optimize import minimize
+from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
 import os
 import matplotlib.tri as tri
 # import nlopt
-import jax.numpy as jnp
 import jaxopt
 import gmsh
+import pytest
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -30,11 +31,14 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32):
+@pytest.mark.parametrize('optimizer', ["jaxopt", "scipy"])
+def test_poisson(setup_test, optimizer, energy_formulation=False):
 
-    config(fdtype=float_dtype, idtype=int_dtype)
+    # backend must be imported AFTER config call to be up-to-date
+    from dctkit import backend as be
 
-    # tested with test1.msh, test2.msh and test3.msh
+    if jax.config.read("jax_enable_x64"):
+        assert dctkit.float_dtype == "float64"
 
     np.random.seed(42)
 
@@ -42,7 +46,7 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
 
     _, _, S_2, node_coord = util.generate_square_mesh(lc)
 
-    S, bnodes, triang = get_complex(S_2, node_coord)
+    S, bnodes, _ = get_complex(S_2, node_coord)
 
     k = 1.
 
@@ -62,7 +66,7 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
     mask[bnodes] = 0.
 
     # initial guess
-    u_0 = 0.01*np.random.rand(dim_0)
+    u_0 = 0.01*np.random.rand(dim_0).astype(dctkit.float_dtype)
     u_0 = np.array(u_0, dtype=dctkit.float_dtype)
 
     if optimizer == "scipy":
@@ -83,7 +87,8 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
 
         u = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
                      jac=gradfun, options={'disp': 1})
-        u = u.x
+        # NOTE: minimize returns a float64 array
+        u = u.x.astype(dctkit.float_dtype)
 
     # elif optimizer == "nlopt":
     #     print("Using NLOpt optimizer (only energy formulation)...")
@@ -121,12 +126,12 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
 
             def energy_poisson(x, f, k, boundary_values, gamma):
                 pos, value = boundary_values
-                f = C.Cochain(0, True, S, f, "jax")
-                u = C.Cochain(0, True, S, x, "jax")
+                f = C.Cochain(0, True, S, f)
+                u = C.Cochain(0, True, S, x)
                 du = C.coboundary(u)
                 norm_grad = k/2.*C.inner_product(du, du)
                 bound_term = C.inner_product(u, f)
-                penalty = 0.5*gamma*jnp.sum((x[pos] - value)**2)
+                penalty = 0.5*gamma*be.sum((x[pos] - value)**2)
                 energy = norm_grad + bound_term + penalty
                 return energy
 
@@ -139,30 +144,29 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
             def obj_poisson(x, f, k, boundary_values, gamma, mask):
                 # f, k, boundary_values, gamma, mask = tuple
                 pos, value = boundary_values
-                Ax = p.poisson_vec_operator(x, S, k, "jax")
+                Ax = p.poisson_vec_operator(x, S, k)
                 r = Ax + f
                 # zero residual on dual cells at the boundary where nodal values are
                 # imposed
 
                 # \sum_i (x_i - value_i)^2
-                penalty = jnp.sum((x[pos] - value)**2)
-                energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                penalty = be.sum((x[pos] - value)**2)
+                energy = 0.5*be.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
             def obj_laplacian_poisson(x, f, k, boundary_values, gamma, mask):
                 pos, value = boundary_values
-                c = C.Cochain(0, True, S, x, type)
+                c = C.Cochain(0, True, S, x)
                 # define laplacian
                 laplacian = C.laplacian(c)
                 # laplacian on forms is minus laplacian on vector fields
                 laplacian.coeffs *= -k
                 # proceed as obj_poisson
                 r = laplacian.coeffs + f
-                penalty = jnp.sum((x[pos] - value)**2)
-                energy = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                penalty = be.sum((x[pos] - value)**2)
+                energy = 0.5*be.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
-            star_f.type = "jax"
             new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
             # since to build laplacian we must do another star, we have to do another
             # star also to star_f
@@ -185,8 +189,3 @@ def test_poisson(energy_formulation=False, optimizer="jaxopt", float_dtype=dctki
     assert u_true.dtype == u.dtype
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
     assert np.allclose(u, u_true, atol=1e-2)
-
-
-if __name__ == "__main__":
-    test_poisson(float_dtype=dctkit.FloatDtype.float32, int_dtype=dctkit.IntDtype.int32)
-    test_poisson(float_dtype=dctkit.FloatDtype.float64, int_dtype=dctkit.IntDtype.int64)

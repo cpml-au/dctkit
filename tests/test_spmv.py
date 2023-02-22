@@ -3,8 +3,7 @@ from dctkit.math import spmv
 import numpy as np
 
 
-def test_spmv_coo():
-    dctkit.config(fdtype=dctkit.FloatDtype.float32, idtype=dctkit.IntDtype.int32)
+def test_spmv_coo(setup_test):
     int_dtype = dctkit.int_dtype
     float_dtype = dctkit.float_dtype
     rows = np.array([0, 0, 1, 2], dtype=int_dtype)
@@ -21,9 +20,5 @@ def test_spmv_coo():
     result_transpose_true = np.array([0., 3., 10.], dtype=float_dtype)
     result = spmv.spmv_coo(A, v, transpose=True, shape=3)
     print(result)
-    print(result.dtype)
+    assert result.dtype == float_dtype
     assert np.allclose(result, result_transpose_true)
-
-
-if __name__ == '__main__':
-    test_spmv_coo()

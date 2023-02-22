@@ -4,11 +4,14 @@ from dctkit import FloatDtype
 from dctkit.mesh import simplex, util
 from dctkit.math import circumcenter as circ
 import os
+import pytest
 
 cwd = os.path.dirname(simplex.__file__)
 
+dtypes = [FloatDtype.float32, FloatDtype.float64]
 
-def test_circumcenter(float_dtype=FloatDtype.float32):
+@pytest.mark.parametrize('float_dtype', dtypes)
+def test_circumcenter(float_dtype):
     dctkit.float_dtype = float_dtype.name
 
     filename = "test1.msh"

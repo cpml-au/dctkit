@@ -7,4 +7,12 @@
     - https://docs.pytest.org/en/stable/writing_plugins.html
 """
 
-# import pytest
+import pytest
+from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+
+
+@pytest.fixture()
+def setup_test():
+    # NOTE: running multiple JAX tests with different data types DOES NOT work
+    # (jax_enable_x64 must be changed AT STARTUP)
+    config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)

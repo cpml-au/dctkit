@@ -23,7 +23,7 @@ def poisson(c, k):
 
     # constitutive relation for the flux
     h = C.Cochain(star_c_1.dim, star_c_1.is_primal, star_c_1.complex,
-                  -k*star_c_1.coeffs, star_c_1.type)
+                  -k*star_c_1.coeffs)
 
     # coboundary again to obtain a dual 2-cochain
     p = C.coboundary(h)
@@ -37,7 +37,7 @@ def poisson(c, k):
     return p
 
 
-def poisson_vec_operator(x, S, k, type="numpy"):
+def poisson_vec_operator(x, S, k):
     """Discrete laplacian starting from a vector instead of a cochain.
 
     Args:
@@ -49,7 +49,7 @@ def poisson_vec_operator(x, S, k, type="numpy"):
         np.array: vector of coefficients of the cochain obtained through the
         discrete laplacian operator.
     """
-    c = C.Cochain(0, True, S, x, type)
+    c = C.Cochain(0, True, S, x)
     p = poisson(c, k)
     w = p.coeffs
     return w
@@ -83,7 +83,6 @@ def obj_poisson(x, f, S, k, boundary_values, gamma, mask):
     return energy
 
 
-# @profile
 def grad_poisson(x, f, S, k, boundary_values, gamma, mask):
     """Gradient of the objective function of the Poisson optimization problem.
 

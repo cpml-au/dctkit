@@ -1,20 +1,23 @@
 import numpy as np
 import dctkit
-from dctkit import config, FloatDtype, IntDtype
+import jax
 from dctkit.mesh import simplex, util
 from dctkit.dec import cochain
 import os
 import matplotlib.tri as tri
 import matplotlib.pyplot as plt
 
-
 cwd = os.path.dirname(simplex.__file__)
 
 # FIXME: tests should involve different dimensions (of cochains and complex)
 
 
-def test_cochain(fdtype=FloatDtype.float32, idtype=IntDtype.int32):
-    config(fdtype=fdtype, idtype=idtype)
+def test_cochain(setup_test):
+
+    if jax.config.read("jax_enable_x64"):
+        assert dctkit.float_dtype == "float64"
+    else:
+        assert dctkit.float_dtype == "float32"
 
     filename = "test1.msh"
     full_path = os.path.join(cwd, filename)
@@ -95,8 +98,3 @@ def test_cochain(fdtype=FloatDtype.float32, idtype=IntDtype.int32):
 
     assert inner_product.dtype == dctkit.float_dtype
     assert np.allclose(inner_product, inner_product_true)
-
-
-if __name__ == '__main__':
-    test_cochain(fdtype=FloatDtype.float64, idtype=IntDtype.int64)
-    test_cochain(fdtype=FloatDtype.float32, idtype=IntDtype.int32)
