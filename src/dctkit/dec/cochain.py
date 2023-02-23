@@ -223,12 +223,12 @@ def coboundary(c: Cochain) -> Cochain:
 
 
 def star(c: Cochain) -> Cochain:
-    """Implements the hodge star operator.
+    """Implements the diagonal Hodge star operator (see Grinspun et al.).
 
     Args:
-        c (Cochain): a primal cochain.
+        c: a cochain.
     Returns:
-        Cochain: the dual cochain obtained applying the hodge star operator.
+        the dual cochain obtained applying the Hodge star operator.
     """
     star_c = Cochain(dim=c.complex.dim - c.dim,
                      is_primal=not c.is_primal, complex=c.complex)
