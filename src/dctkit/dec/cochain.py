@@ -12,8 +12,6 @@ class Cochain():
         is_primal (bool): True if the cochain is primal, False otherwise.
         complex: a SimplicialComplex object.
         coeffs: array of the coefficients of the cochain.
-        type (str): either "numpy" of "jax" according to the type (numpy array or jax
-            array) of the coefficients.
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
