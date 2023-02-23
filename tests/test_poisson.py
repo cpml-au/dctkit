@@ -1,8 +1,7 @@
 import numpy as np
 import jax
-import dctkit
+import dctkit as dt
 from scipy.optimize import minimize
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
@@ -19,7 +18,7 @@ cwd = os.path.dirname(simplex.__file__)
 def get_complex(S_p, node_coords):
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
-    bnodes = bnodes.astype(dctkit.int_dtype)
+    bnodes = bnodes.astype(dt.int_dtype)
     triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
     # initialize simplicial complex
     S = simplex.SimplicialComplex(S_p, node_coords, is_well_centered=True)
@@ -34,11 +33,8 @@ def get_complex(S_p, node_coords):
 @pytest.mark.parametrize('optimizer', ["jaxopt", "scipy"])
 def test_poisson(setup_test, optimizer, energy_formulation=False):
 
-    # backend must be imported AFTER config call to be up-to-date
-    from dctkit import backend as be
-
     if jax.config.read("jax_enable_x64"):
-        assert dctkit.float_dtype == "float64"
+        assert dt.float_dtype == "float64"
 
     np.random.seed(42)
 
@@ -52,22 +48,22 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
 
     # NOTE: exact solution of -Delta u + f = 0
     u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]
-                      ** 2, dtype=dctkit.float_dtype)
+                      ** 2, dtype=dt.float_dtype)
     b_values = u_true[bnodes]
 
-    boundary_values = (np.array(bnodes, dtype=dctkit.int_dtype), b_values)
+    boundary_values = (np.array(bnodes, dtype=dt.int_dtype), b_values)
 
     dim_0 = S.num_nodes
-    f_vec = -4.*np.ones(dim_0, dtype=dctkit.float_dtype)
+    f_vec = -4.*np.ones(dim_0, dtype=dt.float_dtype)
     f = C.Cochain(0, True, S, f_vec)
     star_f = C.star(f)
 
-    mask = np.ones(dim_0, dtype=dctkit.float_dtype)
+    mask = np.ones(dim_0, dtype=dt.float_dtype)
     mask[bnodes] = 0.
 
     # initial guess
-    u_0 = 0.01*np.random.rand(dim_0).astype(dctkit.float_dtype)
-    u_0 = np.array(u_0, dtype=dctkit.float_dtype)
+    u_0 = 0.01*np.random.rand(dim_0).astype(dt.float_dtype)
+    u_0 = np.array(u_0, dtype=dt.float_dtype)
 
     if optimizer == "scipy":
         print("Using SciPy optimizer...")
@@ -88,7 +84,7 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
         u = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
                      jac=gradfun, options={'disp': 1})
         # NOTE: minimize returns a float64 array
-        u = u.x.astype(dctkit.float_dtype)
+        u = u.x.astype(dt.float_dtype)
 
     # elif optimizer == "nlopt":
     #     print("Using NLOpt optimizer (only energy formulation)...")
@@ -131,7 +127,7 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
                 du = C.coboundary(u)
                 norm_grad = k/2.*C.inner_product(du, du)
                 bound_term = C.inner_product(u, f)
-                penalty = 0.5*gamma*be.sum((x[pos] - value)**2)
+                penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
                 energy = norm_grad + bound_term + penalty
                 return energy
 
@@ -150,8 +146,8 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
                 # imposed
 
                 # \sum_i (x_i - value_i)^2
-                penalty = be.sum((x[pos] - value)**2)
-                energy = 0.5*be.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                penalty = dt.backend.sum((x[pos] - value)**2)
+                energy = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
             def obj_laplacian_poisson(x, f, k, boundary_values, gamma, mask):
@@ -163,8 +159,8 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
                 laplacian.coeffs *= -k
                 # proceed as obj_poisson
                 r = laplacian.coeffs + f
-                penalty = be.sum((x[pos] - value)**2)
-                energy = 0.5*be.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                penalty = dt.backend.sum((x[pos] - value)**2)
+                energy = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return energy
 
             new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
@@ -185,7 +181,7 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
         sol = solver.run(u_0, *new_args)
         u = sol.params
 
-    assert u.dtype == dctkit.float_dtype
+    assert u.dtype == dt.float_dtype
     assert u_true.dtype == u.dtype
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
     assert np.allclose(u, u_true, atol=1e-2)

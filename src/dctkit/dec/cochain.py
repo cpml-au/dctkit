@@ -1,4 +1,4 @@
-from dctkit import backend as be
+import dctkit as dt
 
 from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
@@ -139,7 +139,7 @@ def sin(c: Cochain) -> Cochain:
         Cochain: cochain with coefficients equal to sin(c.coeffs).
 
     """
-    C = Cochain(c.dim, c.is_primal, c.complex, be.sin(c.coeffs))
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sin(c.coeffs))
     return C
 
 
@@ -152,7 +152,7 @@ def cos(c: Cochain) -> Cochain:
         Cochain: cochain with coefficients equal to cos(c.coeffs).
 
     """
-    C = Cochain(c.dim, c.is_primal, c.complex, be.cos(c.coeffs))
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.cos(c.coeffs))
     return C
 
 
@@ -165,7 +165,7 @@ def exp(c: Cochain) -> Cochain:
         Cochain: cochain with coefficients equal to exp(c.coeffs).
 
     """
-    C = Cochain(c.dim, c.is_primal, c.complex, be.exp(c.coeffs))
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.exp(c.coeffs))
     return C
 
 
@@ -178,7 +178,7 @@ def log(c: Cochain) -> Cochain:
         Cochain: cochain with coefficients equal to log(c.coeffs).
 
     """
-    C = Cochain(c.dim, c.is_primal, c.complex, be.log(c.coeffs))
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.log(c.coeffs))
     return C
 
 
@@ -191,7 +191,7 @@ def sqrt(c: Cochain) -> Cochain:
         Cochain: cochain with coefficients equal to (c.coeffs)^(1/2).
 
     """
-    C = Cochain(c.dim, c.is_primal, c.complex, be.sqrt(c.coeffs))
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sqrt(c.coeffs))
     return C
 
 
@@ -256,7 +256,7 @@ def inner_product(c_1: CochainP, c_2: CochainP) -> float:
     # dimension of the complexes must agree
     assert (n == c_2.complex.dim)
 
-    inner_product = be.dot(c_1.coeffs, star_c_2.coeffs)
+    inner_product = dt.backend.dot(c_1.coeffs, star_c_2.coeffs)
     return inner_product
 
 

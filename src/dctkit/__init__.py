@@ -39,6 +39,7 @@ def config(fdtype=FloatDtype.float32, idtype=IntDtype.int32, backnd_name=Backend
     backend_name = backnd_name
     platform = platfm
     if backnd_name == Backend.jax:
+        print("Using jax backend.")
         backend = jax.numpy
         from jax.config import config
         config.update('jax_platform_name', platfm.name)
