@@ -141,6 +141,19 @@ def sin(c: Cochain) -> Cochain:
     return C
 
 
+def arcsin(c: Cochain) -> Cochain:
+    """Compute the arcsin of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to arcsin(c.coeffs).
+
+    """
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arcsin(c.coeffs))
+    return C
+
+
 def cos(c: Cochain) -> Cochain:
     """Compute the cos of a cochain
 
@@ -151,6 +164,19 @@ def cos(c: Cochain) -> Cochain:
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.cos(c.coeffs))
+    return C
+
+
+def arccos(c: Cochain) -> Cochain:
+    """Compute the arcsin of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to arccos(c.coeffs).
+
+    """
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arccos(c.coeffs))
     return C
 
 
@@ -190,6 +216,19 @@ def sqrt(c: Cochain) -> Cochain:
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sqrt(c.coeffs))
+    return C
+
+
+def square(c: Cochain) -> Cochain:
+    """Compute the square of a cochain
+
+    Args:
+        c (Cochain): a cochain.
+    Returns:
+        Cochain: cochain with coefficients equal to (c.coeffs)^2.
+
+    """
+    C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.square(c.coeffs))
     return C
 
 
