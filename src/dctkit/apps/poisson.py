@@ -134,7 +134,7 @@ def energy_poisson(x, f, S, k, boundary_values, gamma):
     u = C.Cochain(0, True, S, x)
     du = C.coboundary(u)
     norm_grad = k/2*C.inner_product(du, du)
-    bound_term = C.inner_product(u, f)
+    bound_term = -C.inner_product(u, f)
     penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
     energy = norm_grad + bound_term + penalty
     return energy
@@ -161,8 +161,8 @@ def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
     # grad_1(x) = 1/2 * (A + A^T) x = Ax since A=A^T
     grad_1 = -poisson_vec_operator(x, S, k)
     star_f = C.star(f)
-    # grad_2(x) = Hx, where H is the hodge star matrix
-    grad_2 = star_f.coeffs
+    # grad_2(x) = -Hx, where H is the hodge star matrix
+    grad_2 = -star_f.coeffs
     grad_penalty = np.zeros(len(grad_1))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_1 + grad_2 + gamma*grad_penalty

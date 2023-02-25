@@ -275,12 +275,12 @@ def codifferential(c: Cochain) -> Cochain:
 
 
 def laplacian(c: Cochain) -> Cochain:
-    """Implements the discrete laplacian operator.
+    """Implements the discrete Laplace-de Rham (or Laplace-Beltrami) operator.  (https://en.wikipedia.org/wiki/Laplace%E2%80%93Beltrami_operator)
 
     Args:
         c: a k-cochain.
     Returns:
-        Cochain: a k-cochain obtained taking the discrete laplacian of c.
+        a k-cochain.
     """
     if c.dim == 0:
         laplacian = codifferential(coboundary(c))

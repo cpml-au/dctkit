@@ -30,9 +30,12 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-@pytest.mark.parametrize('optimizer', ["jaxopt", "scipy"])
-def test_poisson(setup_test, optimizer, energy_formulation=False):
+cases = [["jaxopt", False], ["jaxopt", True], ["scipy", False], ["scipy", True]]
 
+
+@pytest.mark.parametrize('optimizer,energy_formulation', cases)
+def test_poisson(setup_test, optimizer, energy_formulation):
+    """Solve the problem k*Delta u + f = 0."""
     if jax.config.read("jax_enable_x64"):
         assert dt.float_dtype == "float64"
 
@@ -46,7 +49,7 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
 
     k = 1.
 
-    # NOTE: exact solution of -Delta u + f = 0
+    # NOTE: exact solution of Delta u + f = 0
     u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]
                       ** 2, dtype=dt.float_dtype)
     b_values = u_true[bnodes]
@@ -126,59 +129,35 @@ def test_poisson(setup_test, optimizer, energy_formulation=False):
                 u = C.Cochain(0, True, S, x)
                 du = C.coboundary(u)
                 norm_grad = k/2.*C.inner_product(du, du)
-                bound_term = C.inner_product(u, f)
+                bound_term = -C.inner_product(u, f)
                 penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
                 energy = norm_grad + bound_term + penalty
                 return energy
 
-            new_args = (f_vec, k, boundary_values, gamma)
+            args = (f_vec, k, boundary_values, gamma)
             obj = energy_poisson
 
         else:
             print("Solving Poisson equation...")
 
             def obj_poisson(x, f, k, boundary_values, gamma, mask):
-                # f, k, boundary_values, gamma, mask = tuple
-                pos, value = boundary_values
-                Ax = p.poisson_vec_operator(x, S, k)
-                r = Ax + f
-                # zero residual on dual cells at the boundary where nodal values are
-                # imposed
-
-                # \sum_i (x_i - value_i)^2
-                penalty = dt.backend.sum((x[pos] - value)**2)
-                energy = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
-                return energy
-
-            def obj_laplacian_poisson(x, f, k, boundary_values, gamma, mask):
                 pos, value = boundary_values
                 c = C.Cochain(0, True, S, x)
-                # define laplacian
+                # compute Laplace-de Rham of c
                 laplacian = C.laplacian(c)
-                # laplacian on forms is minus laplacian on vector fields
+                # the Laplacian on forms is the negative of the Laplacian on scalar fields
                 laplacian.coeffs *= -k
-                # proceed as obj_poisson
+                # compute the residual of the Poisson equation
                 r = laplacian.coeffs + f
                 penalty = dt.backend.sum((x[pos] - value)**2)
-                energy = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
-                return energy
+                obj = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                return obj
 
-            new_args = (star_f.coeffs, k, boundary_values, gamma, mask)
-            # since to build laplacian we must do another star, we have to do another
-            # star also to star_f
-            new_lap_args = (C.star(star_f).coeffs, k, boundary_values, gamma, mask)
+            args = (f_vec, k, boundary_values, gamma, mask)
             obj = obj_poisson
-            obj_lap = obj_laplacian_poisson
-
-            solver_lap = jaxopt.LBFGS(obj_lap, maxiter=5000)
-            sol_lap = solver_lap.run(u_0, *new_lap_args)
-            u_lap = sol_lap.params
-
-            assert np.allclose(u_lap[bnodes], u_true[bnodes], atol=1e-2)
-            assert np.allclose(u_lap, u_true, atol=1e-2)
 
         solver = jaxopt.LBFGS(obj, maxiter=5000)
-        sol = solver.run(u_0, *new_args)
+        sol = solver.run(u_0, *args)
         u = sol.params
 
     assert u.dtype == dt.float_dtype
