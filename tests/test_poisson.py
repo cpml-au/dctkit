@@ -80,7 +80,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
         else:
             print("Solving Poisson equation...")
             obj = p.obj_poisson
-            gradfun = p.grad_poisson
+            gradfun = p.grad_obj_poisson
             gamma = 10000.
             args = (star_f.coeffs, S, k, boundary_values, gamma, mask)
 
@@ -147,7 +147,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 laplacian = C.laplacian(c)
                 # the Laplacian on forms is the negative of the Laplacian on scalar fields
                 laplacian.coeffs *= -k
-                # compute the residual of the Poisson equation
+                # compute the residual of the Poisson equation k*Delta u + f = 0
                 r = laplacian.coeffs + f
                 penalty = dt.backend.sum((x[pos] - value)**2)
                 obj = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty

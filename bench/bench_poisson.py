@@ -80,7 +80,7 @@ def test_poisson(energy_bool=True, optimizer="jaxopt", float_dtype="float64",
             args = (f_vec, S, k, boundary_values, gamma)
         else:
             obj = p.obj_poisson
-            gradfun = p.grad_poisson
+            gradfun = p.grad_obj_poisson
             f = C.Cochain(0, True, S, f_vec)
             star_f = C.star(f)
             # penalty factor on boundary conditions

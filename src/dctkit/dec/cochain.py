@@ -23,14 +23,14 @@ class Cochain():
 
 
 class CochainP(Cochain):
-    "Class for primal cochains"
+    """Class for primal cochains"""
 
     def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(dim, True, complex, coeffs)
 
 
 class CochainD(Cochain):
-    "Class for dual cochains"
+    """Class for dual cochains"""
 
     def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(dim, False, complex, coeffs)
