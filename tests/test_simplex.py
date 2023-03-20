@@ -234,8 +234,8 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
 
 
 if __name__ == "__main__":
-    # test_boundary_COO(dctkit.IntDtype.int32)
-    # test_boundary_COO(dctkit.IntDtype.int64)
+    test_boundary_COO(dctkit.IntDtype.int32)
+    test_boundary_COO(dctkit.IntDtype.int64)
     test_simplicial_complex_1(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
-    #test_simplicial_complex_2(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
-    #test_simplicial_complex_2(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
+    test_simplicial_complex_2(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
+    test_simplicial_complex_2(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
