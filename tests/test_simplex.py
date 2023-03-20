@@ -42,7 +42,84 @@ def test_boundary_COO(int_dtype):
 
 
 @pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32, IntDtype.int32], [FloatDtype.float64, IntDtype.int64]])
-def test_simplicial_complex(float_dtype, int_dtype):
+def test_simplicial_complex_1(float_dtype, int_dtype):
+    dctkit.float_dtype = float_dtype.name
+    dctkit.int_dtype = int_dtype.name
+    # define node_coords
+    num_nodes = 5
+    node_coords = np.linspace(0, 1, num=num_nodes)
+    x = np.zeros((num_nodes, 2))
+    x[:, 0] = node_coords
+    # define S_1
+    S_1 = np.empty((num_nodes - 1, 2))
+    S_1[:, 0] = np.arange(num_nodes-1)
+    S_1[:, 1] = np.arange(1, num_nodes)
+    S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+    S.get_dual_volumes()
+    S.get_hodge_star()
+
+    # define true boundary values
+    boundary_true = sl.ShiftedList([], -1)
+    rows_true = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=dctkit.int_dtype)
+    cols_true = np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype=dctkit.int_dtype)
+    vals_true = np.array([-1,  1, -1,  1, -1,  1, -1,  1], dtype=dctkit.int_dtype)
+    boundary_true.append((rows_true, cols_true, vals_true))
+
+    # define true circumcenters
+    circ_true = sl.ShiftedList([], -1)
+    circ_true_1 = np.zeros((num_nodes - 1, 2))
+    circ_true_1[:, 0] = np.array([1/8, 3/8, 5/8, 7/8], dtype=dctkit.float_dtype)
+    circ_true.append(circ_true_1)
+
+    # define true primal volumes
+    pv_true = sl.ShiftedList([], -1)
+    pv_true.append(1/4*np.ones(num_nodes-1, dtype=dctkit.float_dtype))
+
+    # define true dual volumes values
+    dv_true = sl.ShiftedList([], -1)
+    dv_true.append(np.array([0.125, 0.25, 0.25, 0.25, 0.125], dtype=dctkit.float_dtype))
+
+    # define true hodge star values
+    hodge_true = []
+    hodge_true_0 = np.array([0.125, 0.25, 0.25, 0.25, 0.125], dtype=dctkit.float_dtype)
+    hodge_true_1 = np.array([4, 4, 4, 4], dtype=dctkit.float_dtype)
+    hodge_true.append(hodge_true_0)
+    hodge_true.append(hodge_true_1)
+
+    # define true hodge star inverse values
+    hodge_inv_true = []
+    hodge_inv_true_0 = np.array(
+        [8., 4., 4., 4., 8.], dtype=dctkit.float_dtype)
+    hodge_inv_true_1 = np.array([0.25, 0.25, 0.25, 0.25], dtype=dctkit.float_dtype)
+    hodge_inv_true.append(hodge_inv_true_0)
+    hodge_inv_true.append(hodge_inv_true_1)
+
+    # test boundary
+    for i in range(3):
+        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
+
+    # test circumcenters
+    assert np.allclose(S.circ[1], circ_true[1])
+
+    # test primal volumes
+    assert np.allclose(S.primal_volumes[1], pv_true[1])
+
+    # test dual volumes
+    assert np.allclose(S.dual_volumes[1], dv_true[1])
+
+    # test hodge star
+    for i in range(2):
+        assert np.allclose(S.hodge_star[i], hodge_true[i])
+
+    # test hodge star inverse
+    for i in range(2):
+        assert np.allclose(S.hodge_star_inverse[i], hodge_inv_true[i])
+
+
+@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32, IntDtype.int32], [FloatDtype.float64, IntDtype.int64]])
+def test_simplicial_complex_2(float_dtype, int_dtype):
     dctkit.float_dtype = float_dtype.name
     dctkit.int_dtype = int_dtype.name
     filename = "test1.msh"
@@ -58,7 +135,6 @@ def test_simplicial_complex(float_dtype, int_dtype):
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
-    print(S.boundary)
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -158,7 +234,8 @@ def test_simplicial_complex(float_dtype, int_dtype):
 
 
 if __name__ == "__main__":
-    test_boundary_COO(dctkit.IntDtype.int32)
-    test_boundary_COO(dctkit.IntDtype.int64)
-    test_simplicial_complex(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
-    test_simplicial_complex(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
+    # test_boundary_COO(dctkit.IntDtype.int32)
+    # test_boundary_COO(dctkit.IntDtype.int64)
+    test_simplicial_complex_1(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
+    #test_simplicial_complex_2(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
+    #test_simplicial_complex_2(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
