@@ -1,8 +1,12 @@
 import numpy as np
 import dctkit as dt
 import jax
+import jax.numpy as jnp
+from jax import jit, grad
 from dctkit.dec import cochain as C
 from dctkit.mesh import simplex
+from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 
 
 def test_elastica():
@@ -25,18 +29,48 @@ def test_elastica():
     S.get_dual_volumes()
     S.get_hodge_star()
 
+    #plt.plot(x, np.zeros(num_nodes))
+    # plt.show()
+
     B = 1.
-    A = 2.
-    gamma = 1000.
+    A = 0.
+    gamma = 10000.
+    theta_0 = 0.01*np.random.rand(num_nodes).astype(dt.float_dtype)
 
     def energy_elastica(theta: np.array, A: float, B: float, gamma: float) -> float:
-        theta = C.Cochain(dim=1, is_primal=False, complex=S, coeffs=theta)
-        const = C.Cochain(dim=1, is_primal=False, complex=S,
-                          coeffs=A*np.ones(num_nodes))
+        theta = C.CochainD1(complex=S, coeffs=theta)
+        const = C.CochainD1(complex=S, coeffs=A *
+                            np.ones(num_nodes, dtype=dt.float_dtype))
         curvature = C.codifferential(theta)
         momentum = C.scalar_mul(curvature, B)
+        # print(type(theta.coeffs))
+        # print(type(curvature.coeffs))
+        # print(type(momentum.coeffs))
         energy = 0.5*C.inner_product(momentum, curvature) + \
             C.inner_product(const, C.sin(theta))
-        penalty = 0.5*gamma*dt.backend.sum((theta.coeffs[0])**2)
+        penalty = 0.5*gamma*(theta.coeffs[0])**2
         final_energy = energy + penalty
+        print(final_energy)
         return final_energy
+
+    obj = energy_elastica
+    jac = jit(grad(obj))
+    # get theta minimizing
+    theta = minimize(fun=obj, x0=theta_0,
+                     args=(A, B, gamma), method="Nelder-Mead", jac=jac, options={'disp': 1}).x
+    # recover x and y
+    x = np.empty(num_nodes)
+    y = np.empty(num_nodes)
+    x[0] = 0
+    y[0] = 0
+    h = 1/num_nodes
+    for i in range(num_nodes-1):
+        x[i + 1] = x[i] + h * np.cos(theta[i])
+        y[i + 1] = y[i] + h * np.sin(theta[i])
+    # plot the result
+    plt.plot(x, y)
+    plt.show()
+
+
+if __name__ == "__main__":
+    test_elastica()

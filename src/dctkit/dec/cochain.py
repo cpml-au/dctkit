@@ -47,35 +47,35 @@ class CochainP1(CochainP):
     """Class for primal 1-cochains"""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
-        super().__init__(1, complex, coeffs, type)
+        super().__init__(1, complex, coeffs)
 
 
 class CochainP2(CochainP):
     """Class for primal 2-cochains"""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
-        super().__init__(2, complex, coeffs, type)
+        super().__init__(2, complex, coeffs)
 
 
 class CochainD0(CochainD):
     """Class for dual 0-cochains"""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
-        super().__init__(0, complex, coeffs, type)
+        super().__init__(0, complex, coeffs)
 
 
 class CochainD1(CochainD):
     """Class for dual 1-cochains"""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
-        super().__init__(1, complex, coeffs, type)
+        super().__init__(1, complex, coeffs)
 
 
 class CochainD2(CochainD):
     """Class for dual 2-cochains"""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
-        super().__init__(2, complex, coeffs, type)
+        super().__init__(2, complex, coeffs)
 
 
 def add(c_1: Cochain, c_2: Cochain) -> Cochain:
