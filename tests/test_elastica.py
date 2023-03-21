@@ -7,6 +7,9 @@ from dctkit.dec import cochain as C
 from dctkit.mesh import simplex
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+
+config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
 
 def test_elastica():
@@ -35,7 +38,7 @@ def test_elastica():
     B = 1.
     A = 0.
     gamma = 10000.
-    theta_0 = 0.01*np.random.rand(num_nodes).astype(dt.float_dtype)
+    theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
 
     def energy_elastica(theta: np.array, A: float, B: float, gamma: float) -> float:
         theta = C.CochainD1(complex=S, coeffs=theta)
@@ -43,9 +46,6 @@ def test_elastica():
                             np.ones(num_nodes, dtype=dt.float_dtype))
         curvature = C.codifferential(theta)
         momentum = C.scalar_mul(curvature, B)
-        # print(type(theta.coeffs))
-        # print(type(curvature.coeffs))
-        # print(type(momentum.coeffs))
         energy = 0.5*C.inner_product(momentum, curvature) + \
             C.inner_product(const, C.sin(theta))
         penalty = 0.5*gamma*(theta.coeffs[0])**2
@@ -57,13 +57,14 @@ def test_elastica():
     jac = jit(grad(obj))
     # get theta minimizing
     theta = minimize(fun=obj, x0=theta_0,
-                     args=(A, B, gamma), method="Nelder-Mead", jac=jac, options={'disp': 1}).x
+                     args=(A, B, gamma), method="BFGS", jac=jac, options={'disp': 1}).x
     # recover x and y
     x = np.empty(num_nodes)
     y = np.empty(num_nodes)
     x[0] = 0
     y[0] = 0
     h = 1/num_nodes
+    print(theta)
     for i in range(num_nodes-1):
         x[i + 1] = x[i] + h * np.cos(theta[i])
         y[i + 1] = y[i] + h * np.sin(theta[i])
