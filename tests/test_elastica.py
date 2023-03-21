@@ -3,7 +3,9 @@ import dctkit as dt
 import jax
 from jax import jit, grad
 from dctkit.dec import cochain as C
-from dctkit.mesh import simplex
+from dctkit.mesh import simplex, util
+from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from dctkit.math.opt import optctrl
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import os
@@ -12,20 +14,11 @@ from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
 
-def test_elastica():
-    if jax.config.read("jax_enable_x64"):
-        assert dt.float_dtype == "float64"
-
+def test_elastica(is_bilevel=False):
     np.random.seed(42)
 
     num_nodes = 20
-    node_coords = np.linspace(0, 1, num=num_nodes)
-    x = np.zeros((num_nodes, 2))
-    x[:, 0] = node_coords
-    # define the Simplicial complex
-    S_1 = np.empty((num_nodes - 1, 2))
-    S_1[:, 0] = np.arange(num_nodes-1)
-    S_1[:, 1] = np.arange(1, num_nodes)
+    S_1, x = util.generate_1_D_mesh(num_nodes)
     S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
     S.get_circumcenters()
     S.get_primal_volumes()
@@ -44,7 +37,11 @@ def test_elastica():
     filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
     theta_exact = np.genfromtxt(filename)
 
-    def energy_elastica(theta: np.array, A: float, B: float, gamma: float) -> float:
+    # load FEM solution for benchmark
+    filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
+    theta_exact = np.genfromtxt(filename)
+
+    def energy_elastica(theta: np.array, B: float) -> float:
         theta = C.CochainD1(complex=S, coeffs=theta)
         const = C.CochainD1(complex=S, coeffs=A *
                             np.ones(num_nodes, dtype=dt.float_dtype))
@@ -60,7 +57,20 @@ def test_elastica():
     jac = jit(grad(obj))
     # get theta minimizing
     theta = minimize(fun=obj, x0=theta_0,
-                     args=(A, B, gamma), method="BFGS", jac=jac, options={'disp': 1}).x
+                     args=(B), method="BFGS", jac=jac, options={'disp': 1}).x
+
+    if is_bilevel:
+        theta_true = theta
+
+        def obj_fun(theta_guess: np.array, B_guess: float) -> float:
+            return jnp.sum(jnp.square(theta_guess-theta_true))
+        prb = optctrl.OptimalControlProblem(
+            objfun=obj_fun, state_en=energy_elastica, state_dim=num_nodes)
+        B_0 = 0.2*np.ones(1, dtype=dt.float_dtype)
+        theta, B, fval = prb.run(theta_0, B_0, tol=1e-7)
+        print(fval)
+        print(B)
+
     # recover x and y
     x = np.empty(num_nodes)
     y = np.empty(num_nodes)
@@ -76,4 +86,4 @@ def test_elastica():
 
 
 if __name__ == "__main__":
-    test_elastica()
+    test_elastica(is_bilevel=True)

@@ -70,3 +70,22 @@ def generate_square_mesh(lc):
     numNodes, numElements, nodeTagsPerElem, node_coords = read_mesh()
 
     return numNodes, numElements, nodeTagsPerElem, node_coords
+
+
+def generate_1_D_mesh(num_nodes):
+    """Generate an equispaced 1D mesh.
+
+    Args:
+        num_nodes (int): number of nodes.
+    Returns:
+        np.array: matrix of node coordinates.
+        np.array: matrix containing the IDs of the nodes belonging to each 1-simplex.
+    """
+    node_coords = np.linspace(0, 1, num=num_nodes)
+    x = np.zeros((num_nodes, 2))
+    x[:, 0] = node_coords
+    # define the Simplicial complex
+    S_1 = np.empty((num_nodes - 1, 2))
+    S_1[:, 0] = np.arange(num_nodes-1)
+    S_1[:, 1] = np.arange(1, num_nodes)
+    return S_1, x
