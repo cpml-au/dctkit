@@ -32,8 +32,8 @@ def test_elastica():
     S.get_dual_volumes()
     S.get_hodge_star()
 
-    #plt.plot(x, np.zeros(num_nodes))
-    # plt.show()
+    plt.plot(x, np.zeros(num_nodes))
+    plt.show()
 
     B = 1.
     A = 0.
@@ -50,7 +50,6 @@ def test_elastica():
             C.inner_product(const, C.sin(theta))
         penalty = 0.5*gamma*(theta.coeffs[0])**2
         final_energy = energy + penalty
-        print(final_energy)
         return final_energy
 
     obj = energy_elastica
@@ -64,7 +63,6 @@ def test_elastica():
     x[0] = 0
     y[0] = 0
     h = 1/num_nodes
-    print(theta)
     for i in range(num_nodes-1):
         x[i + 1] = x[i] + h * np.cos(theta[i])
         y[i + 1] = y[i] + h * np.sin(theta[i])
