@@ -29,7 +29,7 @@ def test_elastica(is_bilevel=False):
     plt.show()
 
     B = 1.
-    A = 0.
+    A = 2.
     gamma = 10000.
     theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
 
@@ -67,9 +67,8 @@ def test_elastica(is_bilevel=False):
         prb = optctrl.OptimalControlProblem(
             objfun=obj_fun, state_en=energy_elastica, state_dim=num_nodes)
         B_0 = 0.2*np.ones(1, dtype=dt.float_dtype)
-        theta, B, fval = prb.run(theta_0, B_0, tol=1e-7)
-        print(fval)
-        print(B)
+        theta, B, fval = prb.run(theta_0, B_0, tol=1e-2)
+        assert fval < 1e-3
 
     # recover x and y
     x = np.empty(num_nodes)
