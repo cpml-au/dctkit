@@ -5,13 +5,17 @@ from scipy.optimize import minimize
 
 
 class OptimalControlProblem():
-    """Class for optimal control problems.
+    """Class for optimal control problems of the form:
 
+        (u, a) = argmin J(u, a)     s.t.  F(u, a) = 0,
+
+        where J is the objective function and F is the state function.
     Args:
         objfun: objective function to minimize wrt parameters (controls). Its
-        arguments must be the state vector and the paramters vector.
+            arguments must be the state array and the paramters array.
         state_en: energy function to minimize wrt the state to define the current
-        state given a set of controls.
+            state given a set of controls.
+        state_dim: number of state variables (dimension of the state array).
     """
 
     def __init__(self, objfun: callable, state_en: callable, state_dim: int) -> None:
@@ -52,16 +56,19 @@ class OptimalControlProblem():
         return self.grad_u(u, a)
 
     def run(self, u0: np.array, y0: np.array, tol: float) -> (np.array, np.array, float):
-        """Runs bilevel optimization.
+        """Solves the optimal control problem by SLSQP.
 
         Args:
             u0: initial guess for the state.
             a0: initial guess for the parameters (controls).
+            tol: controls the tolerance on the objective function value.
+        Returns:
+            tuple containing the optimal state, the optimal controls and the value of
+            the objective function.
         """
         x0 = np.concatenate((u0, y0))
         res = minimize(self.obj_fun_wrap, x0, method="SLSQP", constraints={
                        'type': 'eq', 'fun': self.state_eq_wrap, 'jac': self.state_eq_grad}, jac=self.grad_obj, tol=tol)
-        print(res)
         u = res.x[:self.state_dim]
         a = res.x[self.state_dim:]
         fval = res.fun

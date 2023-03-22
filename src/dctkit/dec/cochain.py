@@ -8,9 +8,9 @@ class Cochain():
     """Cochain class.
 
     Args:
-        dim (int): dimension of the complex where the cochain is defined.
-        is_primal (bool): True if the cochain is primal, False otherwise.
-        complex: a SimplicialComplex object.
+        dim: dimension of the complex where the cochain is defined.
+        is_primal: True if the cochain is primal, False otherwise.
+        complex: the simplicial complex where the cochain is defined.
         coeffs: array of the coefficients of the cochain.
     """
 
@@ -79,26 +79,26 @@ class CochainD2(CochainD):
 
 
 def add(c_1: Cochain, c_2: Cochain) -> Cochain:
-    """Adds two p-cochains.
+    """Adds two cochains.
 
     Args:
-        c_1 (Cochain): a p-cochain.
-        c_2 (Cochain): a p-cochain.
+        c_1 (Cochain): a cohcain.
+        c_2 (Cochain): a cochain.
     Returns:
-        Cochain: c_1 + c_2
+        c_1 + c_2
     """
     c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs + c_2.coeffs)
     return c
 
 
 def sub(c_1: Cochain, c_2: Cochain) -> Cochain:
-    """Subtracts two p-cochains.
+    """Subtracts two cochains.
 
     Args:
-        c_1 (Cochain): a p-cochain.
-        c_2 (Cochain): a p-cochain.
+        c_1: a cochain.
+        c_2: a cochain.
     Returns:
-        Cochain: c_1 - c_2
+        c_1 - c_2
     """
     c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs - c_2.coeffs)
     return c
@@ -108,10 +108,10 @@ def scalar_mul(c: Cochain, k: float) -> Cochain:
     """Multiplies a cochain by a scalar.
 
     Args:
-        c (Cochain): a cochain.
-        k (float): a scalar.
+        c: a cochain.
+        k: a scalar.
     Returns:
-        Cochain: cochain with coefficients equal to k*(c.coeffs).
+        cochain with coefficients equal to k*(c.coeffs).
     """
     C = Cochain(c.dim, c.is_primal, c.complex, k*c.coeffs)
     return C
@@ -121,20 +121,20 @@ def identity(c: Cochain) -> Cochain:
     """Implements the identity operator.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: the same cochain.
+        the same cochain.
     """
     return c
 
 
 def sin(c: Cochain) -> Cochain:
-    """Compute the sin of a cochain
+    """Computes the sin of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to sin(c.coeffs).
+        cochain with coefficients equal to sin(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sin(c.coeffs))
@@ -142,12 +142,12 @@ def sin(c: Cochain) -> Cochain:
 
 
 def arcsin(c: Cochain) -> Cochain:
-    """Compute the arcsin of a cochain
+    """Computes the arcsin of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to arcsin(c.coeffs).
+        cochain with coefficients equal to arcsin(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arcsin(c.coeffs))
@@ -155,12 +155,12 @@ def arcsin(c: Cochain) -> Cochain:
 
 
 def cos(c: Cochain) -> Cochain:
-    """Compute the cos of a cochain
+    """Computes the cos of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to cos(c.coeffs).
+        cochain with coefficients equal to cos(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.cos(c.coeffs))
@@ -168,12 +168,12 @@ def cos(c: Cochain) -> Cochain:
 
 
 def arccos(c: Cochain) -> Cochain:
-    """Compute the arcsin of a cochain
+    """Computes the arcsin of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to arccos(c.coeffs).
+        cochain with coefficients equal to arccos(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arccos(c.coeffs))
@@ -181,12 +181,12 @@ def arccos(c: Cochain) -> Cochain:
 
 
 def exp(c: Cochain) -> Cochain:
-    """Compute the exp of a cochain
+    """Compute the exp of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to exp(c.coeffs).
+        cochain with coefficients equal to exp(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.exp(c.coeffs))
@@ -194,12 +194,12 @@ def exp(c: Cochain) -> Cochain:
 
 
 def log(c: Cochain) -> Cochain:
-    """Compute the natural log of a cochain
+    """Computes the natural log of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to log(c.coeffs).
+        cochain with coefficients equal to log(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.log(c.coeffs))
@@ -207,12 +207,12 @@ def log(c: Cochain) -> Cochain:
 
 
 def sqrt(c: Cochain) -> Cochain:
-    """Compute the sqrt of a cochain
+    """Compute the sqrt of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to (c.coeffs)^(1/2).
+        cochain with coefficients equal to sqrt(c.coeffs).
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sqrt(c.coeffs))
@@ -220,12 +220,12 @@ def sqrt(c: Cochain) -> Cochain:
 
 
 def square(c: Cochain) -> Cochain:
-    """Compute the square of a cochain
+    """Computes the square of a cochain.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: cochain with coefficients equal to (c.coeffs)^2.
+        cochain with coefficients equal to (c.coeffs)^2.
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.square(c.coeffs))
@@ -236,9 +236,9 @@ def coboundary(c: Cochain) -> Cochain:
     """Implements the coboundary operator.
 
     Args:
-        c (Cochain): a cochain.
+        c: a cochain.
     Returns:
-        Cochain: the cochain obtained by taking the coboundary of c.
+        the cochain obtained by taking the coboundary of c.
     """
     # initialize dc
     dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
@@ -279,13 +279,13 @@ def star(c: Cochain) -> Cochain:
 
 
 def inner_product(c_1: Cochain, c_2: Cochain) -> float:
-    """Computes the inner product between two primal cochains.
+    """Computes the inner product between two cochains.
 
     Args:
-        c_1 (Cochain): a primal cochain.
-        c_2 (Cochain): a primal cochain.
+        c_1: a cochain.
+        c_2: a cochain.
     Returns:
-        float: inner product between c_1 and c_2.
+        inner product between c_1 and c_2.
     """
     star_c_2 = star(c_2)
     n = c_1.complex.dim
@@ -303,7 +303,7 @@ def codifferential(c: Cochain) -> Cochain:
     Args:
         c: a cochain.
     Returns:
-        Cochain: the discrete codifferential of c.
+        the discrete codifferential of c.
     """
     k = c.dim
     n = c.complex.dim
@@ -317,9 +317,9 @@ def laplacian(c: Cochain) -> Cochain:
     """Implements the discrete Laplace-de Rham (or Laplace-Beltrami) operator.  (https://en.wikipedia.org/wiki/Laplace%E2%80%93Beltrami_operator)
 
     Args:
-        c: a k-cochain.
+        c: a cochain.
     Returns:
-        a k-cochain.
+        a cochain.
     """
     if c.dim == 0:
         laplacian = codifferential(coboundary(c))

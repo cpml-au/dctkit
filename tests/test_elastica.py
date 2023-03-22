@@ -1,12 +1,12 @@
 import numpy as np
 import dctkit as dt
 import jax
-import jax.numpy as jnp
 from jax import jit, grad
 from dctkit.dec import cochain as C
 from dctkit.mesh import simplex
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+import os
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
@@ -39,6 +39,10 @@ def test_elastica():
     A = 0.
     gamma = 10000.
     theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
+
+    # load FEM solution for benchmark
+    filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
+    theta_exact = np.genfromtxt(filename)
 
     def energy_elastica(theta: np.array, A: float, B: float, gamma: float) -> float:
         theta = C.CochainD1(complex=S, coeffs=theta)
