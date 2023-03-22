@@ -8,8 +8,6 @@ from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 from dctkit.math.opt import optctrl
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
-import os
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
@@ -32,14 +30,6 @@ def test_elastica(is_bilevel=False):
     A = 2.
     gamma = 10000.
     theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
-
-    # load FEM solution for benchmark
-    filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
-    theta_exact = np.genfromtxt(filename)
-
-    # load FEM solution for benchmark
-    filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
-    theta_exact = np.genfromtxt(filename)
 
     def energy_elastica(theta: np.array, B: float) -> float:
         theta = C.CochainD1(complex=S, coeffs=theta)
