@@ -36,44 +36,56 @@ def test_elastica(is_bilevel=False):
 
     # set params
     A = -4.
+    gamma = 10000000.
     theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
-
-    def energy_elastica(theta: np.array, B: float) -> float:
-        theta = C.CochainD1(complex=S, coeffs=theta)
-        const = C.CochainD1(complex=S, coeffs=A *
-                            np.ones(num_nodes, dtype=dt.float_dtype))
-        curvature = C.codifferential(theta)
-        momentum = C.scalar_mul(curvature, B)
-        energy = 0.5*C.inner_product(momentum, curvature) - \
-            C.inner_product(const, C.sin(theta))
-
-        return energy
-
-    obj = energy_elastica
-    jac = jit(grad(obj))
-
-    # define linear constraint theta(0) = 0, delta_theta[-1] = 0
-    cons = ({'type': 'eq', 'fun': lambda x: x[0]},
-            {'type': 'eq', 'fun': lambda x: x[num_nodes-2] - x[num_nodes-1]})
 
     if is_bilevel:
         theta_true = theta_exact[:, 1]
 
+        def energy_elastica_with_penalty(theta: np.array, B: float) -> float:
+            theta = C.CochainD1(complex=S, coeffs=theta)
+            const = C.CochainD1(complex=S, coeffs=A *
+                                np.ones(num_nodes, dtype=dt.float_dtype))
+            curvature = C.codifferential(theta)
+            momentum = C.scalar_mul(curvature, B)
+            energy = 0.5*C.inner_product(momentum, curvature) - \
+                C.inner_product(const, C.sin(theta))
+            penalty = 0.5*gamma*(theta.coeffs[0]**2 +
+                                 (theta.coeffs[-2] - theta.coeffs[-1])**2)
+            energy += penalty
+            return energy
+
         def obj_fun(theta_guess: np.array, B_guess: float) -> float:
             return jnp.sum(jnp.square(theta_guess-theta_true))
         prb = optctrl.OptimalControlProblem(
-            objfun=obj_fun, state_en=energy_elastica, state_dim=num_nodes)
-        B_0 = 0.1*np.ones(1, dtype=dt.float_dtype)
-        theta, B, fval = prb.run(theta_0, B_0, tol=1e-7)
-        print(B)
+            objfun=obj_fun, state_en=energy_elastica_with_penalty, state_dim=num_nodes)
+        B_0 = 0.3*np.ones(1, dtype=dt.float_dtype)
+        theta, B, fval = prb.run(theta_0, B_0, tol=1e-2)
+        print(f"The optimal B is {B[0]}")
         print(fval)
-        print(theta)
-        #assert fval < 1e-3
+        # assert fval < 1e-3
 
     # get theta minimizing
     if not is_bilevel:
         B = 1.
-        res = minimize(fun=obj, x0=theta_0, args=(B), method="SLSQP",
+
+        def energy_elastica(theta: np.array, B: float) -> float:
+            theta = C.CochainD1(complex=S, coeffs=theta)
+            const = C.CochainD1(complex=S, coeffs=A *
+                                np.ones(num_nodes, dtype=dt.float_dtype))
+            curvature = C.codifferential(theta)
+            momentum = C.scalar_mul(curvature, B)
+            energy = 0.5*C.inner_product(momentum, curvature) - \
+                C.inner_product(const, C.sin(theta))
+            return energy
+
+        jac = jit(grad(energy_elastica))
+
+        # define linear constraint theta(0) = 0, delta_theta[-1] = 0
+        cons = ({'type': 'eq', 'fun': lambda x: x[0]},
+                {'type': 'eq', 'fun': lambda x: x[num_nodes-2] - x[num_nodes-1]})
+
+        res = minimize(fun=energy_elastica, x0=theta_0, args=(B), method="SLSQP",
                        jac=jac, constraints=cons, options={'disp': 1, 'maxiter': 500})
         print(res)
         theta = res.x
@@ -113,4 +125,4 @@ def test_elastica(is_bilevel=False):
 
 
 if __name__ == "__main__":
-    test_elastica(is_bilevel=False)
+    test_elastica(is_bilevel=True)
