@@ -117,6 +117,20 @@ def scalar_mul(c: Cochain, k: float) -> Cochain:
     return C
 
 
+def cochain_mul(c_1: Cochain, c_2: Cochain) -> Cochain:
+    """Multiplies two cochain component-wise
+
+    Args:
+        c_1: a cochain.
+        c_2: a cochain.
+    Returns:
+        cochain with coefficients = c_1*c_2.
+    """
+
+    assert(c_1.is_primal == c_2.is_primal)
+    return Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs*c_2.coeffs)
+
+
 def identity(c: Cochain) -> Cochain:
     """Implements the identity operator.
 
