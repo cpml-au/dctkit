@@ -9,6 +9,7 @@ from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 from dctkit.math.opt import optctrl
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+import os
 
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
