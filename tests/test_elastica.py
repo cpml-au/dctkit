@@ -36,13 +36,14 @@ def test_elastica(is_bilevel=False):
 
     # set params
     A = -4.
-    gamma = 10000000.
-    theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
 
     if is_bilevel:
         theta_true = theta_exact[:, 1]
+        theta_0 = 0.1*np.random.rand(num_nodes-2).astype(dt.float_dtype)
 
-        def energy_elastica_with_penalty(theta: np.array, B: float) -> float:
+        def energy_elastica_constr(theta: np.array, B: float) -> float:
+            theta = jnp.insert(theta, 0, 0)
+            theta = jnp.append(theta, theta[-1])
             theta = C.CochainD1(complex=S, coeffs=theta)
             const = C.CochainD1(complex=S, coeffs=A *
                                 np.ones(num_nodes, dtype=dt.float_dtype))
@@ -50,24 +51,26 @@ def test_elastica(is_bilevel=False):
             momentum = C.scalar_mul(curvature, B)
             energy = 0.5*C.inner_product(momentum, curvature) - \
                 C.inner_product(const, C.sin(theta))
-            penalty = 0.5*gamma*(theta.coeffs[0]**2 +
-                                 (theta.coeffs[-2] - theta.coeffs[-1])**2)
-            energy += penalty
             return energy
 
         def obj_fun(theta_guess: np.array, B_guess: float) -> float:
+            theta_guess = jnp.insert(theta_guess, 0, 0)
+            theta_guess = jnp.append(theta_guess, theta_guess[-1])
             return jnp.sum(jnp.square(theta_guess-theta_true))
         prb = optctrl.OptimalControlProblem(
-            objfun=obj_fun, state_en=energy_elastica_with_penalty, state_dim=num_nodes)
+            objfun=obj_fun, state_en=energy_elastica_constr, state_dim=num_nodes-2)
         B_0 = 0.3*np.ones(1, dtype=dt.float_dtype)
         theta, B, fval = prb.run(theta_0, B_0, tol=1e-2)
+        # extend theta
+        theta = np.insert(theta, 0, 0)
+        theta = np.append(theta, theta[-1])
         print(f"The optimal B is {B[0]}")
         print(fval)
         # assert fval < 1e-3
 
-    # get theta minimizing
     if not is_bilevel:
         B = 1.
+        theta_0 = 0.1*np.random.rand(num_nodes).astype(dt.float_dtype)
 
         def energy_elastica(theta: np.array, B: float) -> float:
             theta = C.CochainD1(complex=S, coeffs=theta)
