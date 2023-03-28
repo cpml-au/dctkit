@@ -69,6 +69,7 @@ class OptimalControlProblem():
         x0 = np.concatenate((u0, y0))
         res = minimize(self.obj_fun_wrap, x0, method="SLSQP", constraints={
                        'type': 'eq', 'fun': self.state_eq_wrap, 'jac': self.state_eq_grad}, jac=self.grad_obj, tol=tol)
+        print(res)
         u = res.x[:self.state_dim]
         a = res.x[self.state_dim:]
         fval = res.fun
