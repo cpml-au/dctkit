@@ -34,10 +34,8 @@ def test_elastica(is_bilevel=False):
     np.random.seed(42)
 
     # load FEM solution for benchmark
-    filename = os.path.join(os.path.dirname(__file__), "xy_bench_FEM.txt")
-    xy = np.genfromtxt(filename)[:, 1:]
-    x_true = xy[:, 0]
-    y_true = xy[:, 1]
+    filename = os.path.join(os.path.dirname(__file__), "theta_bench_FEM.txt")
+    theta_true = np.genfromtxt(filename)[:, 1]
 
     num_fem_elements_data = 100
     num_nodes_data = num_fem_elements_data + 1
@@ -49,10 +47,15 @@ def test_elastica(is_bilevel=False):
     # set params
     A = -4.
 
-    # recover theta_true
-    theta_true = np.empty(num_fem_elements_data, dtype=dt.float_dtype)
+    # recover x_true, y_true
+    x_true = np.empty(num_nodes_data)
+    y_true = np.empty(num_nodes_data)
+    x_true[0] = 0
+    y_true[0] = 0
+    h = 1/num_fem_elements_data
     for i in range(num_fem_elements_data):
-        theta_true[i] = np.arctan((y_true[i+1]-y_true[i])/(x_true[i+1]-x_true[i]))
+        x_true[i + 1] = x_true[i] + h * np.cos(theta_true[i])
+        y_true[i + 1] = y_true[i] + h * np.sin(theta_true[i])
 
     # cochain to handle boundary nodes
     internal_vec = np.ones(num_nodes, dtype=dt.float_dtype)
@@ -79,10 +82,10 @@ def test_elastica(is_bilevel=False):
 
         def obj_fun(theta_guess: np.array, B_guess: float) -> float:
             theta_guess = jnp.insert(theta_guess, 0, 0)
-            return jnp.sum(jnp.square(theta_guess-theta_true))
+            return jnp.sum(jnp.square(theta_guess-theta_true[:-1]))
         prb = optctrl.OptimalControlProblem(
             objfun=obj_fun, state_en=energy_elastica_constr, state_dim=num_fem_elements-1)
-        B_0 = 0.3*np.ones(1, dtype=dt.float_dtype)
+        B_0 = 1*np.ones(1, dtype=dt.float_dtype)
         theta, B, fval = prb.run(theta_0, B_0, tol=1e-2)
         # extend theta
         theta = np.insert(theta, 0, 0)
@@ -92,7 +95,6 @@ def test_elastica(is_bilevel=False):
 
     else:
         B = 1.
-        print(num_fem_elements)
         theta_0 = 0.1*np.random.rand(num_fem_elements).astype(dt.float_dtype)
 
         def energy_elastica(theta: np.array, B: float) -> float:
@@ -115,50 +117,45 @@ def test_elastica(is_bilevel=False):
                        jac=jac, constraints=cons, options={'disp': 1, 'maxiter': 500})
         print(res)
         theta = res.x
-        theta = theta[::density]
         # print(f"theta_dual:{theta_dual}")
 
     print(f"theta:{theta}")
+
+    # recover x and y
+    x = np.empty(num_nodes)
+    y = np.empty(num_nodes)
+    x[0] = 0
+    y[0] = 0
+    h = 1/num_fem_elements
+    for i in range(num_fem_elements):
+        x[i + 1] = x[i] + h * np.cos(theta[i])
+        y[i + 1] = y[i] + h * np.sin(theta[i])
+
+    print(f"x:{x}")
+    print(f"y:{y}")
+
     # plot momentum
     theta_coch = C.CochainD0(complex=S, coeffs=theta)
     curvature = C.star(C.coboundary(theta_coch))
     B_coch = C.scalar_mul(internal_coch, B)
     momentum = C.cochain_mul(curvature, B_coch)
+    momentum.coeffs = momentum.coeffs.at[0].set(A*x[-1])
+    print(f"momentum: {momentum.coeffs}")
     plt.plot(momentum.coeffs)
     plt.show()
 
-    # recover x_true and y_true
-    '''
-    x_true = np.empty(num_fem_elements + 1)
-    y_true = np.empty(num_fem_elements + 1)
-    x_true[0] = 0
-    y_true[0] = 0
-    h = 1/num_fem_elements
-    for i in range(num_fem_elements):
-        x_true[i + 1] = x_true[i] + h * np.cos(theta_exact[i, 1])
-        y_true[i + 1] = y_true[i] + h * np.sin(theta_exact[i, 1])
-    '''
-
-    # recover x and y
-    x = np.empty(num_nodes_data)
-    y = np.empty(num_nodes_data)
-    x[0] = 0
-    y[0] = 0
-    h = 1/num_fem_elements_data
-    for i in range(num_fem_elements_data):
-        x[i + 1] = x[i] + h * np.cos(theta[i])
-        y[i + 1] = y[i] + h * np.sin(theta[i])
+    x = x[::density]
+    y = y[::density]
+    theta = theta[::density]
 
     # plot the results
     plt.plot(x_true, y_true, 'r')
     plt.plot(x, y, 'b')
     plt.show()
 
-    print(np.linalg.norm(theta - theta_true))
-
     node_coord = S.node_coord[:, 0]
     node_coord = node_coord[::density]
-    plt.plot(theta_true, 'r')
+    plt.plot(theta_true[:-1], 'r')
     plt.plot(theta, 'b')
     plt.show()
 
