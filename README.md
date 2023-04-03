@@ -1,27 +1,91 @@
-<!-- These are examples of badges you might want to add to your README:
-     please update the URLs accordingly
+# dctkit - Discrete Calculus Toolkit
 
-[![Built Status](https://api.cirrus-ci.com/github/<USER>/dctkit.svg?branch=main)](https://cirrus-ci.com/github/<USER>/dctkit)
-[![ReadTheDocs](https://readthedocs.org/projects/dctkit/badge/?version=latest)](https://dctkit.readthedocs.io/en/stable/)
-[![Coveralls](https://img.shields.io/coveralls/github/<USER>/dctkit/main.svg)](https://coveralls.io/r/<USER>/dctkit)
-[![PyPI-Server](https://img.shields.io/pypi/v/dctkit.svg)](https://pypi.org/project/dctkit/)
-[![Conda-Forge](https://img.shields.io/conda/vn/conda-forge/dctkit.svg)](https://anaconda.org/conda-forge/dctkit)
-[![Monthly Downloads](https://pepy.tech/badge/dctkit/month)](https://pepy.tech/project/dctkit)
-[![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter)](https://twitter.com/dctkit)
--->
+`dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
+Discrete Differential Geometry to provide a mathematical language for building discrete
+physical models.
 
-[![Project generated with PyScaffold](https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold)](https://pyscaffold.org/)
+Features:
+- supports `numpy` and `jax` backends for numerical computations
+- manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
+- manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
+- interface for solving optimal control problems (using `SciPy` constrained optimization
+  routines)
+- implements the discrete Dirichlet energy and the discrete Poisson model
+- discrete Euler's Elastica model
 
-# dctkit
+## Installation
 
-> Discrete Calculus Toolkit
+Clone the git repository and launch the following command
 
-A longer description of your project goes here...
+```bash
+$ pip install -e .
+```
 
+to install a development version of the `dctkit` library.
 
-<!-- pyscaffold-notes -->
+Running the tests:
 
-## Note
+```bash
+$ tox
+```
 
-This project has been set up using PyScaffold 4.3.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+Generating the docs:
+
+```bash
+$ tox -e docs
+```
+
+## Usage
+
+Solving discrete Poisson equation in 1D (variational formulation):
+
+```
+import dctkit as dt
+from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from dctkit.mesh import simplex, util
+from dctkit.dec import cochain as C
+import jax.numpy as jnp
+from jax import jit, grad
+from scipy.optimize import minimize
+from matplotlib.pyplot import plot
+
+# set backend for computations, precision and platform (CPU/GPU)
+# MUST be called before using any function of dctkit
+config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
+
+# generate mesh and create SimplicialComplex object
+num_nodes = 10
+L = 1.
+S_1, x = util.generate_1_D_mesh(num_nodes, L)
+S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+# perform some computations and cache results for later use
+S.get_circumcenters()
+S.get_primal_volumes()
+S.get_dual_volumes()
+S.get_hodge_star()
+
+# initial guess for the solution vector (coefficients of a primal 0-chain)
+u = jnp.ones(num_nodes, dtype=dt.float_dtype)
+
+# source term (primal 0-cochain)
+f = C.CochainP0(complex=S, coeffs=jnp.ones(num_nodes))
+
+# discrete Dirichlet energy with source term
+def energy(u):
+     # wrap np.array (when called by scipy's minimize) into a cochain
+     uc = C.CochainP0(complex=S, coeffs=u)
+     du = C.coboundary(uc)
+     return C.inner_product(du, du)-C.inner_product(uc, f)
+
+# compute gradient of the energy using JAX's autodiff
+graden = jit(grad(energy))
+
+# zero Dirichlet bc at x=0
+cons = {'type': 'eq', 'fun': lambda x: x[0]}
+
+# constrained minimization of the energy
+res = minimize(fun=energy, x0=u, constraints=cons, jac=graden)
+
+print(res)
+plot(res.x)
+```
