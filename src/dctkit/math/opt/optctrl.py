@@ -18,7 +18,8 @@ class OptimalControlProblem():
         state_dim: number of state variables (dimension of the state array).
     """
 
-    def __init__(self, objfun: callable, state_en: callable, state_dim: int) -> None:
+    def __init__(self, objfun: callable, state_en: callable, state_dim: int, constraint_args: tuple = (),
+                 obj_args: tuple = ()) -> None:
         self.objfun = jit(objfun)
         self.state_en = jit(state_en)
         # gradient of the state energy wrt state, i.e. state equation
@@ -29,8 +30,10 @@ class OptimalControlProblem():
         self.grad_obj = jit(grad(self.obj_fun_wrap))
         # gradient of the state equation wrt the parameters vector
         self.state_eq_grad = jit(jacrev(self.state_eq_wrap))
+        self.constraint_args = constraint_args
+        self.obj_args = obj_args
 
-    def obj_fun_wrap(self, x: jnp.array) -> jnp.array:
+    def obj_fun_wrap(self, x: jnp.array, *args: any) -> jnp.array:
         """Wrapper for the objective function.
 
         Args:
@@ -40,10 +43,10 @@ class OptimalControlProblem():
         """
         u = x[:self.state_dim]
         a = x[self.state_dim:]
-        obj = self.objfun(u, a)
+        obj = self.objfun(u, a, *args)
         return obj
 
-    def state_eq_wrap(self, x: jnp.array) -> jnp.array:
+    def state_eq_wrap(self, x: jnp.array, *args: any) -> jnp.array:
         """Wrapper for the state equation.
 
         Args:
@@ -53,7 +56,7 @@ class OptimalControlProblem():
         """
         u = x[:self.state_dim]
         a = x[self.state_dim:]
-        return self.grad_u(u, a)
+        return self.grad_u(u, a, *args)
 
     def run(self, u0: np.array, y0: np.array, tol: float) -> (np.array, np.array, float):
         """Solves the optimal control problem by SLSQP.
@@ -67,9 +70,10 @@ class OptimalControlProblem():
             the objective function.
         """
         x0 = np.concatenate((u0, y0))
-        res = minimize(self.obj_fun_wrap, x0, method="SLSQP", constraints={
-                       'type': 'eq', 'fun': self.state_eq_wrap, 'jac': self.state_eq_grad}, jac=self.grad_obj, tol=tol,
-                       options={'maxiter': 100})
+        res = minimize(self.obj_fun_wrap, x0, args=self.obj_args, method="SLSQP",
+                       constraints={'type': 'eq', 'fun': self.state_eq_wrap,
+                                    'jac': self.state_eq_grad, 'args': self.constraint_args},
+                       jac=self.grad_obj, tol=tol, options={'maxiter': 1000})
         print(res)
         u = res.x[:self.state_dim]
         a = res.x[self.state_dim:]
