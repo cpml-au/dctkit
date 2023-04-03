@@ -269,10 +269,11 @@ def test_elastica_data(data_type, is_bilevel=False):
 
         prb = optctrl.OptimalControlProblem(
             objfun=obj_fun_theta, state_en=energy_elastica_constr, state_dim=num_elements)
-        E_0 = 0.01*np.ones(1, dtype=dt.float_dtype)
-        theta, E, fval = prb.run(theta_0, E_0, tol=1e-2)
+        E_0 = 0.1*np.ones(1, dtype=dt.float_dtype)
+        theta, E, fval = prb.run(theta_0, E_0, tol=1e-4)
         # extend theta
         # theta = np.insert(theta, 0, 0)
+        print(f"theta: {theta}")
         plt.plot(theta)
         plt.show()
         print(f"The optimal E is {E[0]}*10^9")
@@ -352,17 +353,19 @@ def test_elastica_data(data_type, is_bilevel=False):
     '''
 
     # get x and y
-    x = L*xi
-    y = L*eta
-    print(x)
-    print(y)
+    #x = L*xi
+    #y = L*eta
+    x = xi
+    y = eta
+    print(f"x: {x}")
+    print(f"y: {y}")
 
     # get x_true and y_true
     x_true = L*xi_true
     y_true = L*eta_true
 
-    print(xi_true)
-    print(eta_true)
+    print(f"x_true: {x_true}")
+    print(f"y_true: {y_true}")
     print(np.linalg.norm(xi - xi_true))
     print(np.linalg.norm(eta - eta_true))
 
