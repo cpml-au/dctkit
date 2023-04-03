@@ -5,7 +5,7 @@ Discrete Differential Geometry to provide a mathematical language for building d
 physical models.
 
 Features:
-- supports `numpy` and `jax` backends for numerical computations
+- supports `numpy` and [`jax`](http://github.com/google/jax/) backends for numerical computations
 - manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
 - manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
 - interface for solving optimal control problems (using `SciPy` constrained optimization
@@ -39,7 +39,7 @@ $ tox -e docs
 
 Solving discrete Poisson equation in 1D (variational formulation):
 
-```
+```python
 import dctkit as dt
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 from dctkit.mesh import simplex, util
