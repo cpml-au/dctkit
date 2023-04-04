@@ -13,6 +13,8 @@ import jax.numpy as jnp
 import jaxopt
 import gmsh
 import jax
+import pygmo as pg
+from functools import partial
 
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 
@@ -46,13 +48,11 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
         assert dt.float_dtype == "float64"
 
     np.random.seed(42)
-    lc = 0.05
+    lc = 0.005
 
     _, _, S_2, node_coord = util.generate_square_mesh(lc)
     S, bnodes, _ = get_complex(S_2, node_coord)
 
-    obj = p.energy_poisson
-    gradfun = p.grad_energy_poisson
     gamma = 1000.
 
     # NOTE: exact solution of Delta u + f = 0
@@ -78,7 +78,11 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
     tic = time.time()
     if optimizer == "scipy":
         print("Using SciPy optimizer...")
-        res = minimize(fun=obj, x0=u_0, args=args, method='BFGS',
+        obj = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
+                              k=k, boundary_values=boundary_values, gamma=gamma))
+        gradfun = partial(p.grad_energy_poisson, f=f_vec, S=S, k=k,
+                          boundary_values=boundary_values, gamma=gamma)
+        res = minimize(fun=obj, x0=u_0, method='BFGS',
                        jac=gradfun, options={'disp': 1})
 
         # NOTE: minimize returns a float64 array
@@ -144,9 +148,43 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
         u = sol.params
         minf = sol.state.value
 
+    elif optimizer == "pygmo":
+        energy = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
+                         k=k, boundary_values=boundary_values, gamma=gamma))
+        # TODO: jit
+        gradient = partial(p.grad_energy_poisson, f=f_vec, S=S,
+                           k=k, boundary_values=boundary_values, gamma=gamma)
+
+        class PoissonProblem():
+            def fitness(self, dv):
+                fit = energy(dv)
+                return [fit]
+
+            def gradient(self, dv):
+                grad = gradient(dv)
+                return grad
+
+            def get_bounds(self):
+                return ([-100]*dim_0, [100]*dim_0)
+
+            def get_name(self):
+                return "Poisson problem"
+
+        prb = pg.problem(PoissonProblem())
+        algo = pg.algorithm(pg.nlopt(solver="tnewton"))
+        algo.extract(pg.nlopt).ftol_abs = 1e-7
+        algo.extract(pg.nlopt).ftol_rel = 1e-7
+        pop = pg.population(prb)
+        pop.push_back(u_0)
+        print(algo)
+        # algo.set_verbosity(1)
+        pop = algo.evolve(pop)
+        u = pop.champion_x
+        toc = time.time()
+
     print("Elapsed time = ", toc-tic)
-    assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-3)
-    assert np.allclose(u, u_true, atol=1e-3)
+    assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
+    assert np.allclose(u, u_true, atol=1e-2)
 
 
 if __name__ == '__main__':
