@@ -12,6 +12,7 @@ Features:
   routines)
 - implements the discrete Dirichlet energy and the discrete Poisson model
 - discrete Euler's Elastica model
+- benchmarks using different optimization packages
 
 ## Installation
 
@@ -34,6 +35,14 @@ Generating the docs:
 ```bash
 $ tox -e docs
 ```
+
+Running the benchmarks:
+
+```bash
+$ sh ./bench/run_bench
+```
+The ASCIIdoc file `bench_results.adoc` will be generated. To view the results in HTML,
+convert the `.adoc` file using the command `asciidoc bench_results.adoc`.
 
 ## Usage
 

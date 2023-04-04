@@ -5,7 +5,7 @@ from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
 import os
-import matplotlib.pyplot as plt
+import sys
 import matplotlib.tri as tri
 import nlopt
 import time
@@ -34,16 +34,19 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def bench_poisson(optimizer="scipy", float_dtype="float32", int_dtype="int32"):
+def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_dtype="int32"):
 
     # NOTE: NLOpt only works with float64
-    config(FloatDtype.float64, IntDtype.int64, Backend.jax, Platform.cpu)
+    if platform == "cpu":
+        config(FloatDtype.float64, IntDtype.int64, Backend.jax, Platform.cpu)
+    else:
+        config(FloatDtype.float64, IntDtype.int64, Backend.jax, Platform.gpu)
 
     if jax.config.read("jax_enable_x64"):
         assert dt.float_dtype == "float64"
 
     np.random.seed(42)
-    lc = 0.1
+    lc = 0.05
 
     _, _, S_2, node_coord = util.generate_square_mesh(lc)
     S, bnodes, _ = get_complex(S_2, node_coord)
@@ -93,9 +96,8 @@ def bench_poisson(optimizer="scipy", float_dtype="float32", int_dtype="int32"):
                 grad[:] = gradfun(x, f_vec, S, k,
                                   boundary_values, gamma)
 
+            # NOTE: this casting to double is crucial to work with NLOpt
             return np.double(obj(x, f_vec, S, k, boundary_values, gamma))
-        # NOTE: this casting to double is crucial to work with NLOpt
-        # return np.double(fjax(x))
 
         # The second argument is the number of optimization parameters
         opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
@@ -148,6 +150,7 @@ def bench_poisson(optimizer="scipy", float_dtype="float32", int_dtype="int32"):
 
 
 if __name__ == '__main__':
-    bench_poisson(optimizer="jaxopt")
-    bench_poisson(optimizer="nlopt")
-    bench_poisson(optimizer="scipy")
+    assert len(sys.argv) > 1
+    optimizer = sys.argv[1]
+    platform = sys.argv[2]
+    bench_poisson(optimizer=optimizer, platform=platform)
