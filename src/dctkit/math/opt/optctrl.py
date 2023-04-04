@@ -74,7 +74,7 @@ class OptimalControlProblem():
                        constraints={'type': 'eq', 'fun': self.state_eq_wrap,
                                     'jac': self.state_eq_grad, 'args': self.constraint_args},
                        jac=self.grad_obj, tol=tol, options={'maxiter': 1000})
-        print(res)
+
         u = res.x[:self.state_dim]
         a = res.x[self.state_dim:]
         fval = res.fun
