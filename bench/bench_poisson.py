@@ -3,7 +3,6 @@ from scipy.optimize import minimize
 import dctkit as dt
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
-from dctkit.dec import cochain as C
 import os
 import sys
 import matplotlib.tri as tri
@@ -48,7 +47,7 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
         assert dt.float_dtype == "float64"
 
     np.random.seed(42)
-    lc = 0.005
+    lc = 0.05
 
     _, _, S_2, node_coord = util.generate_square_mesh(lc)
     S, bnodes, _ = get_complex(S_2, node_coord)
@@ -73,17 +72,20 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
     # initial guess
     u_0 = 0.01*np.random.rand(dim_0).astype(dt.float_dtype)
 
-    args = (f_vec, S, k, boundary_values, gamma)
+    # Dirichlet energy and its gradient (computed using JAX's autodiff)
+    energy = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
+                             k=k, boundary_values=boundary_values, gamma=gamma))
+    graden = jax.jit(jax.grad(partial(p.energy_poisson, f=f_vec, S=S,
+                                      k=k, boundary_values=boundary_values, gamma=gamma)))
 
     tic = time.time()
     if optimizer == "scipy":
         print("Using SciPy optimizer...")
-        obj = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
-                              k=k, boundary_values=boundary_values, gamma=gamma))
-        gradfun = partial(p.grad_energy_poisson, f=f_vec, S=S, k=k,
-                          boundary_values=boundary_values, gamma=gamma)
-        res = minimize(fun=obj, x0=u_0, method='BFGS',
-                       jac=gradfun, options={'disp': 1})
+
+        graden = partial(p.grad_energy_poisson, f=f_vec, S=S, k=k,
+                         boundary_values=boundary_values, gamma=gamma)
+        res = minimize(fun=energy, x0=u_0, method='BFGS',
+                       jac=graden, options={'disp': 1})
 
         # NOTE: minimize returns a float64 array
         u = res.x.astype(dt.float_dtype)
@@ -92,24 +94,22 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
 
     elif optimizer == "nlopt":
         print("Using NLOpt optimizer...")
-        obj = p.energy_poisson
-        gradfun = p.grad_energy_poisson
+        energy = p.energy_poisson
+        graden = p.grad_energy_poisson
 
-        def f2(x, grad):
+        def f(x, grad):
             if grad.size > 0:
-                grad[:] = gradfun(x, f_vec, S, k,
-                                  boundary_values, gamma)
+                grad[:] = graden(x, f_vec, S, k,
+                                 boundary_values, gamma)
 
             # NOTE: this casting to double is crucial to work with NLOpt
-            return np.double(obj(x, f_vec, S, k, boundary_values, gamma))
+            return np.double(energy(x, f_vec, S, k, boundary_values, gamma))
 
         # The second argument is the number of optimization parameters
         opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
-        # opt = nlopt.opt(nlopt.LD_SLSQP, dim_0)
-        # opt.set_lower_bounds([-float('inf'), 0])
 
         # Set objective function to minimize
-        opt.set_min_objective(f2)
+        opt.set_min_objective(f)
 
         opt.set_ftol_abs(1e-8)
         xinit = u_0
@@ -124,24 +124,8 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
     elif optimizer == "jaxopt":
         print("Using jaxopt optimizer...")
 
-        gamma = 1000.
-
-        def energy_poisson(x, f, k, boundary_values, gamma):
-            pos, value = boundary_values
-            f = C.Cochain(0, True, S, f)
-            u = C.Cochain(0, True, S, x)
-            du = C.coboundary(u)
-            norm_grad = k/2.*C.inner_product(du, du)
-            bound_term = -C.inner_product(u, f)
-            penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
-            energy = norm_grad + bound_term + penalty
-            return energy
-
-        args = (f_vec, k, boundary_values, gamma)
-        obj = energy_poisson
-
-        solver = jaxopt.LBFGS(obj, maxiter=5000)
-        sol = solver.run(u_0, *args)
+        solver = jaxopt.LBFGS(energy, maxiter=5000)
+        sol = solver.run(u_0)
         toc = time.time()
         print(sol.state.iter_num, sol.state.value,
               jnp.linalg.norm(sol.params[bnodes]-u_true[bnodes]))
@@ -149,11 +133,6 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
         minf = sol.state.value
 
     elif optimizer == "pygmo":
-        energy = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
-                         k=k, boundary_values=boundary_values, gamma=gamma))
-        # TODO: jit
-        gradient = partial(p.grad_energy_poisson, f=f_vec, S=S,
-                           k=k, boundary_values=boundary_values, gamma=gamma)
 
         class PoissonProblem():
             def fitness(self, dv):
@@ -161,7 +140,7 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
                 return [fit]
 
             def gradient(self, dv):
-                grad = gradient(dv)
+                grad = graden(dv)
                 return grad
 
             def get_bounds(self):
@@ -172,8 +151,8 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
 
         prb = pg.problem(PoissonProblem())
         algo = pg.algorithm(pg.nlopt(solver="tnewton"))
-        algo.extract(pg.nlopt).ftol_abs = 1e-7
-        algo.extract(pg.nlopt).ftol_rel = 1e-7
+        algo.extract(pg.nlopt).ftol_abs = 1e-5
+        algo.extract(pg.nlopt).ftol_rel = 1e-5
         pop = pg.population(prb)
         pop.push_back(u_0)
         print(algo)
