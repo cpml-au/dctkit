@@ -7,6 +7,14 @@ from dctkit.mesh import util
 
 
 class ElasticaProblem():
+    """Elastica problem class.
+
+    Args:
+        num_elements (float): number of elements of primal mesh.
+        L (float): length of the rod.
+        rho (float): ratio between final and initial radius of the section of the rod.
+    """
+
     def __init__(self, num_elements: float, L: float, rho: float) -> None:
         self.num_elements = num_elements
         self.L = L
@@ -15,9 +23,10 @@ class ElasticaProblem():
         self.get_radius()
 
     def get_elastica_mesh(self) -> None:
+        """Routine to construct the normalized simplicial complex"""
         # load simplicial complex
         num_nodes = self.num_elements + 1
-        S_1, x = util.generate_1_D_mesh(num_nodes, self.L)
+        S_1, x = util.generate_1_D_mesh(num_nodes, 1)
         self.S = sim.SimplicialComplex(S_1, x, is_well_centered=True)
         self.S.get_circumcenters()
         self.S.get_primal_volumes()
@@ -25,39 +34,57 @@ class ElasticaProblem():
         self.S.get_hodge_star()
 
     def get_radius(self) -> None:
-        r_node = (1 - (1 - self.rho)*self.S.node_coord[:, 0]/self.L)**4
+        """Routine to compute the radius vector"""
+        r_node = (1 - (1 - self.rho)*self.S.node_coord[:, 0])**4
         self.r = C.CochainP0(complex=self.S, coeffs=r_node)
 
     def energy_elastica(self, theta: np.array, EI0: np.array, theta_0: float, F: float) -> float:
+        """Routine that compute the elastica energy.
+
+        Args:
+            theta (np.array): current configuration angles.
+            EI0 (np.array): product between E and I_0.
+            theta_0 (float): value of theta in the first primal node (boundary condition).
+            F (float): value of the force.
+
+        Returns:
+            float: the value of the energy.
+
+        """
         # add boundary conditions
         theta = jnp.insert(theta, 0, theta_0)
         # define A
         A = F*self.L**2/EI0
-        # penalty = 0.5*gamma*(theta[0] - theta_true[0])**2
-        # jax.debug.print("{E}", E=E[0])
-        # define B
-        # B = C.CochainD0(complex=S, coeffs=E*C.star(C.coboundary(I_coch)).coeffs)
-        # f = E[0]*I_0
+        # define internal cochain to compute the energy only in the interior points
         internal_vec = np.ones(self.S.num_nodes, dtype=dt.float_dtype)
         internal_vec[0] = 0
         internal_vec[-1] = 0
         internal_coch = C.CochainP0(complex=self.S, coeffs=internal_vec)
+        # define B
         B_vec = self.r.coeffs
         B = C.CochainP0(complex=self.S, coeffs=B_vec)
         B_in = C.cochain_mul(B, internal_coch)
-        # get dimensionless B
         theta = C.CochainD0(complex=self.S, coeffs=theta)
         const = C.CochainD0(complex=self.S, coeffs=A *
                             np.ones(self.S.num_nodes-1, dtype=dt.float_dtype))
+        # get curvature and momementum
         curvature = C.star(C.coboundary(theta))
         momentum = C.cochain_mul(B_in, curvature)
         energy = 0.5*C.inner_product(momentum, curvature) - \
             C.inner_product(const, C.sin(theta))
         return energy
 
-    def obj_fun_theta(self, theta_guess: np.array, E_guess: np.array, theta_true: np.array) -> float:
+    def obj_fun_theta(self, theta_guess: np.array, EI_guess: np.array, theta_true: np.array) -> float:
+        """Objective function for the bilevel problem (inverse problem).
+
+        Args:
+            theta_guess (np.array): candidate solution.
+            EI_guess (np.array): candidate EI.
+            theta_true (np.array): true solution.
+
+        Returns:
+            float: error between the candidate and the true theta
+
+        """
         theta_guess = jnp.insert(theta_guess, 0, theta_true[0])
-        # theta_guess = theta_guess[::density]
-        obj = jnp.sum(jnp.square(theta_guess-theta_true))
-        # jax.debug.print("{obj}", obj=obj)
-        return obj
+        return jnp.sum(jnp.square(theta_guess-theta_true))
