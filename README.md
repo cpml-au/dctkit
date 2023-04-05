@@ -53,7 +53,10 @@ The Markdown file `bench_results.md` will be generated containing the results.
 
 ## Usage
 
-Solving discrete Poisson equation in 1D (variational formulation):
+Read the full [documentation](https://dctkit.readthedocs.io/en/latest/) (including API
+docs).
+
+*Example*: solving discrete Poisson equation in 1D (variational formulation):
 
 ```python
 import dctkit as dt
