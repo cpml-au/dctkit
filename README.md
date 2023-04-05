@@ -1,18 +1,16 @@
 # dctkit - Discrete Calculus Toolkit
 
 `dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
-Discrete Differential Geometry to provide a mathematical language for building discrete
-physical models.
+Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
 
 Features:
 - supports `numpy` and [`jax`](http://github.com/google/jax/) backends for numerical computations
 - manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
 - manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
-- interface for solving optimal control problems (using `SciPy` constrained optimization
-  routines)
+- interface to different optimization packages: [`SciPy`](https://github.com/scipy/scipy), [`jaxopt`](http://github.com/google/jaxopt), and [`pygmo`](https://github.com/esa/pygmo2)
+- interface for solving optimal control problems
 - implements the discrete Dirichlet energy and the discrete Poisson model
 - discrete Euler's Elastica model
-- benchmarks using different optimization packages
 
 ## Installation
 
@@ -41,8 +39,17 @@ Running the benchmarks:
 ```bash
 $ sh ./bench/run_bench
 ```
-The ASCIIdoc file `bench_results.adoc` will be generated. To view the results in HTML,
-convert the `.adoc` file using the command `asciidoc bench_results.adoc`.
+The Markdown file `bench_results.md` will be generated containing the results.
+
+*Reference performance (HP Z2 Workstation G9 - 12th Gen Intel i9-12900K (24) @ 5.200GHz - NVIDIA RTX A4000 - 64GB RAM - ArchLinux kernel v6.2.9)*
+
+| Command                              |      Mean [s] | Min [s] | Max [s] |    Relative |
+| :----------------------------------- | ------------: | ------: | ------: | ----------: |
+| `python bench_poisson.py scipy cpu`  | 1.329 ± 0.028 |   1.307 |   1.379 | 1.88 ± 0.05 |
+| `python bench_poisson.py pygmo cpu`  | 0.708 ± 0.011 |   0.692 |   0.722 |        1.00 |
+| `python bench_poisson.py nlopt cpu`  | 0.760 ± 0.008 |   0.750 |   0.769 | 1.07 ± 0.02 |
+| `python bench_poisson.py jaxopt cpu` | 2.291 ± 0.015 |   2.277 |   2.308 | 3.24 ± 0.06 |
+| `python bench_poisson.py jaxopt gpu` | 5.572 ± 0.033 |   5.527 |   5.612 | 7.87 ± 0.13 |
 
 ## Usage
 

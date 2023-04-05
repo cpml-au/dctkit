@@ -1,2 +1,2 @@
-#hyperfine -i -w 1 -r 5 --export-asciidoc bench_results.adoc -L optimizer "scipy cpu","pygmo cpu","nlopt cpu","jaxopt cpu","jaxopt gpu" "python bench_poisson.py {optimizer}"
-hyperfine -i -w 1 -r 5 --output ./out --export-asciidoc bench_results.adoc -L optimizer "pygmo cpu","nlopt cpu","jaxopt cpu","jaxopt gpu" "python bench_poisson.py {optimizer}"
+hyperfine -i -w 1 -r 5 --export-markdown bench_results.md -L optimizer "scipy cpu","pygmo cpu","nlopt cpu","jaxopt cpu","jaxopt gpu" "python bench_poisson.py {optimizer}"
+#hyperfine -i -w 1 -r 5 --output ./out --export-markdown bench_results.md -L optimizer "pygmo cpu","nlopt cpu","jaxopt cpu","jaxopt gpu" "python bench_poisson.py {optimizer}"
