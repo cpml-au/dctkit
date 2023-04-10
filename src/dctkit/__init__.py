@@ -31,7 +31,8 @@ backend = np
 platform = Platform.cpu
 
 
-def config(fdtype=FloatDtype.float32, idtype=IntDtype.int32, backnd_name=Backend.jax, platfm=Platform.cpu):
+def config(fdtype=FloatDtype.float32, idtype=IntDtype.int32,
+           backnd_name=Backend.jax, platfm=Platform.cpu):
     """Set global configuration parameters."""
     global float_dtype, int_dtype, backend_name, backend, platform
     float_dtype = fdtype.name
