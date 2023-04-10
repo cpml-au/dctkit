@@ -19,6 +19,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        sudo apt-get -y install libglu1
         python -m pip install --upgrade pip
         python -m pip install tox tox-gh-actions
     - name: Test with tox
