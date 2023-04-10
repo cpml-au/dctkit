@@ -74,7 +74,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
             print("Using energy formulation...")
             obj = p.energy_poisson
             gradfun = p.grad_energy_poisson
-            gamma = 1000.
+            gamma = 1e3
             args = (f_vec, S, k, boundary_values, gamma)
         else:
             print("Solving Poisson equation...")

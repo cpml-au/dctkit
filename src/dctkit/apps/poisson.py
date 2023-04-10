@@ -145,8 +145,8 @@ def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
     """
     pos, value = boundary_values
     u = C.CochainP0(S, x)
-    f = C.CochainD2(S, f)
-    star_f = C.star(f)
+    f_coch = C.CochainP0(S, f)
+    star_f = C.star(f_coch)
 
     grad_r = -poisson_residual(u, star_f, k).coeffs
 
