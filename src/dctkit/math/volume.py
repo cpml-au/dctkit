@@ -1,6 +1,7 @@
 import numpy as np
 import dctkit
 import numpy.typing as npt
+from scipy.special import factorial
 
 
 def unsigned_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
@@ -31,7 +32,7 @@ def unsigned_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
 
     VTV = np.matmul(V, transpose_V)
     # math formula to compute the unsigned volume of a simplex
-    vol = np.sqrt(np.abs(np.linalg.det(VTV)))/np.math.factorial(rows - 1)
+    vol = np.sqrt(np.abs(np.linalg.det(VTV)))/factorial(rows - 1)
     return vol
 
 
@@ -60,5 +61,5 @@ def signed_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
     V = S_coord[:, index, :] - S_coord[:, ::(rows), :]
 
     # formula to compute the signed volume of a simplex (see Bell et al.)
-    vol = np.linalg.det(V) / np.math.factorial(rows-1)
+    vol = np.linalg.det(V) / factorial(rows-1)
     return vol
