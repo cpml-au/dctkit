@@ -1,9 +1,11 @@
 import numpy as np
 from dctkit.dec import cochain as C
 from dctkit.mesh import simplex
+from typing import Tuple
+import numpy.typing as npt
 
 
-def poisson_residual(u: C.CochainP0, f: C.CochainD2, k: float) -> C.CochainD2:
+def poisson_residual(u: C.CochainP0, f: C.CochainD2, k: float) -> C.Cochain:
     """Compute the residual of the discrete Poisson equation in 2D using DEC framework.
 
         -dh + f = 0,    h = -k*star*du
@@ -33,7 +35,9 @@ def poisson_residual(u: C.CochainP0, f: C.CochainD2, k: float) -> C.CochainD2:
     return C.add(dh, f)
 
 
-def obj_poisson(x: np.array, f: np.array, S: simplex.SimplicialComplex, k: float, boundary_values: (np.array, np.array), gamma: float, mask) -> float:
+def obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, k: float,
+                boundary_values: Tuple[npt.NDArray, npt.NDArray], gamma: float,
+                mask) -> float:
     """Objective function of the optimization problem associated to Poisson equation
     with Dirichlet boundary conditions.
 
@@ -51,10 +55,10 @@ def obj_poisson(x: np.array, f: np.array, S: simplex.SimplicialComplex, k: float
         the value of the objective function at x.
     """
     pos, value = boundary_values
-    u = C.Cochain(0, True, S, x)
-    f = C.Cochain(2, False, S, f)
+    u = C.CochainP0(S, x)
+    f_coch = C.CochainD2(S, f)
 
-    r = poisson_residual(u, f, k).coeffs
+    r = poisson_residual(u, f_coch, k).coeffs
 
     penalty = np.sum((x[pos] - value)**2)
 
@@ -64,7 +68,9 @@ def obj_poisson(x: np.array, f: np.array, S: simplex.SimplicialComplex, k: float
     return energy
 
 
-def grad_obj_poisson(x: np.array, f: np.array, S, k: float, boundary_values: (np.array, np.array), gamma: float, mask: np.array) -> np.array:
+def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
+                     Tuple[npt.NDArray, npt.NDArray], gamma: float,
+                     mask: npt.NDArray) -> npt.NDArray:
     """Gradient of the objective function of the Poisson optimization problem.
 
     Args:
@@ -81,20 +87,21 @@ def grad_obj_poisson(x: np.array, f: np.array, S, k: float, boundary_values: (np
         the value of the gradient of the objective function at x.
     """
     pos, value = boundary_values
-    u = C.Cochain(0, True, S, x)
-    f = C.Cochain(2, False, S, f)
-    r = poisson_residual(u, f, k).coeffs
+    u = C.CochainP0(S, x)
+    f_coch = C.CochainD2(S, f)
+    r = poisson_residual(u, f_coch, k).coeffs
     # zero residual on dual cells at the boundary where nodal values are imposed
-    r_proj = C.Cochain(0, True, S, r*mask)
+    r_proj = C.CochainP0(S, r*mask)
     # gradient of the projected residual = A^T r_proj = A r_proj, since A is symmetric
-    grad_r = (C.sub(poisson_residual(r_proj, f, k), f)).coeffs
+    grad_r = (C.sub(poisson_residual(r_proj, f_coch, k), f_coch)).coeffs
     grad_penalty = np.zeros(len(grad_r))
     grad_penalty[pos] = x[pos] - value
     grad_energy = grad_r + gamma*grad_penalty
     return grad_energy
 
 
-def energy_poisson(x: np.array, f: np.array, S, k: float, boundary_values: (np.array, np.array), gamma: float) -> float:
+def energy_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
+                   Tuple[npt.NDArray, npt.NDArray], gamma: float) -> float:
     """Implementation of the discrete Dirichlet energy.
 
     Args:
@@ -111,11 +118,11 @@ def energy_poisson(x: np.array, f: np.array, S, k: float, boundary_values: (np.a
         the value of the objective function at x.
     """
     pos, value = boundary_values
-    f = C.Cochain(0, True, S, f)
-    u = C.Cochain(0, True, S, x)
+    f_coch = C.CochainP0(S, f)
+    u = C.CochainP0(S, x)
     du = C.coboundary(u)
     norm_grad = k/2*C.inner_product(du, du)
-    bound_term = -C.inner_product(u, f)
+    bound_term = -C.inner_product(u, f_coch)
     penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
     energy = norm_grad + bound_term + penalty
     return energy
@@ -138,8 +145,8 @@ def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
         the value of the gradient of the objective function at x.
     """
     pos, value = boundary_values
-    u = C.Cochain(0, True, S, x)
-    f = C.Cochain(0, True, S, f)
+    u = C.CochainP0(S, x)
+    f = C.CochainD2(S, f)
     star_f = C.star(f)
 
     grad_r = -poisson_residual(u, star_f, k).coeffs

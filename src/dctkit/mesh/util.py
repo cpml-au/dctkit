@@ -1,5 +1,5 @@
 from dctkit import int_dtype, float_dtype
-import gmsh
+import gmsh  # type: ignore
 import numpy as np
 
 

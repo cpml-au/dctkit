@@ -35,7 +35,8 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_dtype="int32"):
+def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
+                  int_dtype="int32"):
 
     # NOTE: NLOpt only works with float64
     if platform == "cpu":
@@ -76,7 +77,8 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32", int_
     energy = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
                              k=k, boundary_values=boundary_values, gamma=gamma))
     graden = jax.jit(jax.grad(partial(p.energy_poisson, f=f_vec, S=S,
-                                      k=k, boundary_values=boundary_values, gamma=gamma)))
+                                      k=k, boundary_values=boundary_values,
+                                      gamma=gamma)))
 
     tic = time.time()
     if optimizer == "scipy":

@@ -8,6 +8,7 @@ from dctkit.dec import cochain as C
 import gmsh
 import matplotlib.tri as tri
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+import numpy.typing as npt
 
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
@@ -30,7 +31,7 @@ def get_complex(S_p, node_coords):
 def test_optimal_control_toy():
     target = np.array([2., 1.], dtype=np.float32)
 
-    def statefun(x: np.array, y: np.array) -> float:
+    def statefun(x: npt.NDArray, y: npt.NDArray) -> jax.Array:
         """Discrete functional associated to the Minimum problem that determines the
         state.
 
@@ -42,7 +43,7 @@ def test_optimal_control_toy():
         """
         return jnp.sum(jnp.square(jnp.square(x)-y))
 
-    def objfun(x: np.array, y: np.array) -> float:
+    def objfun(x: npt.NDArray, y: npt.NDArray) -> jax.Array:
         """Objective function. Problem: choose y such that the state x(y) minimizes the
         distance wrt to the target.
 
@@ -95,18 +96,18 @@ def test_optimal_control_poisson():
 
     gamma = 100000.
 
-    def energy_poisson(x: np.array, f: np.array) -> float:
+    def energy_poisson(x: npt.NDArray, f: npt.NDArray) -> float:
         pos, value = boundary_values
-        f = C.Cochain(0, True, S, f*np.ones(dim_0, dtype=dt.float_dtype))
-        u = C.Cochain(0, True, S, x)
+        f_coch = C.CochainP0(S, f*np.ones(dim_0, dtype=dt.float_dtype))
+        u = C.CochainP0(S, x)
         du = C.coboundary(u)
         norm_grad = k/2.*C.inner_product(du, du)
-        bound_term = -C.inner_product(u, f)
+        bound_term = -C.inner_product(u, f_coch)
         penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
         energy = norm_grad + bound_term + penalty
         return energy
 
-    def obj_fun(x: np.array, f: np.array) -> float:
+    def obj_fun(x: npt.NDArray, f: npt.NDArray) -> jax.Array:
         return jnp.sum(jnp.square(x-u_true))
 
     # initial guesses

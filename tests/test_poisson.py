@@ -145,7 +145,8 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 c = C.Cochain(0, True, S, x)
                 # compute Laplace-de Rham of c
                 laplacian = C.laplacian(c)
-                # the Laplacian on forms is the negative of the Laplacian on scalar fields
+                # the Laplacian on forms is the negative of the Laplacian on scalar
+                # fields
                 laplacian.coeffs *= -k
                 # compute the residual of the Poisson equation k*Delta u + f = 0
                 r = laplacian.coeffs + f

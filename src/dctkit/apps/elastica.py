@@ -4,6 +4,8 @@ from dctkit.dec import cochain as C
 from dctkit.mesh import simplex as sim
 import dctkit as dt
 from dctkit.mesh import util
+import numpy.typing as npt
+from jax import Array
 
 
 class ElasticaProblem():
@@ -38,13 +40,15 @@ class ElasticaProblem():
         r_node = (1 - (1 - self.rho)*self.S.node_coord[:, 0])**4
         self.r = C.CochainP0(complex=self.S, coeffs=r_node)
 
-    def energy_elastica(self, theta: np.array, EI0: np.array, theta_0: float, F: float) -> float:
+    def energy_elastica(self, theta: npt.NDArray, EI0: npt.NDArray, theta_0: float,
+                        F: float) -> float:
         """Routine that compute the elastica energy.
 
         Args:
             theta (np.array): current configuration angles.
             EI0 (np.array): product between E and I_0.
-            theta_0 (float): value of theta in the first primal node (boundary condition).
+            theta_0 (float): value of theta in the first primal node (boundary
+            condition).
             F (float): value of the force.
 
         Returns:
@@ -64,23 +68,24 @@ class ElasticaProblem():
         B_vec = self.r.coeffs
         B = C.CochainP0(complex=self.S, coeffs=B_vec)
         B_in = C.cochain_mul(B, internal_coch)
-        theta = C.CochainD0(complex=self.S, coeffs=theta)
+        theta_coch = C.CochainD0(complex=self.S, coeffs=theta)
         const = C.CochainD0(complex=self.S, coeffs=A *
                             np.ones(self.S.num_nodes-1, dtype=dt.float_dtype))
         # get curvature and momementum
-        curvature = C.star(C.coboundary(theta))
+        curvature = C.star(C.coboundary(theta_coch))
         momentum = C.cochain_mul(B_in, curvature)
         energy = 0.5*C.inner_product(momentum, curvature) - \
-            C.inner_product(const, C.sin(theta))
+            C.inner_product(const, C.sin(theta_coch))
         return energy
 
-    def obj_fun_theta(self, theta_guess: np.array, EI_guess: np.array, theta_true: np.array) -> float:
+    def obj_fun_theta(self, theta_guess: npt.NDArray, EI_guess: npt.NDArray,
+                      theta_true: npt.NDArray) -> Array:
         """Objective function for the bilevel problem (inverse problem).
 
         Args:
-            theta_guess (np.array): candidate solution.
-            EI_guess (np.array): candidate EI.
-            theta_true (np.array): true solution.
+            theta_guess: candidate solution.
+            EI_guess: candidate EI.
+            theta_true: true solution.
 
         Returns:
             float: error between the candidate and the true theta

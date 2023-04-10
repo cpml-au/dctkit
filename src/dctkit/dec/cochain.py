@@ -127,7 +127,7 @@ def cochain_mul(c_1: Cochain, c_2: Cochain) -> Cochain:
         cochain with coefficients = c_1*c_2.
     """
 
-    assert(c_1.is_primal == c_2.is_primal)
+    assert (c_1.is_primal == c_2.is_primal)
     return Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs*c_2.coeffs)
 
 
@@ -239,7 +239,7 @@ def square(c: Cochain) -> Cochain:
     Args:
         c: a cochain.
     Returns:
-        cochain with coefficients equal to (c.coeffs)^2.
+        cochain with coefficients squared.
 
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.square(c.coeffs))
@@ -328,7 +328,8 @@ def codifferential(c: Cochain) -> Cochain:
 
 
 def laplacian(c: Cochain) -> Cochain:
-    """Implements the discrete Laplace-de Rham (or Laplace-Beltrami) operator.  (https://en.wikipedia.org/wiki/Laplace%E2%80%93Beltrami_operator)
+    """Implements the discrete Laplace-de Rham (or Laplace-Beltrami) operator.
+    (https://en.wikipedia.org/wiki/Laplace%E2%80%93Beltrami_operator)
 
     Args:
         c: a cochain.
@@ -338,5 +339,5 @@ def laplacian(c: Cochain) -> Cochain:
     if c.dim == 0:
         laplacian = codifferential(coboundary(c))
     else:
-        laplacian = codifferential(coboundary(c)) + coboundary(codifferential(c))
+        laplacian = add(codifferential(coboundary(c)), coboundary(codifferential(c)))
     return laplacian
