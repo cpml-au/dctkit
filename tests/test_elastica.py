@@ -1,26 +1,20 @@
 import numpy as np
 import dctkit as dt
-import jax
 import jax.numpy as jnp
-from jax import jit, grad, jacrev
-from dctkit.dec import cochain as C
-from dctkit.mesh import simplex, util
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from jax import jit, grad
 from dctkit.math.opt import optctrl
 from scipy.optimize import minimize
 from scipy import sparse
 import matplotlib.pyplot as plt
 import os
 from dctkit.apps import elastica as el
-import functools
 
 
-config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
-
-
-def test_elastica(data, F, is_bilevel=False):
+def test_elastica(setup_test):
+    data = "xy_F_20.txt"
+    F = -20
+    is_bilevel = True
     np.random.seed(42)
-    print("Started test_elastica:")
 
     # load true data
     filename = os.path.join(os.path.dirname(__file__), data)
@@ -93,8 +87,9 @@ def test_elastica(data, F, is_bilevel=False):
 
         jac = jit(grad(energy_elastica))
 
-        res = minimize(fun=energy_elastica, x0=theta_0, args=(EI0, theta_true[0], F), method="SLSQP",
-                       jac=jac, options={'disp': 1, 'maxiter': 500})
+        res = minimize(fun=energy_elastica, x0=theta_0, args=(
+            EI0, theta_true[0], F), method="SLSQP", jac=jac,
+            options={'disp': 1, 'maxiter': 500})
         print(res)
         theta = res.x
         theta = np.insert(theta, 0, theta_true[0])
@@ -118,10 +113,5 @@ def test_elastica(data, F, is_bilevel=False):
     plt.plot(x, y, 'b')
     plt.show()
 
-    error = np.linalg.norm(x-x_true) + np.linalg.norm(y - y_true)
-    print(f"error: {error}")
+    error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
     assert error < 5e-2
-
-
-if __name__ == "__main__":
-    test_elastica(data="xy_F_20.txt", F=-20, is_bilevel=True)

@@ -1,6 +1,6 @@
 import numpy as np
 from jax import grad, jit, jacrev, Array
-from scipy.optimize import minimize  # type: ignore
+from scipy.optimize import minimize
 from typing import Callable
 import numpy.typing as npt
 from typing import Any, Tuple
@@ -12,6 +12,7 @@ class OptimalControlProblem():
         (u, a) = argmin J(u, a)     s.t.  F(u, a) = 0,
 
         where J is the objective function and F is the state function.
+
     Args:
         objfun: objective function to minimize wrt parameters (controls). Its
             arguments must be the state array and the paramters array.
@@ -35,7 +36,7 @@ class OptimalControlProblem():
         self.constraint_args = constraint_args
         self.obj_args = obj_args
 
-    def obj_fun_wrap(self, x: Array | npt.Array, *args: Any) -> Array:
+    def obj_fun_wrap(self, x: Array | npt.NDArray, *args: Any) -> Array:
         """Wrapper for the objective function.
 
         Args:
@@ -48,7 +49,7 @@ class OptimalControlProblem():
         obj = self.objfun(u, a, *args)
         return obj
 
-    def state_eq_wrap(self, x: Array | npt.Array, *args: Any) -> Array:
+    def state_eq_wrap(self, x: Array | npt.NDArray, *args: Any) -> Array:
         """Wrapper for the state equation.
 
         Args:

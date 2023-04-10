@@ -1,3 +1,6 @@
+from typing import Iterable
+
+
 class ShiftedList(list):
     """List with indices shifted by an offset.
 
@@ -6,7 +9,7 @@ class ShiftedList(list):
             off (int): offset.
     """
 
-    def __init__(self, iterable, off):
+    def __init__(self, iterable: Iterable, off: int):
         super().__init__(iterable)
         self.off = off
 

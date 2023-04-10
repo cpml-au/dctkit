@@ -2,6 +2,8 @@ import dctkit as dt
 
 from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
+import numpy.typing as npt
+from jax import Array
 
 
 class Cochain():
@@ -15,7 +17,7 @@ class Cochain():
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
-                 coeffs=None):
+                 coeffs: Array | npt.NDArray = None):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
@@ -23,84 +25,84 @@ class Cochain():
 
 
 class CochainP(Cochain):
-    """Class for primal cochains"""
+    """Class for primal cochains."""
 
     def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(dim, True, complex, coeffs)
 
 
 class CochainD(Cochain):
-    """Class for dual cochains"""
+    """Class for dual cochains."""
 
     def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(dim, False, complex, coeffs)
 
 
 class CochainP0(CochainP):
-    """Class for primal 0-cochains"""
+    """Class for primal 0-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(0, complex, coeffs)
 
 
 class CochainP1(CochainP):
-    """Class for primal 1-cochains"""
+    """Class for primal 1-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(1, complex, coeffs)
 
 
 class CochainP2(CochainP):
-    """Class for primal 2-cochains"""
+    """Class for primal 2-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(2, complex, coeffs)
 
 
 class CochainD0(CochainD):
-    """Class for dual 0-cochains"""
+    """Class for dual 0-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(0, complex, coeffs)
 
 
 class CochainD1(CochainD):
-    """Class for dual 1-cochains"""
+    """Class for dual 1-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(1, complex, coeffs)
 
 
 class CochainD2(CochainD):
-    """Class for dual 2-cochains"""
+    """Class for dual 2-cochains."""
 
     def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
         super().__init__(2, complex, coeffs)
 
 
-def add(c_1: Cochain, c_2: Cochain) -> Cochain:
+def add(c1: Cochain, c2: Cochain) -> Cochain:
     """Adds two cochains.
 
     Args:
-        c_1 (Cochain): a cohcain.
-        c_2 (Cochain): a cochain.
+        c1: a cohcain.
+        c2: a cochain.
     Returns:
-        c_1 + c_2
+        c1 + c2
     """
-    c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs + c_2.coeffs)
+    c = Cochain(c1.dim, c1.is_primal, c1.complex, c1.coeffs + c2.coeffs)
     return c
 
 
-def sub(c_1: Cochain, c_2: Cochain) -> Cochain:
+def sub(c1: Cochain, c2: Cochain) -> Cochain:
     """Subtracts two cochains.
 
     Args:
-        c_1: a cochain.
-        c_2: a cochain.
+        c1: a cochain.
+        c2: a cochain.
     Returns:
         c_1 - c_2
     """
-    c = Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs - c_2.coeffs)
+    c = Cochain(c1.dim, c1.is_primal, c1.complex, c1.coeffs - c2.coeffs)
     return c
 
 
@@ -117,18 +119,18 @@ def scalar_mul(c: Cochain, k: float) -> Cochain:
     return C
 
 
-def cochain_mul(c_1: Cochain, c_2: Cochain) -> Cochain:
+def cochain_mul(c1: Cochain, c2: Cochain) -> Cochain:
     """Multiplies two cochain component-wise
 
     Args:
-        c_1: a cochain.
-        c_2: a cochain.
+        c1: a cochain.
+        c2: a cochain.
     Returns:
-        cochain with coefficients = c_1*c_2.
+        cochain with coefficients = c1*c2.
     """
 
-    assert (c_1.is_primal == c_2.is_primal)
-    return Cochain(c_1.dim, c_1.is_primal, c_1.complex, c_1.coeffs*c_2.coeffs)
+    assert (c1.is_primal == c2.is_primal)
+    return Cochain(c1.dim, c1.is_primal, c1.complex, c1.coeffs*c2.coeffs)
 
 
 def identity(c: Cochain) -> Cochain:
@@ -292,22 +294,22 @@ def star(c: Cochain) -> Cochain:
     return star_c
 
 
-def inner_product(c_1: Cochain, c_2: Cochain) -> float:
+def inner_product(c1: Cochain, c2: Cochain) -> float:
     """Computes the inner product between two cochains.
 
     Args:
-        c_1: a cochain.
-        c_2: a cochain.
+        c1: a cochain.
+        c2: a cochain.
     Returns:
-        inner product between c_1 and c_2.
+        inner product between c1 and c2.
     """
-    star_c_2 = star(c_2)
-    n = c_1.complex.dim
+    star_c_2 = star(c2)
+    n = c1.complex.dim
 
     # dimension of the complexes must agree
-    assert (n == c_2.complex.dim)
+    assert (n == c2.complex.dim)
 
-    inner_product = dt.backend.dot(c_1.coeffs, star_c_2.coeffs)
+    inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
     return inner_product
 
 

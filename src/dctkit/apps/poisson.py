@@ -3,6 +3,7 @@ from dctkit.dec import cochain as C
 from dctkit.mesh import simplex
 from typing import Tuple
 import numpy.typing as npt
+from jax import Array
 
 
 def poisson_residual(u: C.CochainP0, f: C.CochainD2, k: float) -> C.Cochain:
@@ -70,7 +71,7 @@ def obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, k:
 
 def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
                      Tuple[npt.NDArray, npt.NDArray], gamma: float,
-                     mask: npt.NDArray) -> npt.NDArray:
+                     mask: npt.NDArray) -> Array | npt.NDArray:
     """Gradient of the objective function of the Poisson optimization problem.
 
     Args:
@@ -105,17 +106,15 @@ def energy_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
     """Implementation of the discrete Dirichlet energy.
 
     Args:
-        x: vector in which we want to evaluate the objective function.
+        x: array of the nodal values of the state variable (0-cochain)
         f: array of the coefficients of the primal 0-cochain source term
-        S: a simplicial complex in which we define the
-            cochain to apply Poisson.
-        k: the diffusitivity coefficient.
-        boundary_values (tuple): tuple of two np.arrays in which the first
-            encodes the positions of boundary values, while the last encodes the
-            boundary values themselves.
-        gamma: penalty factor.
+        S: a simplicial complex representing the mesh where the energy is defined
+        k: the diffusitivity coefficient
+        boundary_values: tuple of two arrays where the first encodes the positions of
+            boundary values, and the second encodes the boundary values
+        gamma: penalty factor for the Dirichlet boundary conditions
     Returns:
-        the value of the objective function at x.
+        value of the energy.
     """
     pos, value = boundary_values
     f_coch = C.CochainP0(S, f)
