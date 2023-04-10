@@ -1,20 +1,21 @@
 import numpy as np
 import dctkit
 from dctkit import FloatDtype
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 from dctkit.math import circumcenter as circ
 import os
 import pytest
 
-cwd = os.path.dirname(simplex.__file__)
+cwd = os.path.dirname(__file__)
 
 dtypes = [FloatDtype.float32, FloatDtype.float64]
+
 
 @pytest.mark.parametrize('float_dtype', dtypes)
 def test_circumcenter(float_dtype):
     dctkit.float_dtype = float_dtype.name
 
-    filename = "test1.msh"
+    filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 

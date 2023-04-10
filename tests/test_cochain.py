@@ -7,7 +7,7 @@ import os
 import matplotlib.tri as tri
 import matplotlib.pyplot as plt
 
-cwd = os.path.dirname(simplex.__file__)
+cwd = os.path.dirname(__file__)
 
 # FIXME: tests should involve different dimensions (of cochains and complex)
 
@@ -19,7 +19,7 @@ def test_cochain(setup_test):
     else:
         assert dctkit.float_dtype == "float32"
 
-    filename = "test1.msh"
+    filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
 

@@ -1,8 +1,9 @@
 import numpy as np
 import dctkit
+import numpy.typing as npt
 
 
-def unsigned_volume(S, node_coord):
+def unsigned_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
     """Compute the unsigned volume of a set of simplices S.
 
     Args:
@@ -34,7 +35,7 @@ def unsigned_volume(S, node_coord):
     return vol
 
 
-def signed_volume(S, node_coord):
+def signed_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
     """Compute the signed volume of a set of n-simplices.
 
     Args:

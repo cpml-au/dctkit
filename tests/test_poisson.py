@@ -5,13 +5,10 @@ from scipy.optimize import minimize
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
-import os
 import matplotlib.tri as tri
 import jaxopt
 import gmsh
 import pytest
-
-cwd = os.path.dirname(simplex.__file__)
 
 
 def get_complex(S_p, node_coords):

@@ -8,13 +8,13 @@ import matplotlib.tri as tri
 import matplotlib.pyplot as plt
 import pytest
 
-cwd = os.path.dirname(simplex.__file__)
+cwd = os.path.dirname(__file__)
 
 
 @pytest.mark.parametrize('int_dtype', [IntDtype.int32, IntDtype.int64])
 def test_boundary_COO(int_dtype):
     dctkit.int_dtype = int_dtype.name
-    filename = "test1.msh"
+    filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, _ = util.read_mesh(full_path)
 
@@ -41,7 +41,10 @@ def test_boundary_COO(int_dtype):
     assert np.alltrue(boundary_tuple[2] == boundary_true[2])
 
 
-@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32, IntDtype.int32], [FloatDtype.float64, IntDtype.int64]])
+@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
+                                                    IntDtype.int32],
+                                                   [FloatDtype.float64,
+                                                    IntDtype.int64]])
 def test_simplicial_complex_1(float_dtype, int_dtype):
     dctkit.float_dtype = float_dtype.name
     dctkit.int_dtype = int_dtype.name
@@ -118,11 +121,14 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
         assert np.allclose(S.hodge_star_inverse[i], hodge_inv_true[i])
 
 
-@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32, IntDtype.int32], [FloatDtype.float64, IntDtype.int64]])
+@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
+                                                    IntDtype.int32],
+                                                   [FloatDtype.float64,
+                                                    IntDtype.int64]])
 def test_simplicial_complex_2(float_dtype, int_dtype):
     dctkit.float_dtype = float_dtype.name
     dctkit.int_dtype = int_dtype.name
-    filename = "test1.msh"
+    filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, x = util.read_mesh(full_path)
 
@@ -220,7 +226,8 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
     plt.triplot(triang, 'ko-')
     plt.show()
 
-    # FIXME: make this part of the test more clear (remove long instructions between paretheses)
+    # FIXME: make this part of the test more clear (remove long instructions between
+    # paretheses)
     cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
     cpx_new.get_circumcenters()
     cpx_new.get_primal_volumes()
