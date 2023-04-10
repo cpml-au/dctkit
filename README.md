@@ -1,5 +1,8 @@
 # dctkit - Discrete Calculus Toolkit
 
+[![Linting and
+testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge.svg)](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml)
+
 `dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
 Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
 
