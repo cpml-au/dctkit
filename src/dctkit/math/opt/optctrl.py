@@ -9,22 +9,26 @@ import pygmo as pg
 
 
 class OptimizationProblem():
-    """Class for (constrained) optimization problems."""
+    """Class for (constrained) optimization problems.
+
+    Args:
+        dim: dimension of the state array.
+    """
 
     def __init__(self, dim: int, objfun: Callable) -> None:
         self.dim = dim
         self.obj = jit(objfun)
         self.grad_obj = jit(grad(objfun))
 
-    def set_fitness_args(self, *args: Any) -> None:
+    def set_fitness_args(self, args: dict) -> None:
         self.fitness_args = args
 
     def fitness(self, x):
-        fit = self.obj(x, self.fitness_args)
+        fit = self.obj(x, **self.fitness_args)
         return [fit]
 
     def gradient(self, x):
-        grad = self.grad_obj(x, self.fitness_args)
+        grad = self.grad_obj(x, **self.fitness_args)
         return grad
 
     def get_bounds(self):
@@ -36,14 +40,14 @@ class OptimizationProblem():
     def run(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
             ftol_rel: float = 1e-5) -> npt.NDArray:
         prb = pg.problem(self)
-        algo = pg.algorithm(pg.nlopt(solver="tnewton"))
-        algo.extract(pg.nlopt).ftol_abs = ftol_abs
-        algo.extract(pg.nlopt).ftol_rel = ftol_rel
+        algo = pg.algorithm(pg.nlopt(solver=algo))
+        algo.extract(pg.nlopt).ftol_abs = ftol_abs  # type: ignore
+        algo.extract(pg.nlopt).ftol_rel = ftol_rel  # type: ignore
         pop = pg.population(prb)
         pop.push_back(x0)
-        print(algo)
+        # print(algo)
         # algo.set_verbosity(1)
-        pop = algo.evolve(pop)
+        pop = algo.evolve(pop)  # type: ignore
         u = pop.champion_x
         return u
 

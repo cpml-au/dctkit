@@ -1,14 +1,17 @@
 import numpy as np
+import jax.numpy as jnp
 import jax
 import dctkit as dt
 from scipy.optimize import minimize
 from dctkit.mesh import simplex, util
 from dctkit.apps import poisson as p
 from dctkit.dec import cochain as C
+from dctkit.math.opt import optctrl as oc
 import matplotlib.tri as tri
 import jaxopt
 import gmsh
 import pytest
+from functools import partial
 
 
 def get_complex(S_p, node_coords):
@@ -26,7 +29,8 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-cases = [["jaxopt", False], ["jaxopt", True], ["scipy", False], ["scipy", True]]
+cases = [["jaxopt", False], ["jaxopt", True], ["pygmo", True],
+         ["pygmo", False], ["scipy", False], ["scipy", True]]
 
 
 @pytest.mark.parametrize('optimizer,energy_formulation', cases)
@@ -85,6 +89,40 @@ def test_poisson(setup_test, optimizer, energy_formulation):
         # NOTE: minimize returns a float64 array
         u = u.x.astype(dt.float_dtype)
 
+    elif optimizer == "pygmo":
+        print("Using pygmo optimizer...")
+
+        gamma = 1000.
+        if energy_formulation:
+            print("Using energy formulation...")
+            obj = partial(p.energy_poisson, S=S)
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma}
+
+        else:
+            print("Solving Poisson equation...")
+
+            def obj_poisson(x, f, k, boundary_values, gamma, mask):
+                pos, value = boundary_values
+                c = C.Cochain(0, True, S, x)
+                # compute Laplace-de Rham of c
+                laplacian = C.laplacian(c)
+                # the Laplacian on forms is the negative of the Laplacian on scalar
+                # fields
+                laplacian.coeffs *= -k
+                # compute the residual of the Poisson equation k*Delta u + f = 0
+                r = laplacian.coeffs + f
+                penalty = jnp.sum((x[pos] - value)**2)
+                obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                return obj
+            obj = obj_poisson
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma, 'mask': mask}
+
+        prb = oc.OptimizationProblem(dim_0, obj)
+        prb.set_fitness_args(args)
+        u = prb.run(u_0, algo="lbfgs").astype(dt.float_dtype)
+
     elif optimizer == "jaxopt":
         print("Using jaxopt optimizer...")
 
@@ -120,8 +158,8 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 laplacian.coeffs *= -k
                 # compute the residual of the Poisson equation k*Delta u + f = 0
                 r = laplacian.coeffs + f
-                penalty = dt.backend.sum((x[pos] - value)**2)
-                obj = 0.5*dt.backend.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                penalty = jnp.sum((x[pos] - value)**2)
+                obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return obj
 
             args = (f_vec, k, boundary_values, gamma, mask)
