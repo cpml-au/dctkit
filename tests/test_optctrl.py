@@ -9,6 +9,7 @@ import gmsh
 import matplotlib.tri as tri
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
 import numpy.typing as npt
+from jax import grad
 
 config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
 
@@ -29,40 +30,53 @@ def get_complex(S_p, node_coords):
 
 
 def test_optimal_control_toy():
+    # target state
     target = np.array([2., 1.], dtype=np.float32)
 
-    def statefun(x: npt.NDArray, y: npt.NDArray) -> jax.Array:
-        """Discrete functional associated to the Minimum problem that determines the
+    state_dim = len(target)
+
+    # total number of paramters (state + controls)
+    nparams = 2*state_dim
+
+    def statefun(x: npt.NDArray) -> jax.Array:
+        """Discrete functional associated to the minimum problem that determines the
         state.
 
         Args:
-            x: state vector.
-            y: paramters (controls).
+            x: parameters array (state + controls).
         Returns:
-            state vector that minimizes the functional.
+            value of the energy of the system.
         """
-        return jnp.sum(jnp.square(jnp.square(x)-y))
+        u = x[:state_dim]
+        y = x[state_dim:]
+        return grad(lambda u, y: jnp.sum(jnp.square(jnp.square(u)-y)))(u, y)
 
-    def objfun(x: npt.NDArray, y: npt.NDArray) -> jax.Array:
+    def objfun(x: npt.NDArray) -> jax.Array:
         """Objective function. Problem: choose y such that the state x(y) minimizes the
         distance wrt to the target.
 
         Args:
-            x: state vector.
-            y: paramters (controls).
+            x: parameters array (state + controls).
+        Returns:
+            value of the objective function.
         """
-        return jnp.sum(jnp.square(x-target))
+        u = x[:state_dim]
+        return jnp.sum(jnp.square(u-target))
 
     # initial guesses
-    x0 = np.ones(2)
+    u0 = np.ones(2)
     y0 = np.zeros(2)
+    x0 = np.concatenate((u0, y0))
 
-    prb = optctrl.OptimalControlProblem(objfun=objfun, state_en=statefun, state_dim=2)
-    x, y, fval = prb.run(x0, y0, tol=1e-6)
-    print(x, y, fval)
+    prb = optctrl.OptimalControlProblem(
+        objfun=objfun, statefun=statefun, state_dim=state_dim, nparams=nparams)
+
+    x = prb.run(x0=x0, algo="slsqp")
+    u = x[:state_dim]
+    y = x[state_dim:]
 
     assert np.allclose(y, target**2, atol=1e-4)
-    assert np.allclose(x, target, atol=1e-4)
+    assert np.allclose(u, target, atol=1e-4)
 
 
 def test_optimal_control_poisson():
@@ -127,5 +141,5 @@ def test_optimal_control_poisson():
 
 
 if __name__ == "__main__":
-    test_optimal_control_poisson()
     test_optimal_control_toy()
+    # test_optimal_control_poisson()

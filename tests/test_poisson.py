@@ -120,7 +120,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                     'gamma': gamma, 'mask': mask}
 
         prb = oc.OptimizationProblem(dim_0, obj)
-        prb.set_fitness_args(args)
+        prb.set_obj_args(args)
         u = prb.run(u_0, algo="lbfgs").astype(dt.float_dtype)
 
     elif optimizer == "jaxopt":
