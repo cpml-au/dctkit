@@ -1,9 +1,51 @@
 import numpy as np
 from jax import grad, jit, jacrev, Array
-from scipy.optimize import minimize
+# from scipy.optimize import minimize
+from scipy import optimize
 from typing import Callable
 import numpy.typing as npt
 from typing import Any, Tuple
+import pygmo as pg
+
+
+class OptimizationProblem():
+    """Class for (constrained) optimization problems."""
+
+    def __init__(self, dim: int, objfun: Callable) -> None:
+        self.dim = dim
+        self.obj = jit(objfun)
+        self.grad_obj = jit(grad(objfun))
+
+    def set_fitness_args(self, *args: Any) -> None:
+        self.fitness_args = args
+
+    def fitness(self, x):
+        fit = self.obj(x, self.fitness_args)
+        return [fit]
+
+    def gradient(self, x):
+        grad = self.grad_obj(x, self.fitness_args)
+        return grad
+
+    def get_bounds(self):
+        return ([-100]*self.dim, [100]*self.dim)
+
+    def get_name(self):
+        return "Optimization problem"
+
+    def run(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
+            ftol_rel: float = 1e-5) -> npt.NDArray:
+        prb = pg.problem(self)
+        algo = pg.algorithm(pg.nlopt(solver="tnewton"))
+        algo.extract(pg.nlopt).ftol_abs = ftol_abs
+        algo.extract(pg.nlopt).ftol_rel = ftol_rel
+        pop = pg.population(prb)
+        pop.push_back(x0)
+        print(algo)
+        # algo.set_verbosity(1)
+        pop = algo.evolve(pop)
+        u = pop.champion_x
+        return u
 
 
 class OptimalControlProblem():
@@ -74,11 +116,11 @@ class OptimalControlProblem():
             the objective function.
         """
         x0 = np.concatenate((u0, y0))
-        res = minimize(self.obj_fun_wrap, x0, args=self.obj_args, method="SLSQP",
-                       constraints={'type': 'eq', 'fun': self.state_eq_wrap,
-                                    'jac': self.state_eq_grad,
-                                    'args': self.constraint_args},
-                       jac=self.grad_obj, tol=tol, options={'maxiter': 1000})
+        res = optimize.minimize(self.obj_fun_wrap, x0, args=self.obj_args, method="SLSQP",
+                                constraints={'type': 'eq', 'fun': self.state_eq_wrap,
+                                             'jac': self.state_eq_grad,
+                                             'args': self.constraint_args},
+                                jac=self.grad_obj, tol=tol, options={'maxiter': 1000})
 
         u = res.x[:self.state_dim]
         a = res.x[self.state_dim:]
