@@ -116,7 +116,8 @@ class OptimalControlProblem():
             the objective function.
         """
         x0 = np.concatenate((u0, y0))
-        res = optimize.minimize(self.obj_fun_wrap, x0, args=self.obj_args, method="SLSQP",
+        res = optimize.minimize(self.obj_fun_wrap, x0, args=self.obj_args,
+                                method="SLSQP",
                                 constraints={'type': 'eq', 'fun': self.state_eq_wrap,
                                              'jac': self.state_eq_grad,
                                              'args': self.constraint_args},
