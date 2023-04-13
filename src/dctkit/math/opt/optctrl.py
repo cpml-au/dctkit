@@ -34,6 +34,7 @@ class OptimizationProblem():
             self.constr_problem = True
         # gradient of the objective function wrt parameters array
         self.grad_obj = jit(grad(objfun))
+        self.last_opt_result = -1
 
     def set_obj_args(self, args: dict) -> None:
         """Sets the additional arguments to be passed to the objective function."""
@@ -87,9 +88,9 @@ class OptimizationProblem():
         algo.extract(pg.nlopt).maxeval = maxeval  # type: ignore
         pop = pg.population(prb)
         pop.push_back(x0)
-        # print(algo)
         # algo.set_verbosity(1)
         pop = algo.evolve(pop)  # type: ignore
+        self.last_opt_result = algo.extract(pg.nlopt).get_last_opt_result()
         u = pop.champion_x
         return u
 
