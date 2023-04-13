@@ -119,7 +119,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
             args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
                     'gamma': gamma, 'mask': mask}
 
-        prb = oc.OptimizationProblem(dim_0, obj)
+        prb = oc.OptimizationProblem(dim=dim_0, state_dim=dim_0, objfun=obj)
         prb.set_obj_args(args)
         u = prb.run(u_0, algo="lbfgs").astype(dt.float_dtype)
 

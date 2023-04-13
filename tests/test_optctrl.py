@@ -71,7 +71,7 @@ def test_optimal_control_toy():
     prb = optctrl.OptimalControlProblem(
         objfun=objfun, statefun=statefun, state_dim=state_dim, nparams=nparams)
 
-    x = prb.run(x0=x0, algo="slsqp")
+    x = prb.run(x0=x0)
     u = x[:state_dim]
     y = x[state_dim:]
 
@@ -110,36 +110,44 @@ def test_optimal_control_poisson():
 
     gamma = 100000.
 
-    def energy_poisson(x: npt.NDArray, f: npt.NDArray) -> float:
+    def energy_poisson(u: npt.NDArray, f: npt.NDArray) -> float:
         pos, value = boundary_values
         f_coch = C.CochainP0(S, f*np.ones(dim_0, dtype=dt.float_dtype))
-        u = C.CochainP0(S, x)
-        du = C.coboundary(u)
+        u_coch = C.CochainP0(S, u)
+        du = C.coboundary(u_coch)
         norm_grad = k/2.*C.inner_product(du, du)
-        bound_term = -C.inner_product(u, f_coch)
-        penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
+        bound_term = -C.inner_product(u_coch, f_coch)
+        penalty = 0.5*gamma*dt.backend.sum((u[pos] - value)**2)
         energy = norm_grad + bound_term + penalty
         return energy
 
-    def obj_fun(x: npt.NDArray, f: npt.NDArray) -> jax.Array:
-        return jnp.sum(jnp.square(x-u_true))
+    def statefun(x: npt.NDArray) -> jax.Array:
+        u = x[:dim_0]
+        f = x[dim_0:]
+        return grad(energy_poisson)(u, f)
+
+    def objfun(x: npt.NDArray) -> jax.Array:
+        u = x[:dim_0]
+        return jnp.sum(jnp.square(u-u_true))
 
     # initial guesses
     f0 = -1.*np.ones(1, dtype=dt.float_dtype)
 
+    x0 = np.concatenate((u_0, f0))
+
     prb = optctrl.OptimalControlProblem(
-        objfun=obj_fun, state_en=energy_poisson, state_dim=dim_0)
-    x, f, fval = prb.run(u_0, f0, tol=1e-2)
-    print("dim = ", dim_0)
-    print("u = ", x)
+        objfun=objfun, statefun=statefun, state_dim=dim_0, nparams=dim_0 + len(f0))
+    x = prb.run(x0=x0)
+    u = x[:dim_0]
+    f = x[dim_0:]
+    print("u = ", u)
     print("u_true = ", u_true)
     print("f = ", f)
-    print("fval = ", fval)
 
-    assert np.allclose(x, u_true, atol=1e-4)
+    assert np.allclose(u, u_true, atol=1e-4)
     assert np.allclose(f, f_true, atol=1e-4)
 
 
 if __name__ == "__main__":
     test_optimal_control_toy()
-    # test_optimal_control_poisson()
+    test_optimal_control_poisson()
