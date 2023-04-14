@@ -2,6 +2,7 @@
 
 [![Linting and
 testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge.svg)](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml)
+[![Docs](https://readthedocs.org/projects/dctkit/badge/?version=latest)](https://dctkit.readthedocs.io/en/latest/?badge=latest)
 
 `dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
 Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
