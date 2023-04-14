@@ -45,7 +45,7 @@ class OptimizationProblem():
 
     def set_obj_args(self, args: dict) -> None:
         """Sets the additional arguments to be passed to the objective function."""
-        check_type(args, Dict[str, float | np.float32 | np.float64 
+        check_type(args, Dict[str, float | np.float32 | np.float64
                               | npt.NDArray | Array])
         self.obj_args = args
 
@@ -132,9 +132,9 @@ class OptimalControlProblem(OptimizationProblem):
                                         npt.NDArray | Array],
                  statefun: Callable[..., np.float32 | np.float64 | npt.NDArray | Array],
                  state_dim: int, nparams: int,
-                 constraint_args: Dict[str, np.float32 |
+                 constraint_args: Dict[str, float | np.float32 |
                                        np.float64 | npt.NDArray | Array] = {},
-                 obj_args: Dict[str, np.float32 |
+                 obj_args: Dict[str, float | np.float32 |
                                 np.float64 | npt.NDArray | Array] = {}) -> None:
 
         super().__init__(dim=nparams, state_dim=state_dim, objfun=objfun,
