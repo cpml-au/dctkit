@@ -2,8 +2,9 @@ import numpy as np
 from jax import grad, jit, jacrev, Array
 from typing import Callable
 import numpy.typing as npt
-from typing import List
+from typing import List, Dict
 import pygmo as pg
+from typeguard import check_type
 
 
 class OptimizationProblem():
@@ -18,9 +19,12 @@ class OptimizationProblem():
     """
 
     def __init__(self, dim: int, state_dim: int,
-                 objfun: Callable[..., npt.NDArray | Array | float],
-                 constrfun: Callable[..., npt.NDArray | Array | float] | None = None,
-                 constr_args: dict = {}) -> None:
+                 objfun: Callable[..., float | npt.NDArray | Array |
+                                  np.float32 | np.float64],
+                 constrfun: Callable[..., float | npt.NDArray | Array |
+                                     np.float32 | np.float64] | None = None,
+                 constr_args: Dict[str, float | np.float32 |
+                                   np.float64 | npt.NDArray | Array] = {}) -> None:
         self.dim = dim
         self.state_dim = state_dim
         self.obj = jit(objfun)
@@ -30,6 +34,9 @@ class OptimizationProblem():
             self.constr = jit(constrfun)
             # jacobian of the constraint equations wrt the parameters array
             self.constr_grad = jit(jacrev(constrfun))
+            # TODO: check according to dt.float_dtype instead of np.float32 or 64
+            check_type(constr_args, Dict[str, float | np.float32 | np.float64 |
+                                         npt.NDArray | Array])
             self.constr_args = constr_args
             self.constr_problem = True
         # gradient of the objective function wrt parameters array
@@ -38,6 +45,8 @@ class OptimizationProblem():
 
     def set_obj_args(self, args: dict) -> None:
         """Sets the additional arguments to be passed to the objective function."""
+        check_type(args, Dict[str, float | np.float32 | np.float64 
+                              | npt.NDArray | Array])
         self.obj_args = args
 
     def get_nec(self) -> int:
@@ -51,6 +60,7 @@ class OptimizationProblem():
 
     def fitness(self, x: npt.NDArray | Array) -> npt.NDArray | List[float]:
         fit = self.obj(x, **self.obj_args)
+        check_type(fit, float | np.float32 | np.float64 | npt.NDArray | Array)
         if self.constr_problem:
             constr_res = self.constr(x, **self.constr_args)
             return np.concatenate(([fit], constr_res))
@@ -59,6 +69,7 @@ class OptimizationProblem():
 
     def gradient(self, x: npt.NDArray | Array) -> npt.NDArray | Array:
         grad = self.grad_obj(x, **self.obj_args)
+        check_type(grad, float | np.float32 | np.float64 | npt.NDArray | Array)
         if self.constr_problem:
             constr_jac = self.constr_grad(x, **self.constr_args)
             # first dim components are grad of object wrt parameters, then grad of
@@ -92,6 +103,7 @@ class OptimizationProblem():
         pop = algo.evolve(pop)  # type: ignore
         self.last_opt_result = algo.extract(pg.nlopt).get_last_opt_result()
         u = pop.champion_x
+        check_type(u, npt.NDArray)
         return u
 
 
@@ -116,61 +128,15 @@ class OptimalControlProblem(OptimizationProblem):
         obj_args: extra keyword arguments for the objective function.
     """
 
-    def __init__(self, objfun: Callable[..., npt.NDArray | Array | float],
-                 statefun: Callable[..., npt.NDArray | Array | float],
-                 state_dim: int, nparams: int, constraint_args: dict = {},
-                 obj_args: dict = {}) -> None:
+    def __init__(self, objfun: Callable[..., np.float32 | np.float64 |
+                                        npt.NDArray | Array],
+                 statefun: Callable[..., np.float32 | np.float64 | npt.NDArray | Array],
+                 state_dim: int, nparams: int,
+                 constraint_args: Dict[str, np.float32 |
+                                       np.float64 | npt.NDArray | Array] = {},
+                 obj_args: Dict[str, np.float32 |
+                                np.float64 | npt.NDArray | Array] = {}) -> None:
 
         super().__init__(dim=nparams, state_dim=state_dim, objfun=objfun,
                          constrfun=statefun, constr_args=constraint_args)
         super().set_obj_args(obj_args)
-
-    # def obj_fun_wrap(self, x: Array | npt.NDArray, *args: Any) -> Array:
-    #     """Wrapper for the objective function.
-
-    #     Args:
-    #         x: optimization paramters (state + controls).
-    #     Returns:
-    #         value of the objective function.
-    #     """
-    #     u = x[:self.state_dim]
-    #     a = x[self.state_dim:]
-    #     obj = self.objfun(u, a, *args)
-    #     return obj
-
-    # def state_eq_wrap(self, x: Array | npt.NDArray, *args: Any) -> Array:
-    #     """Wrapper for the state equation.
-
-    #     Args:
-    #         x: optimization paramters (state + controls).
-    #     Returns:
-    #         residual of the system of state equations.
-    #     """
-    #     u = x[:self.state_dim]
-    #     a = x[self.state_dim:]
-    #     return self.grad_u(u, a, *args)
-
-    # def run(self, u0: npt.NDArray, y0: npt.NDArray, tol: float) \
-    #         -> Tuple[npt.NDArray, npt.NDArray, float]:
-    #     """Solves the optimal control problem by SLSQP.
-
-    #     Args:
-    #         u0: initial guess for the state.
-    #         a0: initial guess for the parameters (controls).
-    #         tol: controls the tolerance on the objective function value.
-    #     Returns:
-    #         tuple containing the optimal state, the optimal controls and the value of
-    #         the objective function.
-    #     """
-    #     x0 = np.concatenate((u0, y0))
-    #     res = optimize.minimize(self.obj_fun_wrap, x0, args=self.obj_args,
-    #                             method="SLSQP",
-    #                             constraints={'type': 'eq', 'fun': self.state_eq_wrap,
-    #                                          'jac': self.state_eq_grad,
-    #                                          'args': self.constraint_args},
-    #                             jac=self.grad_obj, tol=tol, options={'maxiter': 1000})
-
-    #     u = res.x[:self.state_dim]
-    #     a = res.x[self.state_dim:]
-    #     fval = res.fun
-    #     return u, a, fval
