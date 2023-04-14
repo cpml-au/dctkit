@@ -9,7 +9,7 @@ numpy
 scipy
 jax<=0.4.3
 jaxlib<=0.4.3
-pygmo
+# pygmo
 gmsh
 matplotlib
 jaxopt
