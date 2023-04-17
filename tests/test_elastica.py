@@ -107,8 +107,8 @@ def test_elastica(setup_test, tune_EI0):
         theta = np.insert(theta, 0, theta_true[0])
 
     # plot theta
-    plt.plot(theta)
-    plt.show()
+    # plt.plot(theta)
+    # plt.show()
 
     # reconstruct x, y
     cos_theta = h*jnp.cos(theta)
@@ -121,8 +121,8 @@ def test_elastica(setup_test, tune_EI0):
     y = y[::density]
 
     # plot the results
-    plt.plot(x_true, y_true, 'r')
-    plt.plot(x, y, 'b')
-    plt.show()
+    # plt.plot(x_true, y_true, 'r')
+    # plt.plot(x, y, 'b')
+    # plt.show()
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
     assert error <= 2e-2
