@@ -2,4 +2,4 @@ name: readthedocs
 channels:
   - conda-forge
 dependencies:
-  - pygmo=2.19.0=py311h3d6aefc_0
+  - pygmo
