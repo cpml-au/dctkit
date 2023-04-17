@@ -1,5 +1,19 @@
 name: readthedocs
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - pygmo
+  - sphinx_rtd_theme
+  - myst-parser[linkify]
+  - sphinx>=3.2.1
+  - importlib-metadata
+  - numpy
+  - scipy
+  - jax<=0.4.3
+  - jaxlib<=0.4.3
+  - gmsh
+  - matplotlib
+  - jaxopt
+  - typing_extensions
+  - typeguard

@@ -4,6 +4,7 @@ from dctkit.mesh import simplex as spx
 from dctkit.math import spmv
 import numpy.typing as npt
 from jax import Array
+import jax.numpy as jnp
 
 
 class Cochain():
@@ -17,7 +18,7 @@ class Cochain():
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
-                 coeffs: Array | npt.NDArray = None):
+                 coeffs: Array | npt.NDArray):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
@@ -27,56 +28,56 @@ class Cochain():
 class CochainP(Cochain):
     """Class for primal cochains."""
 
-    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs):
         super().__init__(dim, True, complex, coeffs)
 
 
 class CochainD(Cochain):
     """Class for dual cochains."""
 
-    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs):
         super().__init__(dim, False, complex, coeffs)
 
 
 class CochainP0(CochainP):
     """Class for primal 0-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(0, complex, coeffs)
 
 
 class CochainP1(CochainP):
     """Class for primal 1-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(1, complex, coeffs)
 
 
 class CochainP2(CochainP):
     """Class for primal 2-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(2, complex, coeffs)
 
 
 class CochainD0(CochainD):
     """Class for dual 0-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(0, complex, coeffs)
 
 
 class CochainD1(CochainD):
     """Class for dual 1-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(1, complex, coeffs)
 
 
 class CochainD2(CochainD):
     """Class for dual 2-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs=None):
+    def __init__(self, complex: spx.SimplicialComplex, coeffs):
         super().__init__(2, complex, coeffs)
 
 
@@ -257,7 +258,8 @@ def coboundary(c: Cochain) -> Cochain:
         the cochain obtained by taking the coboundary of c.
     """
     # initialize dc
-    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex)
+    dc = Cochain(dim=c.dim + 1, is_primal=c.is_primal, complex=c.complex,
+                 coeffs=jnp.empty_like(c.coeffs, dtype=dt.float_dtype))
 
     # apply coboundary matrix (transpose of the primal boundary matrix) to the
     # array of coefficients of the cochain.
@@ -284,13 +286,16 @@ def star(c: Cochain) -> Cochain:
         the dual cochain obtained applying the Hodge star operator.
     """
     star_c = Cochain(dim=c.complex.dim - c.dim,
-                     is_primal=not c.is_primal, complex=c.complex)
+                     is_primal=not c.is_primal, complex=c.complex,
+                     coeffs=jnp.empty_like(c.coeffs, dtype=dt.float_dtype))
+
     if c.is_primal:
         star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
     else:
         # NOTE: this step only works with well-centered meshes!
         assert c.complex.is_well_centered
         star_c.coeffs = c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs
+
     return star_c
 
 
