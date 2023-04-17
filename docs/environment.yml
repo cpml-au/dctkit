@@ -1,8 +1,8 @@
 name: readthedocs
 channels:
   - conda-forge
-  - defaults
 dependencies:
+  - python=3.8
   - pygmo
   - sphinx_rtd_theme
   - myst-parser[linkify]

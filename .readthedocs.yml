@@ -16,16 +16,11 @@ sphinx:
 # formats:
 #   - pdf
 
-conda:
-  environment: docs/environment.yml
+# conda:
+#   environment: docs/environment.yml
 
-# python:
-#   version: 3.8
-#   install:
-#     - requirements: docs/requirements.txt
-#     - { path: ., method: pip }
 python:
   version: 3.8
   install:
-    - method: pip
-      path: .
+    - requirements: docs/requirements.txt
+    - { path: ., method: pip }
