@@ -17,7 +17,7 @@ sphinx:
 #   - pdf
 
 build:
-  os: "ubuntu-20.04"
+  image: latest
   tools:
     python: "mambaforge-4.10"
 
@@ -25,7 +25,6 @@ conda:
   environment: docs/environment.yml
 
 python:
-  # version: 3.8
   install:
-    # - requirements: docs/requirements.txt
+    - requirements: docs/requirements.txt
     - { path: ., method: pip }

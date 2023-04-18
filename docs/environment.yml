@@ -1,3 +1,4 @@
+# add dependencies from setup.cfg
 name: readthedocs
 channels:
   - conda-forge
@@ -5,9 +6,6 @@ channels:
 dependencies:
   - python=3.8
   - pygmo
-  - sphinx_rtd_theme
-  - myst-parser[linkify]
-  - sphinx>=3.2.1
   - importlib-metadata
   - numpy
   - scipy

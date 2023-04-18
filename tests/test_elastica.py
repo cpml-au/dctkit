@@ -20,24 +20,16 @@ def test_elastica(setup_test):
     filename = os.path.join(os.path.dirname(__file__), data)
     data = np.genfromtxt(filename)
 
-    # sample true data
+    # sampling factor for true data
     sampling = 10
 
-    density = 1
-    num_elements_data = int(100/sampling)
-    num_elements = num_elements_data*density
+    num_elements = 10
 
-    R_0 = 1e-2
-    R_1 = 1e-2
     L = 1
     h = L/(num_elements)
-    rho = R_1/R_0
 
-    ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=rho)
+    ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=1.)
     num_nodes = ela.S.num_nodes
-
-    # define I_0
-    I_0 = np.pi/4 * R_0**4
 
     # bidiagonal matrix to transform theta in (x,y)
     diag = [1]*(num_nodes)
@@ -53,8 +45,8 @@ def test_elastica(setup_test):
     # compute true solution
     x_true = data[:, 1][::sampling]
     y_true = data[:, 2][::sampling]
-    theta_true = np.empty(num_elements_data, dtype=dt.float_dtype)
-    for i in range(num_elements_data):
+    theta_true = np.empty(num_elements, dtype=dt.float_dtype)
+    for i in range(num_elements):
         theta_true[i] = np.arctan(
             (y_true[i+1]-y_true[i])/(x_true[i+1]-x_true[i]))
 
@@ -83,11 +75,8 @@ def test_elastica(setup_test):
     x0 = np.concatenate((theta_0, EI0_0))
     x = prb.run(x0=x0)
     theta = x[:-1]
-    EI0 = x[-1]
-    # extend theta
+    # extend solution array with boundary element
     theta = np.insert(theta, 0, theta_true[0])
-    print(f"The optimal E*I_0 is {EI0}")
-    print(f"The optimal E is {EI0/I_0}")
 
     # reconstruct x, y
     cos_theta = h*jnp.cos(theta)
@@ -96,8 +85,6 @@ def test_elastica(setup_test):
     b_y = jnp.insert(sin_theta, 0, 0)
     x = jnp.linalg.solve(transform, b_x)
     y = jnp.linalg.solve(transform, b_y)
-    x = x[::density]
-    y = y[::density]
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
     assert error <= 2e-2
