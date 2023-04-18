@@ -26,5 +26,4 @@ conda:
 
 python:
   install:
-    - requirements: docs/requirements.txt
     - { path: ., method: pip }

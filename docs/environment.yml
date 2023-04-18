@@ -16,3 +16,7 @@ dependencies:
   - jaxopt
   - typing_extensions
   - typeguard
+  - pip:
+    - sphinx_rtd_theme
+    - myst-parser[linkify]
+    - sphinx>=3.2.1
