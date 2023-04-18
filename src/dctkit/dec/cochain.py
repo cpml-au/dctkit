@@ -5,6 +5,7 @@ from dctkit.math import spmv
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
+from typeguard import check_type
 
 
 class Cochain():
@@ -18,10 +19,11 @@ class Cochain():
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
-                 coeffs: Array | npt.NDArray):
+                 coeffs: npt.NDArray | Array):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
+        check_type(coeffs, npt.NDArray | Array)
         self.coeffs = coeffs
 
 
@@ -299,7 +301,7 @@ def star(c: Cochain) -> Cochain:
     return star_c
 
 
-def inner_product(c1: Cochain, c2: Cochain) -> float:
+def inner_product(c1: Cochain, c2: Cochain) -> npt.NDArray | Array:
     """Computes the inner product between two cochains.
 
     Args:
@@ -315,6 +317,9 @@ def inner_product(c1: Cochain, c2: Cochain) -> float:
     assert (n == c2.complex.dim)
 
     inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
+    # NOTE: not sure whether we should keep both Jax and numpy as backends and allow for
+    # different return types
+    check_type(inner_product, npt.NDArray | Array)
     return inner_product
 
 

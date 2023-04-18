@@ -12,7 +12,7 @@ import numpy.typing as npt
 
 # @pytest.mark.parametrize('tune_EI0', [True, False])
 def test_elastica(setup_test):
-    data = "xy_F_20.txt"
+    data = "data/xy_F_20.txt"
     F = -20
     np.random.seed(42)
 
