@@ -9,10 +9,12 @@
 
 import pytest
 from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+import dctkit
 
 
 @pytest.fixture()
 def setup_test():
     # NOTE: running multiple JAX tests with different data types DOES NOT work
     # (jax_enable_x64 must be changed AT STARTUP)
+    dctkit.config_called = False
     config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)

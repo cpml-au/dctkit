@@ -29,21 +29,24 @@ int_dtype = IntDtype.int32.name
 backend_name = Backend.numpy
 backend = np
 platform = Platform.cpu
+config_called = False
 
 
 def config(fdtype=FloatDtype.float32, idtype=IntDtype.int32,
            backnd_name=Backend.jax, platfm=Platform.cpu):
     """Set global configuration parameters."""
-    global float_dtype, int_dtype, backend_name, backend, platform
-    float_dtype = fdtype.name
-    int_dtype = idtype.name
-    backend_name = backnd_name
-    platform = platfm
-    if backnd_name == Backend.jax:
-        print("Using jax backend.")
-        backend = jax.numpy
-        from jax.config import config
-        config.update('jax_platform_name', platfm.name)
+    global config_called, float_dtype, int_dtype, backend_name, backend, platform
+    if not config_called:
+        float_dtype = fdtype.name
+        int_dtype = idtype.name
+        backend_name = backnd_name
+        platform = platfm
+        if backnd_name == Backend.jax:
+            # print("Using jax backend.")
+            backend = jax.numpy
+            from jax.config import config
+            config.update('jax_platform_name', platfm.name)
 
-        if fdtype == FloatDtype.float64:
-            config.update("jax_enable_x64", True)
+            if fdtype == FloatDtype.float64:
+                config.update("jax_enable_x64", True)
+        config_called = True
