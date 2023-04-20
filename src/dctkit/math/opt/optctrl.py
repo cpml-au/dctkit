@@ -5,7 +5,7 @@ import numpy.typing as npt
 from typing import List, Dict
 import pygmo as pg
 from typeguard import check_type
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+
 
 class OptimizationProblem():
     """Class for (constrained) optimization problems.
