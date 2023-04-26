@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.11']
 
     steps:
     - uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
       run: |
         sudo apt-get -y install libglu1
         python -m pip install --upgrade pip
-        python -m pip install tox tox-gh-actions
+        python -m pip install tox tox-gh-actions tox-conda
         python -m pip install flake8
     - name: Linting with flake8
       run: |
