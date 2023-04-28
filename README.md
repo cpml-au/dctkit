@@ -18,7 +18,16 @@ Features:
 
 ## Installation
 
-Clone the git repository and launch the following command
+Dependencies should be installed within a `conda` environment. To create a suitable
+environment based on the provided `.yaml` file, use the command
+
+```bash
+$ conda env create -f environment.yaml
+```
+
+Otherwise, update an existing environment using the same `.yaml` file.
+
+After activating the environemnt, clone the git repository and launch the following command
 
 ```bash
 $ pip install -e .
