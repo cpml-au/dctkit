@@ -27,7 +27,7 @@ $ conda env create -f environment.yaml
 
 Otherwise, update an existing environment using the same `.yaml` file.
 
-After activating the environemnt, clone the git repository and launch the following command
+After activating the environment, clone the git repository and launch the following command
 
 ```bash
 $ pip install -e .
