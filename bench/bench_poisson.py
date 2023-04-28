@@ -6,7 +6,6 @@ from dctkit.apps import poisson as p
 import os
 import sys
 import matplotlib.tri as tri
-import nlopt
 import time
 import jax.numpy as jnp
 import jaxopt
@@ -94,35 +93,6 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
         minf = res.fun
         toc = time.time()
 
-    elif optimizer == "nlopt":
-        print("Using NLOpt optimizer...")
-        energy = p.energy_poisson
-        graden = p.grad_energy_poisson
-
-        def f(x, grad):
-            if grad.size > 0:
-                grad[:] = graden(x, f_vec, S, k,
-                                 boundary_values, gamma)
-
-            # NOTE: this casting to double is crucial to work with NLOpt
-            return np.double(energy(x, f_vec, S, k, boundary_values, gamma))
-
-        # The second argument is the number of optimization parameters
-        opt = nlopt.opt(nlopt.LD_LBFGS, dim_0)
-
-        # Set objective function to minimize
-        opt.set_min_objective(f)
-
-        opt.set_ftol_abs(1e-8)
-        xinit = u_0
-
-        u = opt.optimize(xinit)
-        toc = time.time()
-
-        minf = opt.last_optimum_value()
-        print("minimum value = ", minf)
-        print("result code = ", opt.last_optimize_result())
-
     elif optimizer == "jaxopt":
         print("Using jaxopt optimizer...")
 
@@ -132,7 +102,6 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
         print(sol.state.iter_num, sol.state.value,
               jnp.linalg.norm(sol.params[bnodes]-u_true[bnodes]))
         u = sol.params
-        minf = sol.state.value
 
     elif optimizer == "pygmo":
 

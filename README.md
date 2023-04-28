@@ -57,11 +57,10 @@ The Markdown file `bench_results.md` will be generated containing the results.
 
 | Command                              |      Mean [s] | Min [s] | Max [s] |    Relative |
 | :----------------------------------- | ------------: | ------: | ------: | ----------: |
-| `python bench_poisson.py scipy cpu`  | 1.329 ± 0.028 |   1.307 |   1.379 | 1.88 ± 0.05 |
-| `python bench_poisson.py pygmo cpu`  | 0.708 ± 0.011 |   0.692 |   0.722 |        1.00 |
-| `python bench_poisson.py nlopt cpu`  | 0.760 ± 0.008 |   0.750 |   0.769 | 1.07 ± 0.02 |
-| `python bench_poisson.py jaxopt cpu` | 2.291 ± 0.015 |   2.277 |   2.308 | 3.24 ± 0.06 |
-| `python bench_poisson.py jaxopt gpu` | 5.572 ± 0.033 |   5.527 |   5.612 | 7.87 ± 0.13 |
+| `python bench_poisson.py scipy cpu`  | 1.553 ± 0.007 |   1.546 |   1.564 | 2.16 ± 0.01 |
+| `python bench_poisson.py pygmo cpu`  | 0.719 ± 0.003 |   0.716 |   0.723 |        1.00 |
+| `python bench_poisson.py jaxopt cpu` | 2.376 ± 0.055 |   2.309 |   2.451 | 3.30 ± 0.08 |
+| `python bench_poisson.py jaxopt gpu` | 5.638 ± 0.040 |   5.590 |   5.699 | 7.84 ± 0.07 |
 
 ## Usage
 

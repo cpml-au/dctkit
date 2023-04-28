@@ -1,21 +1,19 @@
-# add dependencies from setup.cfg
+# copy from environment.yaml in project root
 name: readthedocs
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.10
-  - pygmo
-  - importlib-metadata
-  - numpy
-  - scipy
-  - jax<=0.4.3
-  - jaxlib<=0.4.3
-  - gmsh
-  - matplotlib
+  - gmsh=4.11.1
+  - jax
   - jaxopt
-  - typing_extensions
+  - numpy=1.24.2
+  - pygmo=2.19.5
+  - python=3.11.0
+  - python-gmsh
+  - scipy=1.10.0
   - typeguard
+  - yaml=0.2.5
   - pip:
     - sphinx_rtd_theme
     - myst-parser[linkify]
