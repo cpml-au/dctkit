@@ -90,7 +90,6 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
 
         # NOTE: minimize returns a float64 array
         u = res.x.astype(dt.float_dtype)
-        minf = res.fun
         toc = time.time()
 
     elif optimizer == "jaxopt":
