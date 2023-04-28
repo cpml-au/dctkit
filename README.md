@@ -8,13 +8,12 @@ testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge
 Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
 
 Features:
-- supports `numpy` and [`jax`](http://github.com/google/jax/) backends for numerical computations
+- uses [`jax`](http://github.com/google/jax/) backend for numerical computations
 - manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
 - manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
-- interface to different optimization packages: [`SciPy`](https://github.com/scipy/scipy), [`jaxopt`](http://github.com/google/jaxopt), and [`pygmo`](https://github.com/esa/pygmo2)
+- interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
 - interface for solving optimal control problems
-- implements the discrete Dirichlet energy and the discrete Poisson model
-- discrete Euler's Elastica model
+- implementation of discrete physical models: Dirichlet energy, Poisson, Euler's Elastica
 
 ## Installation
 
