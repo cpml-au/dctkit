@@ -261,6 +261,7 @@ def compute_boundary_COO(S):
     # compute vals and rows_index
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
+    # vals = vals.astype(dtype=dctkit.float_dtype)
     boundary_COO = (rows_index, column_index, values)
 
     # for triangles and tets, compute B explicitly
