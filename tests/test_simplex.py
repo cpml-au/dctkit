@@ -16,29 +16,20 @@ def test_boundary_COO(int_dtype):
     dctkit.int_dtype = int_dtype.name
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, _ = util.read_mesh(full_path)
-
-    print(f"The number of nodes in the mesh is {numNodes}")
-    print(f"The number of faces in the mesh is {numElements}")
-    print(f"The face matrix is \n {S_2}")
-
-    boundary_tuple, _, _ = simplex.compute_boundary_COO(
-        S_2)
-    print(f"The row index vector is \n {boundary_tuple[0]}")
-    print(f"The column index vector is \n {boundary_tuple[1]}")
-    print(f"The values vector is \n {boundary_tuple[2]}")
+    _, _, S_2, _ = util.read_mesh(full_path)
+    boundary_tuple, _, _ = simplex.compute_boundary_COO(S_2)
     rows_index_true = np.array(
         [0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7], dtype=dctkit.int_dtype)
     column_index_true = np.array(
         [0, 1, 0, 1, 2, 0, 2, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
     values_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1,
                            1, 1, -1], dtype=dctkit.int_dtype)
+    indices_true = np.column_stack([rows_index_true, column_index_true])
 
     assert boundary_tuple[0].dtype == dctkit.int_dtype
-    boundary_true = (rows_index_true, column_index_true, values_true)
+    boundary_true = (values_true, indices_true)
     assert np.alltrue(boundary_tuple[0] == boundary_true[0])
     assert np.alltrue(boundary_tuple[1] == boundary_true[1])
-    assert np.alltrue(boundary_tuple[2] == boundary_true[2])
 
 
 @pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
@@ -68,7 +59,8 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
     rows_true = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=dctkit.int_dtype)
     cols_true = np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype=dctkit.int_dtype)
     vals_true = np.array([-1,  1, -1,  1, -1,  1, -1,  1], dtype=dctkit.int_dtype)
-    boundary_true.append((rows_true, cols_true, vals_true))
+    indices_true = np.column_stack([rows_true, cols_true])
+    boundary_true.append((vals_true, indices_true))
 
     # define true circumcenters
     circ_true = sl.ShiftedList([], -1)
@@ -100,7 +92,7 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
     hodge_inv_true.append(hodge_inv_true_1)
 
     # test boundary
-    for i in range(3):
+    for i in range(2):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
 
     # test circumcenters
@@ -149,12 +141,14 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
                            2, 4, 6, 7], dtype=dctkit.int_dtype)
     values_1_true = np.array([-1, -1, -1, 1, -1, -1, 1, -1, -1,
                              1, 1, -1, 1, 1, 1, 1], dtype=dctkit.int_dtype)
+    indices_1_true = np.column_stack([rows_1_true, cols_1_true])
     rows_2_true = np.array([0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7], dtype=dctkit.int_dtype)
     cols_2_true = np.array([0, 1, 0, 1, 2, 0, 2, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
     values_2_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1,
                              1, 1, -1], dtype=dctkit.int_dtype)
-    boundary_true.append((rows_1_true, cols_1_true, values_1_true))
-    boundary_true.append((rows_2_true, cols_2_true, values_2_true))
+    indices_2_true = np.column_stack([rows_2_true, cols_2_true])
+    boundary_true.append((values_1_true, indices_1_true))
+    boundary_true.append((values_2_true, indices_2_true))
 
     # define true circumcenters
 
@@ -199,7 +193,7 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
     assert S.hodge_star[0].dtype == dctkit.float_dtype
 
     # test boundary
-    for i in range(3):
+    for i in range(2):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
         assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
 

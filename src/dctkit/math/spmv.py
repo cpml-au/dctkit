@@ -48,3 +48,16 @@ def spmv_coo_jax(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.
     vals = vals.astype(dtype=dctkit.float_dtype)
     A_COO = sparse.COO([vals, rows, cols], shape=shape)
     return sparse.coo_matvec(A_COO, v, transpose=transpose)
+
+
+@partial(jit, static_argnums=(2, 3))
+def spmv_bcoo_jax(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
+                  v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
+
+    data, indices = A
+    data = data.astype(dtype=dctkit.float_dtype)
+    A_BCOO = sparse.BCOO([data, indices], shape=shape)
+    if transpose:
+        return A_BCOO.T @ v
+    else:
+        return A_BCOO @ v

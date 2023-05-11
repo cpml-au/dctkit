@@ -269,12 +269,12 @@ def coboundary(c: Cochain) -> Cochain:
         # get the appropriate (primal) boundary matrix
         t = c.complex.boundary[c.dim + 1]
         shape_t = (c.complex.S[c.dim].shape[0], c.complex.S[c.dim+1].shape[0])
-        dc.coeffs = spmv.spmv_coo_jax(t, c.coeffs, transpose=True, shape=shape_t)
+        dc.coeffs = spmv.spmv_bcoo_jax(t, c.coeffs, transpose=True, shape=shape_t)
     else:
         t = c.complex.boundary[c.complex.dim - c.dim]
         shape_t = (c.complex.S[c.complex.dim-c.dim-1].shape[0],
                    c.complex.S[c.complex.dim-c.dim].shape[0])
-        dc.coeffs = spmv.spmv_coo_jax(t, c.coeffs, transpose=False, shape=shape_t)
+        dc.coeffs = spmv.spmv_bcoo_jax(t, c.coeffs, transpose=False, shape=shape_t)
         dc.coeffs *= (-1)**(c.complex.dim - c.dim)
     return dc
 

@@ -262,7 +262,8 @@ def compute_boundary_COO(S):
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
     # vals = vals.astype(dtype=dctkit.float_dtype)
-    boundary_COO = (rows_index, column_index, values)
+    indices = np.column_stack([rows_index, column_index])
+    boundary_BCOO = (values, indices)
 
     # for triangles and tets, compute B explicitly
     if dim > 1:
@@ -281,4 +282,4 @@ def compute_boundary_COO(S):
         B = S
     B.astype(dtype=dctkit.int_dtype)
 
-    return boundary_COO, vals, B
+    return boundary_BCOO, vals, B
