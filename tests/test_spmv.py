@@ -1,6 +1,7 @@
 import dctkit
 from dctkit.math import spmv
 import numpy as np
+from jax.experimental.sparse import BCOO
 
 
 def test_spmv_coo(setup_test):
@@ -14,12 +15,12 @@ def test_spmv_coo(setup_test):
     # multiplication by int-valued arrays not supported
     v = np.array([0, 1, 2], dtype=float_dtype)
     result_true = np.array([2, 3, 10], dtype=float_dtype)
-    result = spmv.spmv_coo_jax(A, v, shape=(3, 3))
+    result = spmv.spmv_coo(A, v, shape=3)
     print(result)
     assert np.allclose(result, result_true)
 
     result_transpose_true = np.array([0, 3, 10], dtype=float_dtype)
-    result = spmv.spmv_coo_jax(A, v, transpose=True, shape=(3, 3))
+    result = spmv.spmv_coo(A, v, transpose=True, shape=3)
     print(result)
     assert np.allclose(result, result_transpose_true)
 
@@ -27,20 +28,19 @@ def test_spmv_coo(setup_test):
 def test_spmv_bcoo(setup_test):
     int_dtype = dctkit.int_dtype
     float_dtype = dctkit.float_dtype
-    # rows = np.array([0, 0, 1, 2], dtype=int_dtype)
-    # cols = np.array([0, 1, 1, 2], dtype=int_dtype)
+
     indices = np.array([[0, 0], [0, 1], [1, 1], [2, 2]], dtype=int_dtype)
     data = np.array([1, 2, 3, 5], dtype=float_dtype)
-    A = [data, indices]
+    A = BCOO([data, indices], shape=(3, 3))
 
     # multiplication by int-valued arrays not supported
     v = np.array([0, 1, 2], dtype=float_dtype)
     result_true = np.array([2, 3, 10], dtype=float_dtype)
-    result = spmv.spmv_bcoo_jax(A, v, shape=(3, 3))
+    result = spmv.spmv_bcoo_jax(A, v)
     print(result)
     assert np.allclose(result, result_true)
 
     result_transpose_true = np.array([0, 3, 10], dtype=float_dtype)
-    result = spmv.spmv_bcoo_jax(A, v, transpose=True, shape=(3, 3))
+    result = spmv.spmv_bcoo_jax(A, v, transpose=True)
     print(result)
     assert np.allclose(result, result_transpose_true)

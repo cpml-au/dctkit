@@ -5,8 +5,8 @@ from dctkit.mesh import simplex, util
 from dctkit.math import shifted_list as sl
 import os
 import matplotlib.tri as tri
-import matplotlib.pyplot as plt
 import pytest
+from jax.experimental import sparse
 
 cwd = os.path.dirname(__file__)
 
@@ -17,19 +17,18 @@ def test_boundary_COO(int_dtype):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     _, _, S_2, _ = util.read_mesh(full_path)
-    boundary_tuple, _, _ = simplex.compute_boundary_COO(S_2)
+    boundary, _, _ = simplex.compute_boundary_COO(S_2)
     rows_index_true = np.array(
         [0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7], dtype=dctkit.int_dtype)
     column_index_true = np.array(
         [0, 1, 0, 1, 2, 0, 2, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
     values_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1,
-                           1, 1, -1], dtype=dctkit.int_dtype)
+                           1, 1, -1], dtype=dctkit.float_dtype)
     indices_true = np.column_stack([rows_index_true, column_index_true])
 
-    assert boundary_tuple[0].dtype == dctkit.int_dtype
-    boundary_true = (values_true, indices_true)
-    assert np.alltrue(boundary_tuple[0] == boundary_true[0])
-    assert np.alltrue(boundary_tuple[1] == boundary_true[1])
+    # NOTE: mesh1 has 8 edges
+    boundary_true = sparse.BCOO([values_true, indices_true], shape=(8, S_2.shape[0]))
+    assert np.allclose(boundary.todense(), boundary_true.todense())
 
 
 @pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
@@ -54,13 +53,14 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
     S.get_dual_volumes()
     S.get_hodge_star()
 
-    # define true boundary values
-    boundary_true = sl.ShiftedList([], -1)
+    # define true boundary operator from edges to nodes
+    # boundary_true = sl.ShiftedList([], -1)
     rows_true = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=dctkit.int_dtype)
     cols_true = np.array([0, 0, 1, 1, 2, 2, 3, 3], dtype=dctkit.int_dtype)
-    vals_true = np.array([-1,  1, -1,  1, -1,  1, -1,  1], dtype=dctkit.int_dtype)
+    vals_true = np.array([-1,  1, -1,  1, -1,  1, -1,  1], dtype=dctkit.float_dtype)
     indices_true = np.column_stack([rows_true, cols_true])
-    boundary_true.append((vals_true, indices_true))
+    boundary_true = sparse.BCOO([vals_true, indices_true],
+                                shape=(num_nodes, num_nodes-1))
 
     # define true circumcenters
     circ_true = sl.ShiftedList([], -1)
@@ -92,8 +92,7 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
     hodge_inv_true.append(hodge_inv_true_1)
 
     # test boundary
-    for i in range(2):
-        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
+    assert np.allclose(S.boundary[1].todense(), boundary_true.todense())
 
     # test circumcenters
     assert np.allclose(S.circ[1], circ_true[1])
@@ -124,34 +123,32 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, x = util.read_mesh(full_path)
 
-    print(f"The number of nodes in the mesh is {numNodes}")
-    print(f"The number of faces in the mesh is {numElements}")
-    print(f"The face matrix is \n {S_2}")
-
     S = simplex.SimplicialComplex(S_2, x)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
-    # define true boundary values
-    boundary_true = sl.ShiftedList([], -1)
+
+    # define true boundary matrices
+    boundary_true = sl.ShiftedList([None]*2, -1)
+    # boundary_true = [None]*3
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
                            4, 4, 4, 4], dtype=dctkit.int_dtype)
     cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 5, 6, 3, 5, 7,
                            2, 4, 6, 7], dtype=dctkit.int_dtype)
     values_1_true = np.array([-1, -1, -1, 1, -1, -1, 1, -1, -1,
-                             1, 1, -1, 1, 1, 1, 1], dtype=dctkit.int_dtype)
+                             1, 1, -1, 1, 1, 1, 1], dtype=dctkit.float_dtype)
     indices_1_true = np.column_stack([rows_1_true, cols_1_true])
     rows_2_true = np.array([0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7], dtype=dctkit.int_dtype)
     cols_2_true = np.array([0, 1, 0, 1, 2, 0, 2, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
     values_2_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1,
-                             1, 1, -1], dtype=dctkit.int_dtype)
+                             1, 1, -1], dtype=dctkit.float_dtype)
     indices_2_true = np.column_stack([rows_2_true, cols_2_true])
-    boundary_true.append((values_1_true, indices_1_true))
-    boundary_true.append((values_2_true, indices_2_true))
+    boundary_true[1] = sparse.BCOO([values_1_true, indices_1_true], shape=(numNodes, 8))
+    boundary_true[2] = sparse.BCOO(
+        [values_2_true, indices_2_true], shape=(8, numElements))
 
     # define true circumcenters
-
     circ_true = sl.ShiftedList([], -1)
     circ_1_true = np.array([[0.5, 0, 0], [1, 0.5, 0], [0.75, 0.25, 0], [0, 0.5, 0],
                            [0.25, 0.25, 0], [0.5, 1, 0], [0.75, 0.75, 0],
@@ -186,28 +183,17 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
     hodge_true.append(hodge_1_true)
     hodge_true.append(hodge_2_true)
 
-    assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype
     assert S.primal_volumes[1].dtype == dctkit.float_dtype
     assert S.dual_volumes[1].dtype == dctkit.float_dtype
     assert S.hodge_star[0].dtype == dctkit.float_dtype
 
-    # test boundary
+    # test boundary, circumcenters, primal volumes and dual volumes
     for i in range(2):
-        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
-        assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
-
-    # test circumcenters
-    assert np.allclose(S.circ[1], circ_true[1])
-    assert np.allclose(S.circ[2], circ_true[2])
-
-    # test primal volumes
-    assert np.allclose(S.primal_volumes[1], pv_true[1])
-    assert np.allclose(S.primal_volumes[2], pv_true[2])
-
-    # test dual volumes
-    assert np.allclose(S.dual_volumes[1], dv_true[1])
-    assert np.allclose(S.dual_volumes[2], dv_true[2])
+        assert np.allclose(S.boundary[i].todense(), boundary_true[i].todense())
+        assert np.allclose(S.circ[i], circ_true[i])
+        assert np.allclose(S.primal_volumes[i], pv_true[i])
+        assert np.allclose(S.dual_volumes[i], dv_true[i])
 
     # test hodge star
     for i in range(3):
@@ -217,8 +203,8 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
     _, _, S_2_new, node_coords_new = util.generate_square_mesh(0.4)
     triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
 
-    plt.triplot(triang, 'ko-')
-    plt.show()
+    # plt.triplot(triang, 'ko-')
+    # plt.show()
 
     # FIXME: make this part of the test more clear (remove long instructions between
     # paretheses)
@@ -232,11 +218,3 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
         assert np.allclose(
             cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
                 p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
-
-
-if __name__ == "__main__":
-    test_boundary_COO(dctkit.IntDtype.int32)
-    test_boundary_COO(dctkit.IntDtype.int64)
-    test_simplicial_complex_1(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
-    test_simplicial_complex_2(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
-    test_simplicial_complex_2(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)

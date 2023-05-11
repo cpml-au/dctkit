@@ -1,4 +1,5 @@
 import numpy as np
+from jax.experimental import sparse
 import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl
@@ -228,9 +229,7 @@ def compute_boundary_COO(S):
     # FIXME: avoid making a copy and sorting every time
     F = S.copy()
     F.sort(axis=1)
-    # ic(F)
     # F_2 = S[np.lexsort(S.T[::-1])]
-    # ic(F_2)
 
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
     S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=dctkit.int_dtype)
@@ -254,6 +253,7 @@ def compute_boundary_COO(S):
     # FIXME: maybe use sort
     faces_ordered = S_pm1_ext[np.lexsort(S_pm1_ext[:, :-2].T[::-1])]
     values = faces_ordered[:, -2]
+    values = values.astype(dtype=dctkit.float_dtype)
     column_index = faces_ordered[:, -1]
     faces = faces_ordered[:, :-2]
 
@@ -261,9 +261,9 @@ def compute_boundary_COO(S):
     # compute vals and rows_index
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
-    # vals = vals.astype(dtype=dctkit.float_dtype)
+    num_faces = len(vals)
     indices = np.column_stack([rows_index, column_index])
-    boundary_BCOO = (values, indices)
+    boundary_BCOO = sparse.BCOO([values, indices], shape=(num_faces, num_simplices))
 
     # for triangles and tets, compute B explicitly
     if dim > 1:
