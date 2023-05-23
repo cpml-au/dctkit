@@ -8,10 +8,8 @@ import os
 from dctkit.apps import elastica as el
 import numpy.typing as npt
 from dctkit.dec import cochain as C
-# import pytest
 
 
-# @pytest.mark.parametrize('tune_EI0', [True, False])
 def test_elastica_energy(setup_test):
     data = "data/xy_F_20.txt"
     F = -20
@@ -110,8 +108,6 @@ def test_elastica_equation(setup_test):
 
     B = 7.854
 
-    penalty = 10.
-
     ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=1.)
     num_nodes = ela.S.num_nodes
 
@@ -131,8 +127,8 @@ def test_elastica_equation(setup_test):
         theta_true[i] = np.arctan(
             (y_true[i+1]-y_true[i])/(x_true[i+1]-x_true[i]))
 
-    # initial guess for the angles
-    theta_0 = theta_true[0]*np.zeros(num_elements, dtype=dt.float_dtype)
+    # initial guess for the angles (EXCEPT PRESCRIBED ANGLE AT LEFT END)
+    theta_0 = np.zeros(num_elements-1, dtype=dt.float_dtype)
 
     # internal cochain
     intc = np.ones(num_nodes, dtype=dt.float_dtype)
@@ -140,28 +136,31 @@ def test_elastica_equation(setup_test):
     intc[-1] = 0.
     int_coch = C.CochainP0(ela.S, intc)
 
-    mask = np.ones(len(theta_0), dtype=dt.float_dtype)
+    mask = np.ones(num_elements, dtype=dt.float_dtype)
     mask[0] = 0.
     mask_coch = C.CochainP1(ela.S, mask)
 
     def obj(x: npt.NDArray) -> Array:
-        theta = C.CochainD0(ela.S, x)
-        dtheta = C.coboundary(theta)
-        # primal 0-cochain
+        # add boundary conditions
+        theta = jnp.insert(x, 0, theta_true[0])
+        theta_coch = C.CochainD0(ela.S, theta)
+        # curvature at primal nodes (primal 0-cochain)
+        dtheta = C.coboundary(theta_coch)
         curv = C.cochain_mul(int_coch, C.star(dtheta))
         # primal 1-cochain
-        load = C.scalar_mul(C.star(C.cos(theta)), F)
-
-        residual = C.add(C.coboundary(C.scalar_mul(curv, B)), load)
+        load = C.scalar_mul(C.star(C.cos(theta_coch)), F)
+        moment = C.scalar_mul(curv, B)
+        residual = C.add(C.coboundary(moment), load)
         mask_residual = C.cochain_mul(mask_coch, residual)
-        penalty_term = penalty*(theta.coeffs[0] - theta_true[0])**2
-        return C.inner_product(mask_residual, mask_residual) + penalty_term
+
+        return C.inner_product(mask_residual, mask_residual)
 
     prb = optctrl.OptimizationProblem(
-        dim=num_elements, state_dim=num_elements, objfun=obj)
+        dim=num_elements-1, state_dim=num_elements-1, objfun=obj)
 
     prb.set_obj_args({})
-    theta = prb.run(x0=theta_0)
+    sol = prb.run(x0=theta_0)
+    theta = jnp.insert(sol, 0, theta_true[0])
 
     # reconstruct x, y
     cos_theta = h*jnp.cos(theta)
@@ -172,7 +171,4 @@ def test_elastica_equation(setup_test):
     y = jnp.linalg.solve(transform, b_y)
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
-    print(theta)
-    print(theta_true)
-    print(prb.last_opt_result)
     assert error <= 2e-2
