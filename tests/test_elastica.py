@@ -153,7 +153,8 @@ def test_elastica_equation(setup_test):
     # cochain to zero residual on elements where BC is prescribed
     mask = np.ones(num_elements, dtype=dt.float_dtype)
     mask[0] = 0.
-    mask_coch = C.CochainP1(ela.S, mask)
+    #mask_coch = C.CochainP1(ela.S, mask)
+    mask_coch = C.CochainD0(ela.S, mask)
 
     def obj(x: npt.NDArray) -> Array:
         # apply Dirichlet BC at left end
@@ -164,12 +165,13 @@ def test_elastica_equation(setup_test):
         dtheta = C.coboundary(theta_coch)
         curv = C.cochain_mul(int_coch, C.star(dtheta))
 
-        load = C.scalar_mul(C.star(C.cos(theta_coch)), f)
-
+        # load = C.star(C.scalar_mul(C.cos(theta_coch), f))
+        load = C.scalar_mul(C.cos(theta_coch), f)
         # dimensionless bending moment
         moment = curv
 
-        residual = C.sub(C.coboundary(moment), load)
+        #residual = C.sub(C.coboundary(moment), load)
+        residual = C.sub(C.codifferential(C.star(moment)), load)
         mask_residual = C.cochain_mul(mask_coch, residual)
 
         return C.inner_product(mask_residual, mask_residual)

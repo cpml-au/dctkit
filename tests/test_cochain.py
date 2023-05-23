@@ -64,7 +64,7 @@ def test_cochain(setup_test):
     assert np.allclose(coeffs_0, coeffs_0_true)
     assert np.allclose(coeffs_1, coeffs_1_true)
 
-    # codifferential test (we need a well-centered mesh)
+    # primal codifferential test (we need a well-centered mesh)
 
     _, _, S_2_new, node_coords_new = util.generate_square_mesh(0.4)
     triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
@@ -78,10 +78,11 @@ def test_cochain(setup_test):
     cpx_new.get_dual_volumes()
     cpx_new.get_hodge_star()
 
-    num_0 = cpx_new.S[1].shape[0]
-    num_1 = cpx_new.S[2].shape[0]
-    v = np.random.rand(num_0).astype(dtype=dctkit.float_dtype)
-    w = np.random.rand(num_1).astype(dtype=dctkit.float_dtype)
+    num_0 = cpx_new.num_nodes
+    num_1 = cpx_new.S[1].shape[0]
+    num_2 = cpx_new.S[2].shape[0]
+    v = np.random.rand(num_1).astype(dtype=dctkit.float_dtype)
+    w = np.random.rand(num_2).astype(dtype=dctkit.float_dtype)
     c = cochain.Cochain(dim=1, is_primal=True, complex=cpx_new, coeffs=v)
     d = cochain.Cochain(dim=2, is_primal=True, complex=cpx_new, coeffs=w)
     inner_product_standard = cochain.inner_product(cochain.coboundary(c), d)
@@ -89,6 +90,38 @@ def test_cochain(setup_test):
 
     assert inner_product_standard.dtype == dctkit.float_dtype
     assert np.allclose(inner_product_standard, inner_product_codiff)
+
+    # dual codifferential test 1D
+    S_1, x = util.generate_1_D_mesh(10, 1)
+    S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+    S.get_dual_volumes()
+    S.get_hodge_star()
+    n_0 = S.num_nodes
+    n_1 = S.S[1].shape[0]
+    a_vec = np.arange(n_1, dtype=dctkit.float_dtype)
+    b_vec = np.arange(n_0, dtype=dctkit.float_dtype)
+    a = cochain.Cochain(dim=0, is_primal=False, complex=S, coeffs=a_vec)
+    b = cochain.Cochain(dim=1, is_primal=False, complex=S, coeffs=b_vec)
+    dual_inner = cochain.inner_product(cochain.coboundary(a), b)
+    dual_cod_inner = cochain.inner_product(a, cochain.codifferential(b))
+    assert np.allclose(dual_inner, dual_cod_inner)
+
+    # dual codifferential test 2D
+    alpha0_vec = np.arange(num_2, dtype=dctkit.float_dtype)
+    alpha1_vec = np.arange(num_1, dtype=dctkit.float_dtype)
+    alpha2_vec = np.arange(num_0, dtype=dctkit.float_dtype)
+    alpha0 = cochain.Cochain(dim=0, is_primal=False, complex=cpx_new, coeffs=alpha0_vec)
+    alpha1 = cochain.Cochain(dim=1, is_primal=False, complex=cpx_new, coeffs=alpha1_vec)
+    alpha2 = cochain.Cochain(dim=2, is_primal=False, complex=cpx_new, coeffs=alpha2_vec)
+    dual_inner_1 = cochain.inner_product(cochain.coboundary(alpha0), alpha1)
+    dual_inner_2 = cochain.inner_product(cochain.coboundary(alpha1), alpha2)
+    dual_cod_inner_1 = cochain.inner_product(alpha0, cochain.codifferential(alpha1))
+    dual_cod_inner_2 = cochain.inner_product(alpha1, cochain.codifferential(alpha2))
+    assert np.allclose(dual_inner_1, dual_cod_inner_1)
+    assert np.allclose(dual_inner_2, dual_cod_inner_2)
+
 
     # inner product test
     v_0_2 = np.array([5, 6, 7, 8, 9], dtype=dctkit.float_dtype)
