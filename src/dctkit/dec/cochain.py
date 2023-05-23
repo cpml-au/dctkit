@@ -334,9 +334,9 @@ def codifferential(c: Cochain) -> Cochain:
     k = c.dim
     n = c.complex.dim
     cob = coboundary(star(c))
-    d_star_c = Cochain(k-1, c.is_primal, c.complex, (-1)
-                       ** (n*(k-1)+1)*star(cob).coeffs)
-    return d_star_c
+    if c.is_primal:
+        return Cochain(k-1, c.is_primal, c.complex, (-1)**(n*(k-1)+1)*star(cob).coeffs)
+    return Cochain(k-1, c.is_primal, c.complex, (-1)**(k*(n+1-k))*star(cob).coeffs)
 
 
 def laplacian(c: Cochain) -> Cochain:
