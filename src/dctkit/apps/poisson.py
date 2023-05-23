@@ -69,7 +69,7 @@ def obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, k:
     return energy
 
 
-def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, 
+def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex,
                      k: float, boundary_values:
                      Tuple[npt.NDArray, npt.NDArray], gamma: float,
                      mask: npt.NDArray) -> Array | npt.NDArray:
