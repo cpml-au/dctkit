@@ -8,25 +8,21 @@ import numpy.typing as npt
 from jax import Array
 
 
-class ElasticaProblem():
-    """Elastica problem class.
+class Elastica():
+    """Euler's Elastica class.
 
     Args:
-        num_elements (float): number of elements of primal mesh.
-        L (float): length of the rod.
-        rho (float): ratio between final and initial radius of the section of the rod.
+        num_elements: number of elements of primal mesh.
+        L: length of the rod.
     """
 
-    def __init__(self, num_elements: float, L: float, rho: float) -> None:
+    def __init__(self, num_elements: float, L: float) -> None:
         self.num_elements = num_elements
         self.L = L
-        self.rho = rho
         self.get_elastica_mesh()
-        self.get_radius()
 
-    def get_elastica_mesh(self) -> None:
-        """Routine to construct the normalized simplicial complex"""
-        # load simplicial complex
+    def get_elastica_mesh(self):
+        """Constructs the normalized simplicial complex in the interval [0,1]."""
         num_nodes = self.num_elements + 1
         S_1, x = util.generate_1_D_mesh(num_nodes, 1)
         self.S = sim.SimplicialComplex(S_1, x, is_well_centered=True)
@@ -35,61 +31,63 @@ class ElasticaProblem():
         self.S.get_dual_volumes()
         self.S.get_hodge_star()
 
-    def get_radius(self) -> None:
-        """Routine to compute the radius vector"""
-        r_node = (1 - (1 - self.rho)*self.S.node_coord[:, 0])**4
-        self.r = C.CochainP0(complex=self.S, coeffs=r_node)
+        # define internal cochain to compute the energy only in the interior points
+        int_vec = np.ones(self.S.num_nodes, dtype=dt.float_dtype)
+        int_vec[0] = 0
+        int_vec[-1] = 0
+        self.int_coch = C.CochainP0(complex=self.S, coeffs=int_vec)
+        # define the unit cochain on the dual nodes
+        self.ones_coch = C.CochainD0(complex=self.S,
+                                     coeffs=np.ones(self.num_elements,
+                                                    dtype=dt.float_dtype))
 
-    def energy_elastica(self, theta: npt.NDArray, EI0: npt.NDArray, theta_0: float,
-                        F: float) -> float:
-        """Routine that compute the elastica energy.
+    def energy(self, theta: npt.NDArray, B: float, theta_0: float, F: float) -> Array:
+        """Computes the total potential energy.
 
         Args:
-            theta (np.array): current configuration angles.
-            EI0 (np.array): product between E and I_0.
-            theta_0 (float): value of theta in the first primal node (boundary
-            condition).
-            F (float): value of the force.
+            theta: current configuration angles.
+            B: bending stiffness.
+            theta_0: prescribed value of the angle at the left end (cantilever).
+            F: vertical component of the applied force at the right end.
 
         Returns:
-            float: the value of the energy.
+            value of the energy.
 
         """
-        # add boundary conditions
+        # apply bc at left end
         theta = jnp.insert(theta, 0, theta_0)
-        # define A
-        A = F*self.L**2/EI0
-        # define internal cochain to compute the energy only in the interior points
-        internal_vec = np.ones(self.S.num_nodes, dtype=dt.float_dtype)
-        internal_vec[0] = 0
-        internal_vec[-1] = 0
-        internal_coch = C.CochainP0(complex=self.S, coeffs=internal_vec)
-        # define B
-        B_vec = self.r.coeffs
-        B = C.CochainP0(complex=self.S, coeffs=B_vec)
-        B_in = C.cochain_mul(B, internal_coch)
         theta_coch = C.CochainD0(complex=self.S, coeffs=theta)
-        const = C.CochainD0(complex=self.S, coeffs=A *
-                            np.ones(self.S.num_nodes-1, dtype=dt.float_dtype))
-        # get curvature and momementum
-        curvature = C.star(C.coboundary(theta_coch))
-        momentum = C.cochain_mul(B_in, curvature)
-        energy = 0.5*C.inner_product(momentum, curvature) - \
-            C.inner_product(const, C.sin(theta_coch))
+
+        # define dimensionless load
+        A = -F*self.L**2/B
+
+        # curvature at internal nodes
+        curvature = C.cochain_mul(self.int_coch, C.star(C.coboundary(theta_coch)))
+
+        # bending moment
+        moment = C.scalar_mul(curvature, B)
+
+        # potential of the applied load
+        A_coch = C.scalar_mul(self.ones_coch, A)
+        load = -C.inner_product(C.sin(theta_coch), A_coch)
+
+        energy = 0.5*C.inner_product(moment, curvature) - load
+
         return energy
 
-    def obj_fun_theta(self, theta_guess: npt.NDArray, EI_guess: npt.NDArray,
+    def obj_stiffness(self, theta: npt.NDArray, B: float,
                       theta_true: npt.NDArray) -> Array:
-        """Objective function for the bilevel problem (inverse problem).
+        """Objective function for the bending stiffness identification problem
+            (inverse problem).
 
         Args:
-            theta_guess: candidate solution.
-            EI_guess: candidate EI.
+            theta: candidate solution (except left angle).
+            B: candidate bending stiffness.
             theta_true: true solution.
 
         Returns:
-            float: error between the candidate and the true theta
+            error between the candidate and the true solutions.
 
         """
-        theta_guess = jnp.insert(theta_guess, 0, theta_true[0])
-        return jnp.sum(jnp.square(theta_guess-theta_true))
+        theta = jnp.insert(theta, 0, theta_true[0])
+        return jnp.sum(jnp.square(theta-theta_true))

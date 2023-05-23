@@ -69,7 +69,8 @@ def obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, k:
     return energy
 
 
-def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
+def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, 
+                     k: float, boundary_values:
                      Tuple[npt.NDArray, npt.NDArray], gamma: float,
                      mask: npt.NDArray) -> Array | npt.NDArray:
     """Gradient of the objective function of the Poisson optimization problem.

@@ -1,7 +1,7 @@
 import numpy as np
 import dctkit as dt
 import jax.numpy as jnp
-from jax import grad, Array
+from jax import jit, grad, Array
 from dctkit.math.opt import optctrl
 from scipy import sparse
 import os
@@ -48,7 +48,7 @@ def compute_true_solution(data: npt.NDArray, sampling: int,
 
 def test_elastica_energy(setup_test):
     data = "data/xy_F_20.txt"
-    F = -20
+    F = -20.
     np.random.seed(42)
 
     # load true data
@@ -63,20 +63,24 @@ def test_elastica_energy(setup_test):
     L = 1
     h = L/(num_elements)
 
-    ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=1.)
+    ela = el.Elastica(num_elements=num_elements, L=L)
     num_nodes = ela.S.num_nodes
 
     # initial guess for the angles (EXCEPT THE FIRST ANGLE, FIXED BY BC)
-    theta_0 = 0.1*np.random.rand(num_elements-1).astype(dt.float_dtype)
+    theta_in = 0.1*np.random.rand(num_elements-1).astype(dt.float_dtype)
+
+    B_in = 1.
 
     # compute true solution
     theta_true, x_true, y_true = compute_true_solution(data, sampling, num_elements)
 
+    energy_grad = jit(grad(ela.energy))
+
     # state function: stationarity conditions of the elastic energy
-    def statefun(x: npt.NDArray, theta_0: npt.NDArray, F: float) -> Array:
-        u = x[:-1]
-        EI0 = x[-1]
-        return grad(ela.energy_elastica)(u, EI0, theta_0, F)
+    def statefun(x: npt.NDArray, theta_0: float, F: float) -> Array:
+        theta = x[:-1]
+        B = x[-1]
+        return energy_grad(theta, B=B, theta_0=theta_0, F=F)
 
     # define extra_args
     constraint_args = {'theta_0': theta_true[0], 'F': F}
@@ -84,8 +88,8 @@ def test_elastica_energy(setup_test):
 
     def obj(x: npt.NDArray, theta_true: npt.NDArray) -> Array:
         theta_guess = x[:-1]
-        EI_guess = x[-1]
-        return ela.obj_fun_theta(theta_guess, EI_guess, theta_true)
+        B_guess = x[-1]
+        return ela.obj_stiffness(theta_guess, B_guess, theta_true)
 
     prb = optctrl.OptimalControlProblem(objfun=obj,
                                         statefun=statefun,
@@ -93,11 +97,14 @@ def test_elastica_energy(setup_test):
                                         nparams=num_elements,
                                         constraint_args=constraint_args,
                                         obj_args=obj_args)
-    EI0_0 = 1*np.ones(1, dtype=dt.float_dtype)
-    x0 = np.concatenate((theta_0, EI0_0))
+
+    # initial guess for the bending stiffness
+    B_in = 1*np.ones(1, dtype=dt.float_dtype)
+    x0 = np.concatenate((theta_in, B_in))
     x = prb.run(x0=x0)
-    theta = x[:-1]
+
     # extend solution array with boundary element
+    theta = x[:-1]
     theta = np.insert(theta, 0, theta_true[0])
 
     # reconstruct x, y
@@ -128,7 +135,7 @@ def test_elastica_equation(setup_test):
 
     f = -F*L**2/B
 
-    ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=1.)
+    ela = el.Elastica(num_elements=num_elements, L=L)
     num_nodes = ela.S.num_nodes
 
     # compute true solution

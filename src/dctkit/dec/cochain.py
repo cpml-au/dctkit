@@ -301,7 +301,7 @@ def star(c: Cochain) -> Cochain:
     return star_c
 
 
-def inner_product(c1: Cochain, c2: Cochain) -> npt.NDArray | Array:
+def inner_product(c1: Cochain, c2: Cochain) -> Array:
     """Computes the inner product between two cochains.
 
     Args:

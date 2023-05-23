@@ -90,7 +90,7 @@ class OptimizationProblem():
     def run(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
             ftol_rel: float = 1e-5, maxeval: int = 500) -> npt.NDArray:
         prb = pg.problem(self)
-        # print(prb)
+
         if self.constr_problem:
             algo = "slsqp"
         algo = pg.algorithm(pg.nlopt(solver=algo))
@@ -101,7 +101,8 @@ class OptimizationProblem():
         pop.push_back(x0)
         # algo.set_verbosity(1)
         pop = algo.evolve(pop)  # type: ignore
-        self.last_opt_result = algo.extract(pg.nlopt).get_last_opt_result()
+        self.last_opt_result = algo.extract(  # type: ignore
+            pg.nlopt).get_last_opt_result()
         u = pop.champion_x
         check_type(u, npt.NDArray)
         return u
