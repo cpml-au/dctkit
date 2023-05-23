@@ -90,8 +90,8 @@ def test_elastica_energy(setup_test):
 
 
 def test_elastica_equation(setup_test):
-    data = "data/xy_F_10.txt"
-    F = -10.
+    data = "data/xy_F_20.txt"
+    F = -20.
     np.random.seed(42)
 
     # load true data
@@ -107,6 +107,8 @@ def test_elastica_equation(setup_test):
     h = L/(num_elements)
 
     B = 7.854
+
+    f = -F*L**2/B
 
     ela = el.ElasticaProblem(num_elements=num_elements, L=L, rho=1.)
     num_nodes = ela.S.num_nodes
@@ -144,13 +146,17 @@ def test_elastica_equation(setup_test):
         # add boundary conditions
         theta = jnp.insert(x, 0, theta_true[0])
         theta_coch = C.CochainD0(ela.S, theta)
-        # curvature at primal nodes (primal 0-cochain)
+
+        # dimensionless curvature at primal nodes (primal 0-cochain)
         dtheta = C.coboundary(theta_coch)
         curv = C.cochain_mul(int_coch, C.star(dtheta))
-        # primal 1-cochain
-        load = C.scalar_mul(C.star(C.cos(theta_coch)), F)
-        moment = C.scalar_mul(curv, B)
-        residual = C.add(C.coboundary(moment), load)
+
+        load = C.scalar_mul(C.star(C.cos(theta_coch)), f)
+
+        # dimensionless bending moment
+        moment = curv
+
+        residual = C.sub(C.coboundary(moment), load)
         mask_residual = C.cochain_mul(mask_coch, residual)
 
         return C.inner_product(mask_residual, mask_residual)
