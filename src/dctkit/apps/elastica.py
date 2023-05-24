@@ -59,7 +59,7 @@ class Elastica():
         theta_coch = C.CochainD0(complex=self.S, coeffs=theta)
 
         # define dimensionless load
-        A = -F*self.L**2/B
+        A = F*self.L**2/B
 
         # curvature at internal nodes
         curvature = C.cochain_mul(self.int_coch, C.star(C.coboundary(theta_coch)))
@@ -69,7 +69,7 @@ class Elastica():
 
         # potential of the applied load
         A_coch = C.scalar_mul(self.ones_coch, A)
-        load = -C.inner_product(C.sin(theta_coch), A_coch)
+        load = C.inner_product(C.sin(theta_coch), A_coch)
 
         energy = 0.5*C.inner_product(moment, curvature) - load
 
