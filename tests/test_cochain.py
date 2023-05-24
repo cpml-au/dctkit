@@ -122,7 +122,6 @@ def test_cochain(setup_test):
     assert np.allclose(dual_inner_1, dual_cod_inner_1)
     assert np.allclose(dual_inner_2, dual_cod_inner_2)
 
-
     # inner product test
     v_0_2 = np.array([5, 6, 7, 8, 9], dtype=dctkit.float_dtype)
     c_0_2 = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0_2)
