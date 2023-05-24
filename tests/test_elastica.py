@@ -133,7 +133,7 @@ def test_elastica_equation(setup_test):
 
     B = 7.854
 
-    f = -F*L**2/B
+    A = F*L**2/B
 
     ela = el.Elastica(num_elements=num_elements, L=L)
     num_nodes = ela.S.num_nodes
@@ -166,7 +166,7 @@ def test_elastica_equation(setup_test):
         curv = C.cochain_mul(int_coch, C.star(dtheta))
 
         # load = C.star(C.scalar_mul(C.cos(theta_coch), f))
-        load = C.scalar_mul(C.cos(theta_coch), f)
+        load = C.scalar_mul(C.cos(theta_coch), A)
         # dimensionless bending moment
         moment = curv
 
