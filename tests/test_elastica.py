@@ -115,8 +115,8 @@ def test_elastica_energy(setup_test):
 
 
 def test_elastica_equation(setup_test):
-    data = "data/xy_F_20.txt"
-    F = -20.
+    data = "data/xy_F_35.txt"
+    F = -35.
     np.random.seed(42)
 
     # load true data
@@ -170,9 +170,10 @@ def test_elastica_equation(setup_test):
         moment = curv
 
         residual = C.sub(C.codifferential(C.star(moment)), load)
-        mask_residual = C.cochain_mul(mask_coch, residual)
+        # mask_residual = C.cochain_mul(mask_coch, residual)
 
-        return C.inner_product(mask_residual, mask_residual)
+        # return C.inner_product(mask_residual, mask_residual)
+        return jnp.linalg.norm(residual.coeffs[1:])
 
     prb = optctrl.OptimizationProblem(
         dim=num_elements-1, state_dim=num_elements-1, objfun=obj)
@@ -185,4 +186,112 @@ def test_elastica_equation(setup_test):
     x, y = reconstruct_xy(theta, h, num_nodes)
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
+    assert error <= 2e-2
+
+
+def test_elastica_equation_tuneB(setup_test):
+    data = "data/xy_F_35.txt"
+    F = -35.
+    np.random.seed(42)
+
+    # load true data
+    filename = os.path.join(os.path.dirname(__file__), data)
+    data = np.genfromtxt(filename)
+
+    # sampling factor for true data
+    sampling = 10
+
+    num_elements = 10
+
+    L = 1
+    h = L/(num_elements)
+
+    ela = el.Elastica(num_elements=num_elements, L=L)
+    num_nodes = ela.S.num_nodes
+
+    # initial guess for the angles (EXCEPT THE FIRST ANGLE, FIXED BY BC)
+    theta_in = np.zeros(num_elements-1, dtype=dt.float_dtype)
+
+    B_in = 1.
+
+    # compute true solution
+    theta_true, x_true, y_true = compute_true_solution(data, sampling, num_elements)
+
+    # internal cochain
+    intc = np.ones(num_nodes, dtype=dt.float_dtype)
+    intc[0] = 0.
+    intc[-1] = 0.
+    int_coch = C.CochainP0(ela.S, intc)
+
+    # cochain to zero residual on elements where BC is prescribed
+    mask = np.ones(num_elements, dtype=dt.float_dtype)
+    mask[0] = 0.
+    mask_coch = C.CochainD0(ela.S, mask)
+
+    def energy(theta: npt.NDArray, B, theta_0, F) -> Array:
+        # apply Dirichlet BC at left end
+        theta = jnp.insert(theta, 0, theta_0)
+        theta_coch = C.CochainD0(ela.S, theta)
+
+        # dimensionless curvature at primal nodes (primal 0-cochain)
+        dtheta = C.coboundary(theta_coch)
+        curv = C.cochain_mul(int_coch, C.star(dtheta))
+
+        A = F*L**2/B
+
+        A_coch = C.CochainD0(ela.S, A*jnp.ones(num_elements, dtype=dt.float_dtype))
+
+        load = C.cochain_mul(C.cos(theta_coch), A_coch)
+
+        # dimensionless bending moment
+        moment = curv
+
+        residual = C.sub(C.codifferential(C.star(moment)), load)
+        # mask_residual = C.cochain_mul(mask_coch, residual)
+
+        # return jnp.linalg.norm(residual.coeffs[1:])
+        return residual.coeffs[1:]
+
+    # energy_grad = jit(grad(energy))
+    energy_grad = energy
+
+    # state function: stationarity conditions of the elastic energy
+
+    def statefun(x: npt.NDArray, theta_0: float, F: float) -> Array:
+        theta = x[:-1]
+        B = x[-1]
+        return energy_grad(theta, B=B, theta_0=theta_0, F=F)
+
+    # define extra_args
+    constraint_args = {'theta_0': theta_true[0], 'F': F}
+    obj_args = {'theta_true': theta_true}
+
+    def obj(x: npt.NDArray, theta_true: npt.NDArray) -> Array:
+        theta_guess = x[:-1]
+        B_guess = x[-1]
+        return ela.obj_stiffness(theta_guess, B_guess, theta_true)
+
+    prb = optctrl.OptimalControlProblem(objfun=obj,
+                                        statefun=statefun,
+                                        state_dim=num_elements-1,
+                                        nparams=num_elements,
+                                        constraint_args=constraint_args,
+                                        obj_args=obj_args)
+
+    # initial guess for the bending stiffness
+    B_in = 1*np.ones(1, dtype=dt.float_dtype)
+    x0 = np.concatenate((theta_in, B_in))
+    x = prb.run(x0=x0)
+
+    print(x[-1])
+    # extend solution array with boundary element
+    theta = x[:-1]
+    theta = np.insert(theta, 0, theta_true[0])
+
+    # reconstruct x, y
+    x, y = reconstruct_xy(theta, h, num_nodes)
+
+    error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
+    print(jnp.sum(jnp.square(theta-theta_true)))
+    # assert False
     assert error <= 2e-2
