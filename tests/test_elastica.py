@@ -153,7 +153,6 @@ def test_elastica_equation(setup_test):
     # cochain to zero residual on elements where BC is prescribed
     mask = np.ones(num_elements, dtype=dt.float_dtype)
     mask[0] = 0.
-    mask_coch = C.CochainD0(ela.S, mask)
 
     def obj(x: npt.NDArray) -> Array:
         # apply Dirichlet BC at left end
@@ -226,7 +225,6 @@ def test_elastica_equation_tuneB(setup_test):
     # cochain to zero residual on elements where BC is prescribed
     mask = np.ones(num_elements, dtype=dt.float_dtype)
     mask[0] = 0.
-    mask_coch = C.CochainD0(ela.S, mask)
 
     def energy(theta: npt.NDArray, B, theta_0, F) -> Array:
         # apply Dirichlet BC at left end
