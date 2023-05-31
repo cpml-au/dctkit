@@ -4,6 +4,8 @@ import jax.ops as ops
 from typing import Tuple
 from jax import Array
 import numpy.typing as npt
+import jax.numpy as jnp
+import jax
 
 
 @partial(jit, static_argnums=(2, 3))
@@ -29,6 +31,7 @@ def spmv_coo(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDAr
         vv = v.take(cols, axis=0)
 
     prod = (vals * vv.T).T
+    # prod = jnp.multiply(vals, vv)
 
     if transpose:
         result = ops.segment_sum(prod, cols, shape)

@@ -123,6 +123,7 @@ def test_simplicial_complex_2(setup_test):
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
+    S.get_dual_edges_info()
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -173,6 +174,13 @@ def test_simplicial_complex_2(setup_test):
     hodge_true.append(hodge_0_true)
     hodge_true.append(hodge_1_true)
     hodge_true.append(hodge_2_true)
+
+    print(S.circ[2])
+    print(S.S[1])
+    print(S.dedges)
+    print(S.dedges_lengths)
+
+    assert False
 
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype

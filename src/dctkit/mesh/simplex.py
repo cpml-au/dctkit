@@ -2,7 +2,7 @@ import numpy as np
 import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl
-from dctkit.math import volume
+from dctkit.math import volume, spmv
 
 
 class SimplicialComplex:
@@ -165,6 +165,33 @@ class SimplicialComplex:
                 self.hodge_star_inverse[p] = 1.0/self.hodge_star[p]
                 # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
                 self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
+
+    def get_dual_edges_info(self):
+        # get the dual edges taking into account dual orientation
+        dim = self.dim
+        dnodes_coords = self.circ[dim]
+        # number of dual edges
+        n_dedges = self.S[dim-1].shape[0]
+        # number of n_simplices
+        B = self.B[dim]
+        num_n_simplices, num_face_incident = B.shape
+        # this is the dual 0 coboundary up to sign
+        cob_d0 = self.boundary[0]
+        # compute the dual coboundary on the dual 0-cochain vector-valued
+        # in which the i-th entry is the coordinates of the i-th n-simplex
+        # circumcenter
+        self.dedges = (-1)**dim*spmv.spmv_coo(cob_d0, dnodes_coords,
+                                              shape=n_dedges)
+        self.dedges_lengths = np.zeros(
+            (num_n_simplices, num_face_incident), dtype=dctkit.float_dtype)
+        for i in range(num_n_simplices):
+            # get the positions of the (n-1)-simplices belonging
+            # to the i-th n-simplex
+            dedges_in_i = B[i, :]
+            # get the lengths of the portion of the dual edge contained
+            # in the i-th simplex
+            self.dedges_lengths[i, :] = np.linalg.norm(self.circ[dim][i, :] -
+                                                       self.circ[dim-1][dedges_in_i, :])
 
 
 def __simplex_array_parity(s):

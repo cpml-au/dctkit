@@ -21,6 +21,7 @@ def test_spmv_coo(setup_test):
     print(result_matrix)
     assert np.allclose(result, result_true)
     assert np.allclose(result_matrix, result_matrix_true)
+    # assert False
 
     result_transpose_true = np.array([0., 3., 10.], dtype=float_dtype)
     result_transpose_matrix_true = (
