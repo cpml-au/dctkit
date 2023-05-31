@@ -24,11 +24,11 @@ def spmv_coo(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDAr
     rows, cols, vals = A
 
     if transpose:
-        vv = v.take(rows)
+        vv = v.take(rows, axis=0)
     else:
-        vv = v.take(cols)
+        vv = v.take(cols, axis=0)
 
-    prod = vals * vv
+    prod = (vals * vv.T).T
 
     if transpose:
         result = ops.segment_sum(prod, cols, shape)
