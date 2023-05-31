@@ -1,7 +1,7 @@
 import sys
 import enum
-import jax
-import numpy as np
+import jax.numpy as jnp
+from jax.config import config as cfg
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
@@ -20,33 +20,29 @@ finally:
 
 FloatDtype = enum.Enum('FloatDtype', ['float32', 'float64'])
 IntDtype = enum.Enum('IntDtype', ['int32', 'int64'])
-Backend = enum.Enum('Backend', ['numpy', 'jax'])
 Platform = enum.Enum('Platform', ['cpu', 'gpu'])
 
 # data types, backend and platform used in all the modules
-float_dtype = FloatDtype.float32.name
-int_dtype = IntDtype.int32.name
-backend_name = Backend.numpy
-backend = np
+float_dtype = FloatDtype.float64.name
+int_dtype = IntDtype.int64.name
+backend = jnp
 platform = Platform.cpu
 config_called = False
 
 
-def config(fdtype=FloatDtype.float32, idtype=IntDtype.int32,
-           backnd_name=Backend.jax, platfm=Platform.cpu):
+def config(fdtype=FloatDtype.float64, platfm=Platform.cpu):
     """Set global configuration parameters."""
-    global config_called, float_dtype, int_dtype, backend_name, backend, platform
+    global config_called, float_dtype, int_dtype, platform
     if not config_called:
         float_dtype = fdtype.name
-        int_dtype = idtype.name
-        backend_name = backnd_name
         platform = platfm
-        if backnd_name == Backend.jax:
-            # print("Using jax backend.")
-            backend = jax.numpy
-            from jax.config import config
-            config.update('jax_platform_name', platfm.name)
 
-            if fdtype == FloatDtype.float64:
-                config.update("jax_enable_x64", True)
+        cfg.update('jax_platform_name', platfm.name)
+
+        if fdtype == FloatDtype.float64:
+            int_dtype = IntDtype.int64.name
+            cfg.update("jax_enable_x64", True)
+        else:
+            int_dtype = IntDtype.int32.name
+
         config_called = True

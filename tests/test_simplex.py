@@ -1,19 +1,13 @@
 import numpy as np
 import dctkit
-from dctkit import FloatDtype, IntDtype
 from dctkit.mesh import simplex, util
 from dctkit.math import shifted_list as sl
 import os
-import matplotlib.tri as tri
-import matplotlib.pyplot as plt
-import pytest
 
 cwd = os.path.dirname(__file__)
 
 
-@pytest.mark.parametrize('int_dtype', [IntDtype.int32, IntDtype.int64])
-def test_boundary_COO(int_dtype):
-    dctkit.int_dtype = int_dtype.name
+def test_boundary_COO(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, _ = util.read_mesh(full_path)
@@ -41,13 +35,7 @@ def test_boundary_COO(int_dtype):
     assert np.alltrue(boundary_tuple[2] == boundary_true[2])
 
 
-@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
-                                                    IntDtype.int32],
-                                                   [FloatDtype.float64,
-                                                    IntDtype.int64]])
-def test_simplicial_complex_1(float_dtype, int_dtype):
-    dctkit.float_dtype = float_dtype.name
-    dctkit.int_dtype = int_dtype.name
+def test_simplicial_complex_1(setup_test):
     # define node_coords
     num_nodes = 5
     node_coords = np.linspace(0, 1, num=num_nodes)
@@ -121,13 +109,7 @@ def test_simplicial_complex_1(float_dtype, int_dtype):
         assert np.allclose(S.hodge_star_inverse[i], hodge_inv_true[i])
 
 
-@pytest.mark.parametrize('float_dtype,int_dtype', [[FloatDtype.float32,
-                                                    IntDtype.int32],
-                                                   [FloatDtype.float64,
-                                                    IntDtype.int64]])
-def test_simplicial_complex_2(float_dtype, int_dtype):
-    dctkit.float_dtype = float_dtype.name
-    dctkit.int_dtype = int_dtype.name
+def test_simplicial_complex_2(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
     numNodes, numElements, S_2, x = util.read_mesh(full_path)
@@ -221,10 +203,6 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
 
     # test hodge star inverse
     _, _, S_2_new, node_coords_new = util.generate_square_mesh(0.4)
-    triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
-
-    plt.triplot(triang, 'ko-')
-    plt.show()
 
     # FIXME: make this part of the test more clear (remove long instructions between
     # paretheses)
@@ -238,11 +216,3 @@ def test_simplicial_complex_2(float_dtype, int_dtype):
         assert np.allclose(
             cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
                 p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
-
-
-if __name__ == "__main__":
-    test_boundary_COO(dctkit.IntDtype.int32)
-    test_boundary_COO(dctkit.IntDtype.int64)
-    test_simplicial_complex_1(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)
-    test_simplicial_complex_2(dctkit.FloatDtype.float32, dctkit.IntDtype.int32)
-    test_simplicial_complex_2(dctkit.FloatDtype.float64, dctkit.IntDtype.int64)

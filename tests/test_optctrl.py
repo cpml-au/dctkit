@@ -7,11 +7,11 @@ from dctkit.mesh import simplex, util
 from dctkit.dec import cochain as C
 import gmsh
 import matplotlib.tri as tri
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from dctkit import config, FloatDtype, Platform
 import numpy.typing as npt
 from jax import grad
 
-config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
+config(FloatDtype.float32, Platform.cpu)
 
 
 def get_complex(S_p, node_coords):
@@ -29,9 +29,9 @@ def get_complex(S_p, node_coords):
     return S, bnodes, triang
 
 
-def test_optimal_control_toy():
+def test_optimal_control_toy(setup_test):
     # target state
-    target = np.array([2., 1.], dtype=np.float32)
+    target = np.array([2., 1.], dtype=dt.float_dtype)
 
     state_dim = len(target)
 
@@ -79,7 +79,7 @@ def test_optimal_control_toy():
     assert np.allclose(u, target, atol=1e-4)
 
 
-def test_optimal_control_poisson():
+def test_optimal_control_poisson(setup_test):
 
     if jax.config.read("jax_enable_x64"):
         assert dt.float_dtype == "float64"
@@ -146,8 +146,3 @@ def test_optimal_control_poisson():
 
     assert np.allclose(u, u_true, atol=1e-4)
     assert np.allclose(f, f_true, atol=1e-4)
-
-
-if __name__ == "__main__":
-    test_optimal_control_toy()
-    test_optimal_control_poisson()

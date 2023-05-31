@@ -1,19 +1,13 @@
 import numpy as np
 import dctkit
-from dctkit import FloatDtype
 from dctkit.mesh import util
 from dctkit.math import circumcenter as circ
 import os
-import pytest
 
 cwd = os.path.dirname(__file__)
 
-dtypes = [FloatDtype.float32, FloatDtype.float64]
 
-
-@pytest.mark.parametrize('float_dtype', dtypes)
-def test_circumcenter(float_dtype):
-    dctkit.float_dtype = float_dtype.name
+def test_circumcenter(setup_test):
 
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
@@ -33,8 +27,3 @@ def test_circumcenter(float_dtype):
         circ_i = circ.circumcenter(S_2[i, :], node_coord)[0]
         assert circ_i.dtype == dctkit.float_dtype
         assert np.allclose(circ_i, circ_true[i, :])
-
-
-if __name__ == '__main__':
-    test_circumcenter(float_dtype=FloatDtype.float64)
-    test_circumcenter(float_dtype=FloatDtype.float32)

@@ -8,7 +8,7 @@ testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge
 Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
 
 Features:
-- uses [`jax`](http://github.com/google/jax/) backend for numerical computations
+- uses [`jax`](http://github.com/google/jax/) as a backend for numerical computations
 - manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
 - manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
 - interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
@@ -71,9 +71,10 @@ docs).
 
 ```python
 import dctkit as dt
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from dctkit import config, FloatDtype, Platform
 from dctkit.mesh import simplex, util
 from dctkit.dec import cochain as C
+from dctkit.math.opt import optctrl as oc
 import jax.numpy as jnp
 from jax import jit, grad
 from scipy.optimize import minimize
@@ -81,13 +82,15 @@ from matplotlib.pyplot import plot
 
 # set backend for computations, precision and platform (CPU/GPU)
 # MUST be called before using any function of dctkit
-config(FloatDtype.float32, IntDtype.int32, Backend.jax, Platform.cpu)
+# defaults: float64 precision and CPU platform
+config()
 
 # generate mesh and create SimplicialComplex object
 num_nodes = 10
 L = 1.
 S_1, x = util.generate_1_D_mesh(num_nodes, L)
 S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+
 # perform some computations and cache results for later use
 S.get_circumcenters()
 S.get_primal_volumes()
@@ -95,27 +98,26 @@ S.get_dual_volumes()
 S.get_hodge_star()
 
 # initial guess for the solution vector (coefficients of a primal 0-chain)
-u = jnp.ones(num_nodes, dtype=dt.float_dtype)
+# except for the node 0, where the boundary condition is prescribed
+u = jnp.ones(num_nodes-1, dtype=dt.float_dtype)
 
 # source term (primal 0-cochain)
 f = C.CochainP0(complex=S, coeffs=jnp.ones(num_nodes))
 
 # discrete Dirichlet energy with source term
 def energy(u):
-     # wrap np.array (when called by scipy's minimize) into a cochain
+     # zero Dirichlet bc at x=0
+     u = jnp.insert(u, 0, 0.)
+     # wrap JAX array (when calling minimization routine) into a cochain
      uc = C.CochainP0(complex=S, coeffs=u)
      du = C.coboundary(uc)
      return C.inner_product(du, du)-C.inner_product(uc, f)
 
-# compute gradient of the energy using JAX's autodiff
-graden = jit(grad(energy))
+# minimization of the energy
+prb = oc.OptimizationProblem(dim=num_nodes-1, state_dim=num_nodes-1, objfun=energy)
+prb.set_obj_args({})
+x = prb.run(x0=u, algo="lbfgs")
+x = jnp.insert(x, 0, 0.)
 
-# zero Dirichlet bc at x=0
-cons = {'type': 'eq', 'fun': lambda x: x[0]}
-
-# constrained minimization of the energy
-res = minimize(fun=energy, x0=u, constraints=cons, jac=graden)
-
-print(res)
-plot(res.x)
+plot(x)
 ```
