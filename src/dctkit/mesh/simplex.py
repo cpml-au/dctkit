@@ -221,8 +221,9 @@ class SimplicialComplex:
         self.delements += circ_belems
 
     def get_dual_relative_areas(self):
-        """Compute a matrix in which each row is a given n-simplex and each column is the
-           area of the portions of the dual (n-1)-simplices intersecting the n-simplex.
+        """Compute a matrix in which each row is a given n-simplex and each column is
+           the area of the portions of the dual (n-1)-simplices intersecting the
+           n-simplex.
         """
         dim = self.dim
         B = self.B[dim]
@@ -234,11 +235,11 @@ class SimplicialComplex:
             current_delements_areas = self.delements_areas[i, :]
             # get the positions of the (n-1)-simplices belonging
             # to the i-th n-simplex
-            delements_in_i = B[i, :]
+            delems_i = B[i, :]
             # get the areas of the portions of the dual edges contained
             # in the i-th simplex
-            current_delements_areas[delements_in_i] = np.linalg.norm(self.circ[dim][i, :] -
-                                                                     self.circ[dim-1][delements_in_i, :], axis=1)
+            proj_matrix = self.circ[dim][i, :] - self.circ[dim-1][delems_i, :]
+            current_delements_areas[delems_i] = np.linalg.norm(proj_matrix, axis=1)
 
 
 def __simplex_array_parity(s):
