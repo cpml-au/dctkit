@@ -124,6 +124,7 @@ def test_simplicial_complex_2(setup_test):
     S.get_dual_volumes()
     S.get_hodge_star()
     S.get_dual_elements()
+    S.get_dual_relative_areas()
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -180,6 +181,20 @@ def test_simplicial_complex_2(setup_test):
                                [0, 0, 0], [0.5, -0.5, 0], [0, 0, 0],
                                [-0.5, 0.5, 0], [-0.5, -0.5, 0]])
 
+    # define true dual edges lengths
+    num_n_simplices = S.S[S.dim].shape[0]
+    num_nm1_simplices = S.S[S.dim-1].shape[0]
+    delements_lengths_true = -np.ones(
+        (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
+    delements_lengths_true[0, 0] = 0
+    delements_lengths_true[0, [2, 4]] = np.sqrt(2)/4
+    delements_lengths_true[1, 1] = 0
+    delements_lengths_true[1, [2, 6]] = np.sqrt(2)/4
+    delements_lengths_true[2, 3] = 0
+    delements_lengths_true[2, [4, 7]] = np.sqrt(2)/4
+    delements_lengths_true[3, 5] = 0
+    delements_lengths_true[3, [6, 7]] = np.sqrt(2)/4
+
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype
     assert S.primal_volumes[1].dtype == dctkit.float_dtype
@@ -207,8 +222,9 @@ def test_simplicial_complex_2(setup_test):
     for i in range(3):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
 
-    # test dual edge
+    # test dual edge and dual edge lengths
     assert np.allclose(S.delements, delements_true)
+    assert np.allclose(S.delements_areas, delements_lengths_true)
 
     # test hodge star inverse
     _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
