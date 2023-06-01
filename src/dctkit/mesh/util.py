@@ -82,6 +82,41 @@ def generate_square_mesh(lc):
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
+def generate_hexagon_mesh(a, lc):
+    """Generate a regular hexagonal mesh
+
+       Args:
+            a (float): length of the hexagonal edges.
+    """
+    if not gmsh.is_initialized():
+        gmsh.initialize()
+
+    gmsh.model.add("hexagon")
+    gmsh.model.geo.addPoint(2*a, np.sqrt(3)/2 * a, 0, lc, 1)
+    gmsh.model.geo.addPoint(3/2 * a, np.sqrt(3)*a, 0, lc, 2)
+    gmsh.model.geo.addPoint(a/2, np.sqrt(3)*a, 0, lc, 3)
+    gmsh.model.geo.addPoint(0, np.sqrt(3)/2 * a, 0, lc, 4)
+    gmsh.model.geo.addPoint(a/2, 0, 0, lc, 5)
+    gmsh.model.geo.addPoint(3/2 * a, 0, 0, lc, 6)
+
+    gmsh.model.geo.addLine(1, 2, 1)
+    gmsh.model.geo.addLine(2, 3, 2)
+    gmsh.model.geo.addLine(3, 4, 3)
+    gmsh.model.geo.addLine(4, 5, 4)
+    gmsh.model.geo.addLine(5, 6, 5)
+    gmsh.model.geo.addLine(6, 1, 6)
+    gmsh.model.geo.addCurveLoop([1, 2, 3, 4, 5, 6], 1)
+    gmsh.model.geo.addPlaneSurface([1], 1)
+    gmsh.model.geo.synchronize()
+    gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4, 5, 6], 1)
+    gmsh.model.mesh.generate(2)
+    gmsh.fltk.run()
+
+    numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
+
+    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
+
+
 def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArray]:
     """Generate a uniform 1D mesh.
 
