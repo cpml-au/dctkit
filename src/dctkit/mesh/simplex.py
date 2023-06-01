@@ -13,6 +13,9 @@ class SimplicialComplex:
             (cols) belonging to each tetrahedron or top-level simplex (rows).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
         nodes (rows) of the simplicial complex.
+        belem (float np.array): matrix containing the IDs of the nodes
+            (cols) belonging to each boundary (n-1)-simplex (rows).
+        is_well_centered (bool): True if the mesh is well-centered.
     Attributes:
         dim (int32): dimension of the complex.
         S (list): list where each entry p is a matrix containing the IDs of the
@@ -182,14 +185,13 @@ class SimplicialComplex:
                 self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
 
     def get_dual_elements(self):
+        """Compute dual elements vectors taking into account dual orientation.
+        """
         # get the dual elements taking into account dual orientation
         dim = self.dim
         dnodes_coords = self.circ[dim]
         # number of dual elements
         n_delements = self.S[dim-1].shape[0]
-        # number of n_simplices
-        B = self.B[dim]
-        # num_n_simplices, num_face_incident = B.shape
         # this is the dual 0 coboundary up to sign
         cob_d0 = self.boundary[0]
         # compute the dual coboundary on the dual 0-cochain vector-valued
@@ -218,20 +220,25 @@ class SimplicialComplex:
         # and circ_belems
         self.delements += circ_belems
 
-    def get_dual_relative_lengths():
-        # self.delements[self.bindices] = (sign * self.delements[self.bindices].T).T
-
-        # self.dedges_lengths = np.zeros(
-        #    (num_n_simplices, num_face_incident), dtype=dctkit.float_dtype)
-        # for i in range(num_n_simplices):
-        # get the positions of the (n-1)-simplices belonging
-        # to the i-th n-simplex
-        #    dedges_in_i = B[i, :]
-        # get the lengths of the portion of the dual edge contained
-        # in the i-th simplex
-        #    self.dedges_lengths[i, :] = np.linalg.norm(self.circ[dim][i, :] -
-        #                                               self.circ[dim-1][dedges_in_i, :])
-        pass
+    def get_dual_relative_areas(self):
+        """Compute a matrix in which each row is a given n-simplex and each column is the
+           area of the portions of the dual (n-1)-simplices intersecting the n-simplex.
+        """
+        dim = self.dim
+        B = self.B[dim]
+        num_n_simplices = self.S[dim].shape[0]
+        num_nm1_simplices = self.S[dim-1].shape[0]
+        self.delements_areas = -np.ones(
+            (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
+        for i in range(num_n_simplices):
+            current_delements_areas = self.delements_areas[i, :]
+            # get the positions of the (n-1)-simplices belonging
+            # to the i-th n-simplex
+            delements_in_i = B[i, :]
+            # get the areas of the portions of the dual edges contained
+            # in the i-th simplex
+            current_delements_areas[delements_in_i] = np.linalg.norm(self.circ[dim][i, :] -
+                                                                     self.circ[dim-1][delements_in_i, :], axis=1)
 
 
 def __simplex_array_parity(s):
