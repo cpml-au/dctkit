@@ -10,7 +10,7 @@ cwd = os.path.dirname(__file__)
 def test_boundary_COO(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, _ = util.read_mesh(full_path)
+    numNodes, numElements, S_2, _, _ = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
@@ -112,18 +112,18 @@ def test_simplicial_complex_1(setup_test):
 def test_simplicial_complex_2(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, x = util.read_mesh(full_path)
+    numNodes, numElements, S_2, x, belem = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    S = simplex.SimplicialComplex(S_2, x)
+    S = simplex.SimplicialComplex(S_2, x, belem=belem)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
-    S.get_dual_edges_info()
+    S.get_dual_elements()
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -175,12 +175,10 @@ def test_simplicial_complex_2(setup_test):
     hodge_true.append(hodge_1_true)
     hodge_true.append(hodge_2_true)
 
-    print(S.circ[2])
-    print(S.S[1])
-    print(S.dedges)
-    print(S.dedges_lengths)
-
-    assert False
+    # define true dual edges
+    delements_true = np.array([[0, 0, 0], [0, 0, 0], [0.5, 0.5, 0],
+                               [0, 0, 0], [0.5, -0.5, 0], [0, 0, 0],
+                               [-0.5, 0.5, 0], [-0.5, -0.5, 0]])
 
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype
@@ -209,8 +207,11 @@ def test_simplicial_complex_2(setup_test):
     for i in range(3):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
 
+    # test dual edge
+    assert np.allclose(S.delements, delements_true)
+
     # test hodge star inverse
-    _, _, S_2_new, node_coords_new = util.generate_square_mesh(0.4)
+    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
 
     # FIXME: make this part of the test more clear (remove long instructions between
     # paretheses)

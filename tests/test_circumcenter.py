@@ -11,7 +11,7 @@ def test_circumcenter(setup_test):
 
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
+    numNodes, numElements, S_2, node_coord, _ = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")

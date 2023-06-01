@@ -14,7 +14,7 @@ cwd = os.path.dirname(__file__)
 def test_cochain(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, node_coord = util.read_mesh(full_path)
+    numNodes, numElements, S_2, node_coord, _ = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
@@ -59,7 +59,7 @@ def test_cochain(setup_test):
 
     # primal codifferential test (we need a well-centered mesh)
 
-    _, _, S_2_new, node_coords_new = util.generate_square_mesh(0.4)
+    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
     triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
 
     plt.triplot(triang, 'ko-')
