@@ -43,7 +43,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
     lc = 0.5
 
-    _, _, S_2, node_coord = util.generate_square_mesh(lc)
+    _, _, S_2, node_coord, _ = util.generate_square_mesh(lc)
 
     S, bnodes, _ = get_complex(S_2, node_coord)
 

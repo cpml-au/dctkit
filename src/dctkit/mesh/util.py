@@ -46,7 +46,15 @@ def read_mesh(filename=None, format="gmsh"):
 
     # Position vectors of mesh points
     node_coords = coords.reshape(len(coords)//3, 3)
-    return numNodes, numElements, nodeTagsPerElem, node_coords
+
+    # get node tags per boundary elements
+    _, nodeTagsPerBElem = gmsh.model.mesh.getElementsByType(1)
+    nodeTagsPerBElem = np.array(nodeTagsPerBElem, dtype=int_dtype) - 1
+    nodeTagsPerBElem = nodeTagsPerBElem.reshape(len(nodeTagsPerBElem) // 2, 2)
+    # we sort every row to get the orientation used for our simulations
+    nodeTagsPerBElem = np.sort(nodeTagsPerBElem)
+
+    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
 def generate_square_mesh(lc):
@@ -69,9 +77,9 @@ def generate_square_mesh(lc):
     gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4], 1)
     gmsh.model.mesh.generate(2)
 
-    numNodes, numElements, nodeTagsPerElem, node_coords = read_mesh()
+    numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
 
-    return numNodes, numElements, nodeTagsPerElem, node_coords
+    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
 def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArray]:

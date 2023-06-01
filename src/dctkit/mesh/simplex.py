@@ -32,7 +32,7 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, is_well_centered=False):
+    def __init__(self, tet_node_tags, node_coord, belem=None, is_well_centered=False):
 
         # store the coordinates of the nodes
         node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
@@ -43,6 +43,7 @@ class SimplicialComplex:
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
+        self.belem = belem
 
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
@@ -50,8 +51,10 @@ class SimplicialComplex:
         self.S = [None] * (self.dim + 1)
         self.S[-1] = tet_node_tags
 
-        # populate boundary operators
+        # populate boundary operators and boundary elements indices
         self.__get_boundary()
+        if belem is not None:
+            self.__get_belem_indices()
 
     def __get_boundary(self):
         """Compute all the COO representations of the boundary matrices.
@@ -64,6 +67,18 @@ class SimplicialComplex:
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
             self.S[self.dim - p - 1] = vals
+
+    def __get_belem_indices(self):
+        """Compute positions of boundary elements."""
+        elem = self.S[1]
+        num_belem = self.belem.shape[0]
+        self.bindices = np.zeros(num_belem, dtype=dctkit.int_dtype)
+        for i, bedge in enumerate(self.belem):
+            # get the index of bedge in the matrix
+            # of all the elements
+            row_finder = np.all(elem == bedge, axis=1)*1
+            self.bindices[i] = np.nonzero(row_finder)[0]
+        self.bindices = np.sort(self.bindices)
 
     def get_circumcenters(self):
         """Compute all the circumcenters.
@@ -166,32 +181,57 @@ class SimplicialComplex:
                 # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
                 self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
 
-    def get_dual_edges_info(self):
-        # get the dual edges taking into account dual orientation
+    def get_dual_elements(self):
+        # get the dual elements taking into account dual orientation
         dim = self.dim
         dnodes_coords = self.circ[dim]
-        # number of dual edges
-        n_dedges = self.S[dim-1].shape[0]
+        # number of dual elements
+        n_delements = self.S[dim-1].shape[0]
         # number of n_simplices
         B = self.B[dim]
-        num_n_simplices, num_face_incident = B.shape
+        # num_n_simplices, num_face_incident = B.shape
         # this is the dual 0 coboundary up to sign
         cob_d0 = self.boundary[0]
         # compute the dual coboundary on the dual 0-cochain vector-valued
         # in which the i-th entry is the coordinates of the i-th n-simplex
         # circumcenter
-        self.dedges = (-1)**dim*spmv.spmv_coo(cob_d0, dnodes_coords,
-                                              shape=n_dedges)
-        self.dedges_lengths = np.zeros(
-            (num_n_simplices, num_face_incident), dtype=dctkit.float_dtype)
-        for i in range(num_n_simplices):
-            # get the positions of the (n-1)-simplices belonging
-            # to the i-th n-simplex
-            dedges_in_i = B[i, :]
-            # get the lengths of the portion of the dual edge contained
-            # in the i-th simplex
-            self.dedges_lengths[i, :] = np.linalg.norm(self.circ[dim][i, :] -
-                                                       self.circ[dim-1][dedges_in_i, :])
+        self.delements = (-1)**dim*spmv.spmv_coo(cob_d0, dnodes_coords,
+                                                 shape=n_delements)
+
+        # construct the vector consisting of boundary elements circumcenter
+        # on boundary elements indices and 0 otherwise
+        circ_elems = self.circ[dim-1]
+        circ_belems = np.zeros(circ_elems.shape, dtype=dctkit.float_dtype)
+        circ_belems[self.bindices] = circ_elems[self.bindices]
+
+        # adjust the sign of the boundary entries of circ_belems
+        rows, _, vals = cob_d0
+        _, idx, count = np.unique(rows, return_index=True, return_counts=True)
+        # extract indices of rows related to boundary elements
+        boundary_rows_idx = idx[count == 1]
+        sign = -vals[boundary_rows_idx]
+        # sign of the boundary_entries is the opposite of the sign
+        # in non-zero entry of the corresponding row
+        circ_belems[self.bindices] = (sign * circ_belems[self.bindices].T).T
+
+        # the real dual elements coordinates are the sum of self.delements
+        # and circ_belems
+        self.delements += circ_belems
+
+    def get_dual_relative_lengths():
+        # self.delements[self.bindices] = (sign * self.delements[self.bindices].T).T
+
+        # self.dedges_lengths = np.zeros(
+        #    (num_n_simplices, num_face_incident), dtype=dctkit.float_dtype)
+        # for i in range(num_n_simplices):
+        # get the positions of the (n-1)-simplices belonging
+        # to the i-th n-simplex
+        #    dedges_in_i = B[i, :]
+        # get the lengths of the portion of the dual edge contained
+        # in the i-th simplex
+        #    self.dedges_lengths[i, :] = np.linalg.norm(self.circ[dim][i, :] -
+        #                                               self.circ[dim-1][dedges_in_i, :])
+        pass
 
 
 def __simplex_array_parity(s):
