@@ -7,8 +7,8 @@ import numpy.typing as npt
 
 
 @partial(jit, static_argnums=(2, 3))
-def spmv_coo(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
-             v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
+def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
+         v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
     """Performs the matrix-vector product between a sparse matrix in COO format and a
         vector.
 
