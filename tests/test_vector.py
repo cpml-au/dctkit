@@ -1,6 +1,7 @@
 import numpy as np
 from dctkit.mesh import simplex, util
 import dctkit.dec.vector as V
+import jax.numpy as jnp
 
 
 def test_vector(setup_test):
@@ -14,12 +15,10 @@ def test_vector(setup_test):
     S.get_areas_complementary_duals()
     S.get_flat_coeffs_matrix()
 
+    # test flat operator
     v_coeffs = np.ones((S.S[2].shape[0], S.embedded_dim))
     v = V.DiscreteVectorFieldD(S, v_coeffs)
     c = V.flat(v)
-    print(S.dedges)
-    print(S.delements_areas)
-    print(S.dedges_complete_areas)
-    print(S.flat_coeffs_matrix)
-    print(c.coeffs)
-    assert False
+    c_true_coeffs = S.dedges.sum(axis=1)
+
+    assert jnp.allclose(c.coeffs, c_true_coeffs)
