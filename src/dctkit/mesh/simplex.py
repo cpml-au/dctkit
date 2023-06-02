@@ -13,7 +13,7 @@ class SimplicialComplex:
             (cols) belonging to each tetrahedron or top-level simplex (rows).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
         nodes (rows) of the simplicial complex.
-        belem_tags (float np.array): matrix containing the IDs of the nodes 
+        belem_tags (float np.array): matrix containing the IDs of the nodes
             (cols) belonging to each boundary (n-1)-simplex (rows).
         is_well_centered (bool): True if the mesh is well-centered.
     Attributes:
@@ -35,7 +35,8 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, belem_tags=None, is_well_centered=False):
+    def __init__(self, tet_node_tags, node_coord, belem_tags=None,
+                 is_well_centered=False):
 
         # store the coordinates of the nodes
         node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
