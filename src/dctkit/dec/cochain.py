@@ -267,12 +267,13 @@ def coboundary(c: Cochain) -> Cochain:
     # array of coefficients of the cochain.
     if c.is_primal:
         # get the appropriate (primal) boundary matrix
-        t = c.complex.boundary[c.dim + 1]
-        dc.coeffs = spmv.spmm(t, c.coeffs, transpose=True,
+        cbnd_coo = c.complex.boundary[c.dim + 1]
+        dc.coeffs = spmv.spmm(cbnd_coo, c.coeffs, transpose=True,
                               shape=c.complex.S[c.dim+1].shape[0])
     else:
-        t = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = spmv.spmm(t, c.coeffs,
+        # FIXME: change sign of the boundary before applying it?
+        bnd_coo = c.complex.boundary[c.complex.dim - c.dim]
+        dc.coeffs = spmv.spmm(bnd_coo, c.coeffs,
                               transpose=False,
                               shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
         dc.coeffs *= (-1)**(c.complex.dim - c.dim)

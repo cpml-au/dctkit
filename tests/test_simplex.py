@@ -112,18 +112,18 @@ def test_simplicial_complex_1(setup_test):
 def test_simplicial_complex_2(setup_test):
     filename = "data/test1.msh"
     full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, x, belem_tags = util.read_mesh(full_path)
+    numNodes, numElements, S_2, x, bnd_faces_tags = util.read_mesh(full_path)
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    S = simplex.SimplicialComplex(S_2, x, belem_tags=belem_tags)
+    S = simplex.SimplicialComplex(S_2, x, bnd_faces_tags=bnd_faces_tags)
     S.get_circumcenters()
     S.get_primal_volumes()
     S.get_dual_volumes()
     S.get_hodge_star()
-    S.get_dual_edges()
+    S.get_dual_edge_vectors()
     S.get_areas_complementary_duals()
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
@@ -223,8 +223,8 @@ def test_simplicial_complex_2(setup_test):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
 
     # test dual edge and dual edge lengths
-    assert np.allclose(S.dedges, dedges_true)
-    assert np.allclose(S.delements_areas, dedges_lengths_true)
+    assert np.allclose(S.dual_edges_vectors, dedges_true)
+    assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
 
     # test hodge star inverse
     _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
