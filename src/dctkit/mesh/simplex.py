@@ -60,8 +60,7 @@ class SimplicialComplex:
             self.__get_belem_positions()
 
     def __get_boundary(self):
-        """Compute all the COO representations of the boundary matrices.
-        """
+        """Compute all the COO representations of the boundary matrices."""
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
@@ -84,8 +83,7 @@ class SimplicialComplex:
         self.bpositions = np.sort(self.bpositions)
 
     def get_circumcenters(self):
-        """Compute all the circumcenters.
-        """
+        """Compute all the circumcenters."""
         self.circ = sl.ShiftedList([None] * (self.dim), -1)
         self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
@@ -98,8 +96,7 @@ class SimplicialComplex:
             self.bary_circ[p] = B
 
     def get_primal_volumes(self):
-        """Compute all the primal volumes.
-        """
+        """Compute all the primal volumes."""
         # loop over all p-simplices (1..dim + 1)
         # (volume of 0-simplices is 1, we do not store it)
         self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
@@ -114,8 +111,7 @@ class SimplicialComplex:
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):
-        """Compute all the dual volumes.
-        """
+        """Compute all the dual volumes."""
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
         self.dual_volumes[self.dim] = np.ones(self.S[self.embedded_dim - self.dim].
                                               shape[0], dtype=self.float_dtype)
@@ -185,8 +181,7 @@ class SimplicialComplex:
                 self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
 
     def get_dual_edges(self):
-        """Compute dual edges vectors taking into account dual orientation.
-        """
+        """Compute dual edges vectors taking into account dual orientation."""
         # get the dual edges taking into account dual orientation
         dim = self.dim
         dnodes_coords = self.circ[dim]
@@ -225,8 +220,7 @@ class SimplicialComplex:
     def get_areas_complementary_duals(self):
         """Compute a matrix in which each row is a given n-simplex and each column is
            the area of the portions of the dual (n-1)-simplices intersecting the
-           n-simplex.
-        """
+           n-simplex."""
         dim = self.dim
         B = self.B[dim]
         num_n_simplices = self.S[dim].shape[0]
@@ -244,6 +238,8 @@ class SimplicialComplex:
             current_delements_areas[delems_i] = np.linalg.norm(proj_matrix, axis=1)
 
     def get_flat_coeffs_matrix(self):
+        """Compute the matrix in which any non-negative entry (i,j) is the
+           weight for the i-th n-simplex of the j-th coordinate of the flat vector"""
         opp_areas = 1/self.dedges_complete_areas
         self.flat_coeffs_matrix = opp_areas*self.delements_areas
 
