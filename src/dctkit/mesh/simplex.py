@@ -13,7 +13,7 @@ class SimplicialComplex:
             (cols) belonging to each tetrahedron or top-level simplex (rows).
         node_coord (float np.array): Cartesian coordinates (columns) of all the
         nodes (rows) of the simplicial complex.
-        belem_tags (float np.array): matrix containing the IDs of the nodes
+        bnd_faces_tags (float np.array): matrix containing the IDs of the nodes
             (cols) belonging to each boundary (n-1)-simplex (rows).
         is_well_centered (bool): True if the mesh is well-centered.
     Attributes:
@@ -35,7 +35,7 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, belem_tags=None,
+    def __init__(self, tet_node_tags, node_coord, bnd_faces_tags=None,
                  is_well_centered=False):
 
         # store the coordinates of the nodes
@@ -47,7 +47,7 @@ class SimplicialComplex:
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
-        self.belem_tags = belem_tags
+        self.bnd_faces_tags = bnd_faces_tags
 
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
@@ -56,11 +56,11 @@ class SimplicialComplex:
         self.S[-1] = tet_node_tags
 
         # populate boundary operators and boundary elements indices
-        self.__get_boundary()
-        if belem_tags is not None:
-            self.__get_belem_positions()
+        self.__get_boundary_operators()
+        if bnd_faces_tags is not None:
+            self.__get_boundary_faces_indices()
 
-    def __get_boundary(self):
+    def __get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
@@ -71,17 +71,15 @@ class SimplicialComplex:
             self.B[self.dim - p] = B
             self.S[self.dim - p - 1] = vals
 
-    def __get_belem_positions(self):
-        """Compute positions of boundary elements."""
-        elem = self.S[1]
-        num_belem = self.belem_tags.shape[0]
-        self.bpositions = np.zeros(num_belem, dtype=dctkit.int_dtype)
-        for i, bedge in enumerate(self.belem_tags):
-            # get the index of bedge in the matrix
-            # of all the elements
-            row_finder = np.all(elem == bedge, axis=1)*1
-            self.bpositions[i] = np.nonzero(row_finder)[0]
-        self.bpositions = np.sort(self.bpositions)
+    def __get_boundary_faces_indices(self):
+        """Compute the (sorted) indices of the boundary faces in the matrix S[dim-1]."""
+        faces = self.S[self.dim - 1]
+        num_bnd_faces = self.bnd_faces_tags.shape[0]
+        self.bnd_faces_indices = np.zeros(num_bnd_faces, dtype=dctkit.int_dtype)
+        # extract row indices of the faces matrix corresponding to the boundary faces
+        self.bnd_faces_indices = [int(np.argwhere(
+            np.all(faces == bnd_face, axis=1))) for bnd_face in self.bnd_faces_tags]
+        self.bnd_faces_indices = np.sort(self.bnd_faces_indices)
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
@@ -181,42 +179,55 @@ class SimplicialComplex:
                 # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
                 self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
 
-    def get_dual_edges(self):
-        """Compute dual edges vectors taking into account dual orientation."""
-        # get the dual edges taking into account dual orientation
+    def get_dual_edge_vectors(self):
+        """Compute dual edges vectors taking into account their orientations."""
         dim = self.dim
-        dnodes_coords = self.circ[dim]
-        # number of dual edges
-        n_dedges = self.S[dim-1].shape[0]
-        # this is the dual 0 coboundary up to sign
-        cob_d0 = self.boundary[0]
-        # compute the dual coboundary on the dual 0-cochain vector-valued
-        # in which the i-th entry is the coordinates of the i-th n-simplex
-        # circumcenter
-        self.dedges = (-1)**dim*spmv.spmm(cob_d0, dnodes_coords,
-                                          shape=n_dedges)
+        # dual nodes == circumcenters of the n-simplices
+        dual_nodes_coords = self.circ[dim]
+        num_dual_edges = self.S[dim-1].shape[0]
 
-        # construct the vector consisting of boundary edges circumcenter
-        # on boundary edges indices and 0 otherwise
-        circ_elems = self.circ[dim-1]
-        circ_belems = np.zeros(circ_elems.shape, dtype=dctkit.float_dtype)
-        circ_belems[self.bpositions] = circ_elems[self.bpositions]
+        # FIXME: changing the sign here overwrites that of the boundary operator!
+        dual_coboundary0 = self.boundary[0]
+        dual_coboundary0[2] *= (-1)**dim
 
-        # adjust the sign of the boundary entries of circ_belems
-        rows, _, vals = cob_d0
+        # compute the dual coboundary of the dual vector-valued 0-cochain
+        # where the i-th row contains the coordinates of the circumcenter of the
+        # i-th primal n-simplex
+        self.dual_edges_vectors = spmv.spmm(dual_coboundary0,
+                                            dual_nodes_coords,
+                                            shape=num_dual_edges)
+
+        # dual edges that belong to "incomplete boundary cells" must be treated
+        # separately, as described below
+
+        # construct the array consisting of the positions of the circumcenters of the
+        # boundary faces arranged by rows, padded with zeros for the non-boundary
+        # edges
+        circ_faces = self.circ[dim-1]
+        circ_bnd_faces = np.zeros(circ_faces.shape, dtype=dctkit.float_dtype)
+        circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
+
+        # adjust the signs based on the appropriate entries of the dual coboundary
+        rows, _, vals = dual_coboundary0
+        # extract rows indices with only one non-zero element, as they correspond to
+        # dual edges incident on boundary faces
         _, idx, count = np.unique(rows, return_index=True, return_counts=True)
-        # extract indices of rows related to boundary edges
         boundary_rows_idx = idx[count == 1]
-        sign = -vals[boundary_rows_idx]
-        # sign of the boundary_entries is the opposite of the sign
-        # in non-zero entry of the corresponding row
-        circ_belems[self.bpositions] = (sign * circ_belems[self.bpositions].T).T
 
-        # the real dual edges coordinates are the sum of self.dedges
-        # and circ_belems
-        self.dedges += circ_belems
-        # save the area of each dual edge
-        self.dedges_complete_areas = np.linalg.norm(self.dedges, axis=1)
+        # the action of the dual coboundary on the collection of the
+        # coordinates of the dual nodes produces incomplete results on the dual edges
+        # having only one dual node as a boundary (i.e. those who are incident on the
+        # boundary faces). To compensate for this, add the coordinates of the
+        # circumcenters of the boundary faces with the appropriate sign, given by the
+        # orientation of the dual edge contained in the dual coboundary matrix.
+        # NOTE: vals must be a COLUMN vector
+        sign = -vals[boundary_rows_idx][:, None]
+        complement = circ_bnd_faces
+        complement[self.bnd_faces_indices] *= sign
+
+        self.dual_edges_vectors += complement
+
+        self.dual_edges_lengths = np.linalg.norm(self.dual_edges_vectors, axis=1)
 
     def get_areas_complementary_duals(self):
         """Compute a matrix in which each row is a given n-simplex and each column is
@@ -226,23 +237,28 @@ class SimplicialComplex:
         B = self.B[dim]
         num_n_simplices = self.S[dim].shape[0]
         num_nm1_simplices = self.S[dim-1].shape[0]
-        self.delements_areas = -np.ones(
+        self.dual_edges_fractions_lengths = -np.ones(
             (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
         for i in range(num_n_simplices):
-            current_delements_areas = self.delements_areas[i, :]
+            # current_delements_areas = self.dual_edges_fractions_lengths[i, :]
             # get the positions of the (n-1)-simplices belonging
             # to the i-th n-simplex
             delems_i = B[i, :]
             # get the areas of the portions of the dual edges contained
             # in the i-th simplex
             proj_matrix = self.circ[dim][i, :] - self.circ[dim-1][delems_i, :]
-            current_delements_areas[delems_i] = np.linalg.norm(proj_matrix, axis=1)
+            self.dual_edges_fractions_lengths[i, :][
+                delems_i] = np.linalg.norm(proj_matrix, axis=1)
 
-    def get_flat_coeffs_matrix(self):
-        """Compute the matrix in which any non-negative entry (i,j) is the
-           weight for the i-th n-simplex of the j-th coordinate of the flat vector"""
-        opp_areas = 1/self.dedges_complete_areas
-        self.flat_coeffs_matrix = opp_areas*self.delements_areas
+    def get_flat_weights(self):
+        """Compute the matrix where each non-negative entry (i,j) is the
+           ratio between the length of the j-th dual edge contained in the
+           i-th n-simplex and the total length of the j-th dual edge.
+
+           This ratio appears as a weighitng factor in the computation of the
+           discrete flat operator.
+        """
+        self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
 
 
 def __simplex_array_parity(s):
@@ -339,7 +355,7 @@ def compute_boundary_COO(S):
     # compute vals and rows_index
     vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
-    boundary_COO = (rows_index, column_index, values)
+    boundary_COO = [rows_index, column_index, values]
 
     # for triangles and tets, compute B explicitly
     if dim > 1:

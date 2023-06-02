@@ -38,9 +38,9 @@ def flat(v: DiscreteVectorFieldD) -> CochainD1:
     Returns:
         (CochainD1): the dual one cochain equal to flat(v).
     """
-    dedges = v.S.dedges
+    dedges = v.S.dual_edges_vectors
     num_dedges = dedges.shape[0]
-    flat_matrix = v.S.flat_coeffs_matrix
+    flat_matrix = v.S.flat_weights
     coch_coeffs = jnp.zeros(num_dedges, dtype=dt.float_dtype)
     for i in range(num_dedges):
         # extract indices with non-zero entries in the flat matrix.
