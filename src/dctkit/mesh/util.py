@@ -110,7 +110,6 @@ def generate_hexagon_mesh(a, lc):
     gmsh.model.geo.synchronize()
     gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4, 5, 6], 1)
     gmsh.model.mesh.generate(2)
-    gmsh.fltk.run()
 
     numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
 
