@@ -125,6 +125,8 @@ def test_simplicial_complex_2(setup_test):
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()
+    S.get_metric_2D()
+
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -195,6 +197,10 @@ def test_simplicial_complex_2(setup_test):
     dedges_lengths_true[3, 5] = 0
     dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
 
+    metric_true = np.zeros((4, 2, 2), dtype=dctkit.float_dtype)
+    for i in range(4):
+        metric_true[i] = np.array([[1., 0.5], [0.5, 0.5]])
+
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype
     assert S.primal_volumes[1].dtype == dctkit.float_dtype
@@ -225,6 +231,9 @@ def test_simplicial_complex_2(setup_test):
     # test dual edge and dual edge lengths
     assert np.allclose(S.dual_edges_vectors, dedges_true)
     assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
+
+    # test metric
+    assert np.allclose(S.metric, metric_true)
 
     # test hodge star inverse
     _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)

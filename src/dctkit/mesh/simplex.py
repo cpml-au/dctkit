@@ -257,6 +257,27 @@ class SimplicialComplex:
 
         self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
 
+    def get_metric_2D(self):
+        """Compute the multiarray of shape (n, 2, 2) where n is the number of faces
+           and any 2x2 matrix is the metric of the corresponding face.
+        """
+        dim = self.dim
+        B = self.B[dim]
+        primal_edges = self.S[1]
+        node_coords = self.node_coord
+        # construct the matrix in which the i-th row corresponds to the vector
+        # of coordinates of the i-th primal edge
+        primal_edge_vectors = node_coords[primal_edges[:,
+                                                       1], :] - node_coords[
+                                                           primal_edges[:, 0], :]
+        # construct the multiarray of shape (n, 3, 3) where any 3x3 matrix represents
+        # the coordinates of the edge vectors belonging to the corresponding face
+        primal_edges_per_face = primal_edge_vectors[B]
+        # extract the first two rows, i.e. coordinate vectors, for each 3x3 matrix
+        edge_basis_per_face = primal_edges_per_face[:, :-1, :]
+        self.metric = edge_basis_per_face @ np.transpose(
+            edge_basis_per_face, axes=(0, 2, 1))
+
 
 def __simplex_array_parity(s):
     """Compute the number of transpositions needed to sort the array in
