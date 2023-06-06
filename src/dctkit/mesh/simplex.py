@@ -258,8 +258,8 @@ class SimplicialComplex:
         self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
 
     def get_metric_2D(self):
-        """Compute the multiarray of shape (n, 2, 2) where n is the number of faces
-           and any 2x2 matrix is the metric of the corresponding face.
+        """Compute the multiarray of shape (n, 2, 2) where n is the number of
+           2-simplices and any 2x2 matrix is the metric of the corresponding 2-simplex.
         """
         dim = self.dim
         B = self.B[dim]
@@ -267,16 +267,16 @@ class SimplicialComplex:
         node_coords = self.node_coord
         # construct the matrix in which the i-th row corresponds to the vector
         # of coordinates of the i-th primal edge
-        primal_edge_vectors = node_coords[primal_edges[:,
-                                                       1], :] - node_coords[
-                                                           primal_edges[:, 0], :]
+        primal_edge_vectors = node_coords[primal_edges[:, 1], :] - \
+            node_coords[primal_edges[:, 0], :]
         # construct the multiarray of shape (n, 3, 3) where any 3x3 matrix represents
-        # the coordinates of the edge vectors belonging to the corresponding face
-        primal_edges_per_face = primal_edge_vectors[B]
-        # extract the first two rows, i.e. coordinate vectors, for each 3x3 matrix
-        edge_basis_per_face = primal_edges_per_face[:, :-1, :]
-        self.metric = edge_basis_per_face @ np.transpose(
-            edge_basis_per_face, axes=(0, 2, 1))
+        # the coordinates of the edge vectors (arranged in rows) belonging to the
+        # corresponding 2-simplex
+        primal_edges_per_2_simplex = primal_edge_vectors[B]
+        # extract the first two rows, i.e. basis vectors, for each 3x3 matrix
+        basis_vectors = primal_edges_per_2_simplex[:, :-1, :]
+        self.metric = basis_vectors @ np.transpose(
+            basis_vectors, axes=(0, 2, 1))
 
 
 def __simplex_array_parity(s):
