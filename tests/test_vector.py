@@ -12,13 +12,12 @@ def test_vector(setup_test):
     S.get_dual_volumes()
     S.get_hodge_star()
     S.get_dual_edge_vectors()
-    S.get_areas_complementary_duals()
     S.get_flat_weights()
 
     # test flat operator
-    v_coeffs = np.ones((S.S[2].shape[0], S.embedded_dim))
+    v_coeffs = np.ones((S.embedded_dim, S.S[2].shape[0]))
     v = V.DiscreteVectorFieldD(S, v_coeffs)
-    c = V.flat(v)
+    c = V.flat_DPD(v)
     c_true_coeffs = S.dual_edges_vectors.sum(axis=1)
 
     assert jnp.allclose(c.coeffs, c_true_coeffs)

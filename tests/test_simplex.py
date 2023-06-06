@@ -124,7 +124,7 @@ def test_simplicial_complex_2(setup_test):
     S.get_dual_volumes()
     S.get_hodge_star()
     S.get_dual_edge_vectors()
-    S.get_areas_complementary_duals()
+    S.get_flat_weights()
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
     rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -184,7 +184,7 @@ def test_simplicial_complex_2(setup_test):
     # define true dual edges lengths
     num_n_simplices = S.S[S.dim].shape[0]
     num_nm1_simplices = S.S[S.dim-1].shape[0]
-    dedges_lengths_true = -np.ones(
+    dedges_lengths_true = np.zeros(
         (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
     dedges_lengths_true[0, 0] = 0
     dedges_lengths_true[0, [2, 4]] = np.sqrt(2)/4

@@ -30,24 +30,18 @@ class DiscreteVectorFieldD(DiscreteVectorField):
         super().__init__(S, False, coeffs)
 
 
-def flat(v: DiscreteVectorFieldD) -> CochainD1:
+def flat_DPD(v: DiscreteVectorFieldD) -> CochainD1:
     """Implements the flat operator for dual discrete vector fields.
 
     Args:
-        v (DiscreteVectorFieldD): a dual discrete vector field.
+        v: a dual discrete vector field.
     Returns:
-        (CochainD1): the dual one cochain equal to flat(v).
+        the dual cochain resulting from the application of the flat operator.
     """
     dedges = v.S.dual_edges_vectors
-    num_dedges = dedges.shape[0]
     flat_matrix = v.S.flat_weights
-    coch_coeffs = jnp.zeros(num_dedges, dtype=dt.float_dtype)
-    for i in range(num_dedges):
-        # extract indices with non-zero entries in the flat matrix.
-        good_indices = flat_matrix[:, i] >= 0
-        # normalize right entries
-        norm_v_good = (flat_matrix[good_indices, i] * v.coeffs[good_indices, :].T).T
-        # i-th entry of coch_coeffs is the sum of the entries of the vector obtained
-        # by multiplying the matrix norm_v with the coords of the i-th dual edge
-        coch_coeffs = coch_coeffs.at[i].set(jnp.sum(norm_v_good @ dedges[i, :]))
+    # multiply weights of each dual edge by the vectors associated to the dual nodes
+    # belonging to the edge and then perform dot product row-wise with the edge vectors
+    # of the dual edges (see definition of DPD in Hirani, pag. 54).
+    coch_coeffs = jnp.sum((v.coeffs @ flat_matrix).T * dedges, axis=1)
     return CochainD1(v.S, coch_coeffs)
