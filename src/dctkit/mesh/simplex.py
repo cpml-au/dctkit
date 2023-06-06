@@ -186,16 +186,12 @@ class SimplicialComplex:
         dual_nodes_coords = self.circ[dim]
         num_dual_edges = self.S[dim-1].shape[0]
 
-        # FIXME: changing the sign here overwrites that of the boundary operator!
-        dual_coboundary0 = self.boundary[0]
-        dual_coboundary0[2] *= (-1)**dim
-
-        # compute the dual coboundary of the dual vector-valued 0-cochain
-        # where the i-th row contains the coordinates of the circumcenter of the
-        # i-th primal n-simplex
-        self.dual_edges_vectors = spmv.spmm(dual_coboundary0,
+        # apply the dual coboundary to the dual vector-valued 0-cochain
+        # of the coordinates of the dual nodes
+        self.dual_edges_vectors = spmv.spmm(self.boundary[0],
                                             dual_nodes_coords,
                                             shape=num_dual_edges)
+        self.dual_edges_vectors *= (-1)**dim
 
         # dual edges that belong to "incomplete boundary cells" must be treated
         # separately, as described below
@@ -208,7 +204,9 @@ class SimplicialComplex:
         circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
 
         # adjust the signs based on the appropriate entries of the dual coboundary
-        rows, _, vals = dual_coboundary0
+        # NOTE: here we take the values of the boundary matrix, we fix their signs later
+        # to avoid allocating a new matrix for the coboundary.
+        rows, _, vals = self.boundary[0]
         # extract rows indices with only one non-zero element, as they correspond to
         # dual edges incident on boundary faces
         _, idx, count = np.unique(rows, return_index=True, return_counts=True)
@@ -221,34 +219,15 @@ class SimplicialComplex:
         # circumcenters of the boundary faces with the appropriate sign, given by the
         # orientation of the dual edge contained in the dual coboundary matrix.
         # NOTE: vals must be a COLUMN vector
-        sign = -vals[boundary_rows_idx][:, None]
+        # NOTE: the (-1)**dim factor accounts for the correct sign of the dual
+        # coboundary matrix
+        sign = -vals[boundary_rows_idx][:, None]*(-1)**dim
         complement = circ_bnd_faces
         complement[self.bnd_faces_indices] *= sign
 
         self.dual_edges_vectors += complement
 
         self.dual_edges_lengths = np.linalg.norm(self.dual_edges_vectors, axis=1)
-
-    def get_areas_complementary_duals(self):
-        """Compute a matrix in which each row is a given n-simplex and each column is
-           the area of the portions of the dual (n-1)-simplices intersecting the
-           n-simplex."""
-        dim = self.dim
-        B = self.B[dim]
-        num_n_simplices = self.S[dim].shape[0]
-        num_nm1_simplices = self.S[dim-1].shape[0]
-        self.dual_edges_fractions_lengths = -np.ones(
-            (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
-        for i in range(num_n_simplices):
-            # current_delements_areas = self.dual_edges_fractions_lengths[i, :]
-            # get the positions of the (n-1)-simplices belonging
-            # to the i-th n-simplex
-            delems_i = B[i, :]
-            # get the areas of the portions of the dual edges contained
-            # in the i-th simplex
-            proj_matrix = self.circ[dim][i, :] - self.circ[dim-1][delems_i, :]
-            self.dual_edges_fractions_lengths[i, :][
-                delems_i] = np.linalg.norm(proj_matrix, axis=1)
 
     def get_flat_weights(self):
         """Compute the matrix where each non-negative entry (i,j) is the
@@ -258,6 +237,24 @@ class SimplicialComplex:
            This ratio appears as a weighitng factor in the computation of the
            discrete flat operator.
         """
+        dim = self.dim
+        B = self.B[dim]
+        num_n_simplices = self.S[dim].shape[0]
+        num_nm1_simplices = self.S[dim-1].shape[0]
+        self.dual_edges_fractions_lengths = np.zeros(
+            (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
+
+        for i in range(num_n_simplices):
+            # get the indices of the (n-1)-simplices belonging to the i-th n-simplex
+            dual_edges_indices = B[i, :]
+            # construct the matrix containing the difference vectors between the
+            # circumcenter of the i-th n-simplex and the circumcenters of the dual edges
+            # intersecting such a simplex, arranged in rows.
+            diff_circs = self.circ[dim][i, :] - self.circ[dim-1][dual_edges_indices, :]
+            # take the norms of the difference vectors
+            self.dual_edges_fractions_lengths[i, :][
+                dual_edges_indices] = np.linalg.norm(diff_circs, axis=1)
+
         self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
 
 
