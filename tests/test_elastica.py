@@ -250,7 +250,6 @@ def test_elastica_equation_tuneB(setup_test):
         # return jnp.linalg.norm(residual.coeffs[1:])
         return residual.coeffs[1:]
 
-    # energy_grad = jit(grad(energy))
     energy_grad = energy
 
     # state function: stationarity conditions of the elastic energy

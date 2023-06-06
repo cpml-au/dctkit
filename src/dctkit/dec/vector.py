@@ -1,4 +1,3 @@
-import dctkit as dt
 import jax.numpy as jnp
 import numpy.typing as npt
 from .cochain import CochainD1
