@@ -22,8 +22,23 @@ class DiscreteVectorField():
         self.coeffs = coeffs
 
 
+class DiscreteTensorField():
+    def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
+                 coeffs: npt.NDArray | Array):
+        self.S = S
+        self.is_primal = is_primal
+        self.coeffs = coeffs
+
+
 class DiscreteVectorFieldD(DiscreteVectorField):
     """Inherited class for dual discrete vector fields."""
+
+    def __init__(self, S: spx.SimplicialComplex, coeffs: npt.NDArray | Array):
+        super().__init__(S, False, coeffs)
+
+
+class DiscreteTensorFieldD(DiscreteTensorField):
+    """Inherited class for dual discrete tensor fields."""
 
     def __init__(self, S: spx.SimplicialComplex, coeffs: npt.NDArray | Array):
         super().__init__(S, False, coeffs)
