@@ -15,6 +15,7 @@ def test_vector_cochain(setup_test):
     S.get_flat_weights()
 
     # test flat operator
+    # FIXME: Add the test for discrete tensor field
     v_coeffs = np.ones((S.embedded_dim, S.S[2].shape[0]))
     v = V.DiscreteVectorFieldD(S, v_coeffs)
     c = V.flat_DPD(v)
