@@ -123,3 +123,30 @@ def test_cochain(setup_test):
 
     assert inner_product.dtype == dctkit.float_dtype
     assert np.allclose(inner_product, inner_product_true)
+
+    # vector-valued cochain test
+    c0_v_coeffs = np.arange(15).reshape((5, 3))
+    c1_v_coeffs = np.arange(24).reshape((8, 3))
+    c0_v = cochain.CochainP0(cpx, c0_v_coeffs)
+    c1_v = cochain.CochainP1(cpx, c1_v_coeffs)
+    dc0_v = cochain.coboundary(c0_v)
+    dc1_v = cochain.coboundary(c1_v)
+    dc0_v_true = np.array([[3, 3, 3],
+                           [6,  6,  6],
+                           [12, 12, 12],
+                           [6, 6, 6],
+                           [9, 9, 9],
+                           [3, 3, 3],
+                           [6, 6, 6],
+                           [3, 3, 3]], dtype=dctkit.float_dtype)
+    dc1_v_true = np.array([[6, 7, 8],
+                           [-15, -16, -17],
+                           [18, 19, 20],
+                           [-18, -19, -20]], dtype=dctkit.float_dtype)
+    assert np.allclose(dc0_v.coeffs, dc0_v_true)
+    assert np.allclose(dc1_v.coeffs, dc1_v_true)
+
+    star_c0_v = cochain.star(c0_v)
+    star_c0_v_true = 0.125*c0_v_coeffs
+    star_c0_v_true[-1, :] = np.array([6, 6.5, 7])
+    assert np.allclose(star_c0_v.coeffs, star_c0_v_true)
