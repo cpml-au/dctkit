@@ -256,6 +256,11 @@ class SimplicialComplex:
                 dual_edges_indices] = np.linalg.norm(diff_circs, axis=1)
 
         self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
+        # in the case of non-well centered mesh an entry of the flat weights matrix
+        # can be NaN. In this case, the corresponding dual edge is the null vector,
+        # hence we shouldn't take in account dot product with it. We then substitute
+        # any NaN with 0.
+        self.flat_weights = np.nan_to_num(self.flat_weights)
 
     def get_metric_2D(self):
         """Compute the multiarray of shape (n, 2, 2) where n is the number of

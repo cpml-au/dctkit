@@ -44,7 +44,7 @@ class DiscreteTensorFieldD(DiscreteTensorField):
         super().__init__(S, False, coeffs)
 
 
-def flat_DPD(v: DiscreteVectorFieldD) -> CochainD1:
+def flat_DPD(v: DiscreteVectorFieldD | DiscreteTensorFieldD) -> CochainD1:
     """Implements the flat operator for dual discrete vector fields.
 
     Args:
@@ -55,7 +55,17 @@ def flat_DPD(v: DiscreteVectorFieldD) -> CochainD1:
     dedges = v.S.dual_edges_vectors
     flat_matrix = v.S.flat_weights
     # multiply weights of each dual edge by the vectors associated to the dual nodes
-    # belonging to the edge and then perform dot product row-wise with the edge vectors
-    # of the dual edges (see definition of DPD in Hirani, pag. 54).
-    coch_coeffs = jnp.sum((v.coeffs @ flat_matrix).T * dedges, axis=1)
+    # belonging to the edge
+    weighted_v = v.coeffs @ flat_matrix
+    weighted_v_T = weighted_v.T
+    if v.coeffs.ndim == 2:
+        # vector field case
+        # perform dot product row-wise with the edge vectors
+        # of the dual edges (see definition of DPD in Hirani, pag. 54).
+        coch_coeffs = jnp.einsum("ij, ij -> i", weighted_v_T, dedges)
+    elif v.coeffs.ndim == 3:
+        # tensor field case
+        # apply each matrix (rows of the multiarray weighted_v_T fixing the first axis)
+        # to the edge vector of the corresponding dual edge
+        coch_coeffs = jnp.einsum("ijk, ik -> ij", weighted_v_T, dedges)
     return CochainD1(v.S, coch_coeffs)
