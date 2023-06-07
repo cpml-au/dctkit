@@ -293,11 +293,12 @@ def star(c: Cochain) -> Cochain:
                      coeffs=jnp.empty_like(c.coeffs, dtype=dt.float_dtype))
 
     if c.is_primal:
-        star_c.coeffs = c.complex.hodge_star[c.dim]*c.coeffs
+        star_c.coeffs = (c.complex.hodge_star[c.dim]*c.coeffs.T).T
     else:
         # NOTE: this step only works with well-centered meshes!
         assert c.complex.is_well_centered
-        star_c.coeffs = c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs
+        star_c.coeffs = (
+            c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs.T).T
 
     return star_c
 
