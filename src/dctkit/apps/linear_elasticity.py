@@ -1,4 +1,3 @@
-import numpy as np
 import numpy.typing as npt
 from dctkit.mesh.simplex import SimplicialComplex
 import dctkit.dec.cochain as C
@@ -12,9 +11,9 @@ class LinearElasticity():
     """Linear elasticity class.
 
     Args:
-        S (SimplicialComplex): reference configuration simplicial complex.
-        mu_ (float): Lamé modulus
-        lambda_ (float): Lamé modulus
+        S: reference configuration simplicial complex.
+        mu_: Lamé modulus
+        lambda_: Lamé modulus
     """
 
     def __init__(self, S: SimplicialComplex, mu_: float, lambda_: float):
@@ -27,25 +26,25 @@ class LinearElasticity():
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
-          Args:
-            node_coords (C.CochainP0): primal vector valued 0-cochain of
+        Args:
+            node_coords: primal vector valued 0-cochain of
             node coordinates of the current configuration.
-            f (C.CochainP2): primal vector-valued 2-cochain of sources.
+            f: primal vector-valued 2-cochain of sources.
 
-          Returns:
-            (C.CochainP2): residual vector-valued cochain.
+        Returns:
+            the residual vector-valued cochain.
 
         """
         dim = self.S.dim
-        g = self.S.get_current_metric_2D(node_coords=node_coords.coeffs)
-        g_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=g)
+        current_metric = self.S.get_current_metric_2D(node_coords=node_coords.coeffs)
+        current_metric_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=current_metric)
         # define the infinitesimal strain and its trace
-        epsilon = 1/2 * (g_tensor - self.S.metric)
+        epsilon = 1/2 * (current_metric_tensor - self.S.metric)
         tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
         # get the stress via the consistutive equation for isotropic linear
         # elastic materials
         stress = 2*self.mu*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
-            np.stack([np.identity(2)]*dim)
+            jnp.stack([jnp.identity(2)]*dim)
         stress_integrated = V.flat_DPD(stress)
         residual = C.coboundary(C.star(stress_integrated)) + f
         return residual
@@ -57,16 +56,16 @@ class LinearElasticity():
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
 
-           Args:
-            node_coords (np.array): matrix with node coordinates arranged row-wise.
-            f (np.array): vector of external sources (constant term of the system).
-            gamma (float): penalty factor.
-            boundary_values (tuple): tuple of two np.arrays in which the first
+        Args:
+            node_coords: matrix with node coordinates arranged row-wise.
+            f: vector of external sources (constant term of the system).
+            gamma: penalty factor.
+            boundary_values: tuple of two np.arrays in which the first
             encodes the indices of boundary values, while the last encodes the
             boundary values themselves.
 
-           Returns:
-            (float): the value of the objective function at node_coords.
+        Returns:
+            the value of the objective function at node_coords.
 
         """
         idx, value = boundary_values
