@@ -272,7 +272,7 @@ class SimplicialComplex:
 
             Args:
                 node_coords (np.array): matrix of shape (n, embedded_dim) in which i-th
-                row is the vector of coordinates of i-th node of the simplex in the 
+                row is the vector of coordinates of i-th node of the simplex in the
                 current configuration.
 
             Returns:

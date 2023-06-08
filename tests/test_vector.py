@@ -2,7 +2,6 @@ import numpy as np
 import dctkit as dt
 from dctkit.mesh import simplex, util
 import dctkit.dec.vector as V
-import jax.numpy as jnp
 
 
 def test_vector_cochain(setup_test):
