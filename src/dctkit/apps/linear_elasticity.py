@@ -69,12 +69,12 @@ class LinearElasticity():
             the value of the objective function at node_coords.
 
         """
-        node_coords = node_coords.reshape(self.S.node_coord.shape)
+        node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
         f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
         idx, value = boundary_values
-        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords)
+        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(node_coords_coch, f_coch).coeffs
-        penalty = jnp.sum((node_coords[idx] - value)**2)
-        energy = 1/2*(jnp.linalg.norm(residual) + gamma*penalty)
+        penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+        energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy

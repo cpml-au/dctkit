@@ -27,20 +27,20 @@ class OptimizationProblem():
                                    np.float64 | npt.NDArray | Array] = {}) -> None:
         self.dim = dim
         self.state_dim = state_dim
-        self.obj = jit(objfun)
+        self.obj = (objfun)
         self.constr_problem = False
         # constrained optimization problem
         if constrfun is not None:
-            self.constr = jit(constrfun)
+            self.constr = (constrfun)
             # jacobian of the constraint equations wrt the parameters array
-            self.constr_grad = jit(jacrev(constrfun))
+            self.constr_grad = (jacrev(constrfun))
             # TODO: check according to dt.float_dtype instead of np.float32 or 64
             check_type(constr_args, Dict[str, float | np.float32 | np.float64 |
                                          npt.NDArray | Array])
             self.constr_args = constr_args
             self.constr_problem = True
         # gradient of the objective function wrt parameters array
-        self.grad_obj = jit(grad(objfun))
+        self.grad_obj = (grad(objfun))
         self.last_opt_result = -1
 
     def set_obj_args(self, args: dict) -> None:

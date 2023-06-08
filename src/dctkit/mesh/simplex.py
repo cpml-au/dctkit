@@ -5,6 +5,7 @@ from dctkit.math import shifted_list as sl
 from dctkit.math import volume, spmv
 import numpy.typing as npt
 from jax import Array
+import jax.numpy as jnp
 
 
 class SimplicialComplex:
@@ -291,9 +292,15 @@ class SimplicialComplex:
         primal_edges_per_2_simplex = primal_edge_vectors[B]
         # extract the first two rows, i.e. basis vectors, for each 3x3 matrix
         basis_vectors = primal_edges_per_2_simplex[:, :-1, :]
-        metric = basis_vectors @ np.transpose(
+        # extract metric multiarray in the local reference frame
+        metric_local = basis_vectors @ jnp.transpose(
             basis_vectors, axes=(0, 2, 1))
-        return metric
+        # change basis to the global reference frame
+        print(basis_vectors[:, :, :-1])
+        global_to_local = jnp.transpose(basis_vectors[:, :, :-1], axes=(0, 2, 1))
+        global_to_local_inv = jnp.linalg.inv(global_to_local)
+        metric_global = (global_to_local_inv @ metric_local) @ global_to_local
+        return metric_global
 
 
 def __simplex_array_parity(s):
