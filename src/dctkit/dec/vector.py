@@ -5,8 +5,27 @@ from dctkit.mesh import simplex as spx
 from jax import Array
 
 
-class DiscreteVectorField():
-    """Discrete vector fields class.
+class DiscreteTensorField():
+    """Discrete tensor fields class.
+
+    Args:
+        S (SimplicialComplex): the simplicial complex where the discrete vector field
+        is defined.
+        is_primal (bool): True if the discrete vector field is primal, False otherwise.
+        coeffs (Array): array of the coefficients of the discrete vector fields.
+        rank (float): rank of the tensor.
+    """
+
+    def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
+                 coeffs: npt.NDArray | Array, rank: float):
+        self.S = S
+        self.is_primal = is_primal
+        self.coeffs = coeffs
+        self.rank = rank
+
+
+class DiscreteVectorField(DiscreteTensorField):
+    """Inherited class for discrete vector fields.
 
     Args:
         S (SimplicialComplex): the simplicial complex where the discrete vector field
@@ -17,17 +36,7 @@ class DiscreteVectorField():
 
     def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
                  coeffs: npt.NDArray | Array):
-        self.S = S
-        self.is_primal = is_primal
-        self.coeffs = coeffs
-
-
-class DiscreteTensorField():
-    def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
-                 coeffs: npt.NDArray | Array):
-        self.S = S
-        self.is_primal = is_primal
-        self.coeffs = coeffs
+        super().__init__(S, is_primal, coeffs, 1)
 
 
 class DiscreteVectorFieldD(DiscreteVectorField):
@@ -40,11 +49,12 @@ class DiscreteVectorFieldD(DiscreteVectorField):
 class DiscreteTensorFieldD(DiscreteTensorField):
     """Inherited class for dual discrete tensor fields."""
 
-    def __init__(self, S: spx.SimplicialComplex, coeffs: npt.NDArray | Array):
-        super().__init__(S, False, coeffs)
+    def __init__(self, S: spx.SimplicialComplex, coeffs: npt.NDArray | Array,
+                 rank: float):
+        super().__init__(S, False, coeffs, rank)
 
 
-def flat_DPD(v: DiscreteVectorFieldD | DiscreteTensorFieldD) -> CochainD1:
+def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
     """Implements the flat operator for dual discrete vector fields.
 
     Args:
@@ -58,12 +68,12 @@ def flat_DPD(v: DiscreteVectorFieldD | DiscreteTensorFieldD) -> CochainD1:
     # belonging to the edge
     weighted_v = v.coeffs @ flat_matrix
     weighted_v_T = weighted_v.T
-    if v.coeffs.ndim == 2:
+    if v.rank == 1:
         # vector field case
         # perform dot product row-wise with the edge vectors
         # of the dual edges (see definition of DPD in Hirani, pag. 54).
         coch_coeffs = jnp.einsum("ij, ij -> i", weighted_v_T, dedges)
-    elif v.coeffs.ndim == 3:
+    elif v.rank == 2:
         # tensor field case
         # apply each matrix (rows of the multiarray weighted_v_T fixing the first axis)
         # to the edge vector of the corresponding dual edge

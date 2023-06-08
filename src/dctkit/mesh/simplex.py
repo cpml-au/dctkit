@@ -3,6 +3,8 @@ import dctkit
 from dctkit.math import circumcenter as circ
 from dctkit.math import shifted_list as sl
 from dctkit.math import volume, spmv
+import numpy.typing as npt
+from jax import Array
 
 
 class SimplicialComplex:
@@ -59,6 +61,7 @@ class SimplicialComplex:
         self.__get_boundary_operators()
         if bnd_faces_tags is not None:
             self.__get_boundary_faces_indices()
+            self.metric = self.get_current_metric_2D(self.node_coord)
 
     def __get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
@@ -262,14 +265,22 @@ class SimplicialComplex:
         # any NaN with 0.
         self.flat_weights = np.nan_to_num(self.flat_weights)
 
-    def get_metric_2D(self):
+    def get_current_metric_2D(self, node_coords: npt.NDArray | Array) -> npt.NDArray:
         """Compute the multiarray of shape (n, 2, 2) where n is the number of
-           2-simplices and any 2x2 matrix is the metric of the corresponding 2-simplex.
+            2-simplices and any 2x2 matrix is the metric of the corresponding
+            2-simplex.
+
+            Args:
+                node_coords (np.array): matrix of shape (n, embedded_dim) in which i-th
+                row is the vector of coordinates of i-th node of the simplex in the 
+                current configuration.
+
+            Returns:
+                (np.array): the current metric multiarray.
         """
         dim = self.dim
         B = self.B[dim]
         primal_edges = self.S[1]
-        node_coords = self.node_coord
         # construct the matrix in which the i-th row corresponds to the vector
         # of coordinates of the i-th primal edge
         primal_edge_vectors = node_coords[primal_edges[:, 1], :] - \
@@ -280,8 +291,9 @@ class SimplicialComplex:
         primal_edges_per_2_simplex = primal_edge_vectors[B]
         # extract the first two rows, i.e. basis vectors, for each 3x3 matrix
         basis_vectors = primal_edges_per_2_simplex[:, :-1, :]
-        self.metric = basis_vectors @ np.transpose(
+        metric = basis_vectors @ np.transpose(
             basis_vectors, axes=(0, 2, 1))
+        return metric
 
 
 def __simplex_array_parity(s):

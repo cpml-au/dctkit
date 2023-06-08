@@ -125,7 +125,6 @@ def test_simplicial_complex_2(setup_test):
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()
-    S.get_metric_2D()
 
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
