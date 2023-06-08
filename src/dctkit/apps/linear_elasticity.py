@@ -14,7 +14,7 @@ class LinearElasticity():
     Args:
         S (SimplicialComplex): reference configuration simplicial complex.
         mu_ (float): Lamé modulus
-        lambda_ (float): Lamé modulus 
+        lambda_ (float): Lamé modulus
     """
 
     def __init__(self, S: SimplicialComplex, mu_: float, lambda_: float):
@@ -50,11 +50,12 @@ class LinearElasticity():
         residual = C.coboundary(C.star(stress_integrated)) + f
         return residual
 
-    def obj_linear_elasticity(self, node_coords: npt.NDArray | Array, f: npt.NDArray | Array,
-                              gamma: float, boundary_values:
+    def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
+                              f: npt.NDArray | Array, gamma: float, boundary_values:
                               Tuple[npt.NDArray, npt.NDArray]) -> float:
-        """Objective function of the optimization problem associated to linear elasticity
-           balance equation with Dirichlet B.C. on a portion of the boundary.
+        """Objective function of the optimization problem associated to linear
+           elasticity balance equation with Dirichlet boundary conditions on a portion
+           of the boundary.
 
            Args:
             node_coords (np.array): matrix with node coordinates arranged row-wise.
@@ -65,7 +66,7 @@ class LinearElasticity():
             boundary values themselves.
 
            Returns:
-            (float): the value of the objective function at node_coords. 
+            (float): the value of the objective function at node_coords.
 
         """
         idx, value = boundary_values
