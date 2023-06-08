@@ -9,15 +9,14 @@ class DiscreteTensorField():
     """Discrete tensor fields class.
 
     Args:
-        S (SimplicialComplex): the simplicial complex where the discrete vector field
-        is defined.
-        is_primal (bool): True if the discrete vector field is primal, False otherwise.
-        coeffs (Array): array of the coefficients of the discrete vector fields.
-        rank (float): rank of the tensor.
+        S: the simplicial complex where the discrete vector field is defined.
+        is_primal: True if the discrete vector field is primal, False otherwise.
+        coeffs: array of the coefficients of the discrete vector fields.
+        rank: rank of the tensor.
     """
 
     def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
-                 coeffs: npt.NDArray | Array, rank: float):
+                 coeffs: npt.NDArray | Array, rank: int):
         self.S = S
         self.is_primal = is_primal
         self.coeffs = coeffs
@@ -25,14 +24,7 @@ class DiscreteTensorField():
 
 
 class DiscreteVectorField(DiscreteTensorField):
-    """Inherited class for discrete vector fields.
-
-    Args:
-        S (SimplicialComplex): the simplicial complex where the discrete vector field
-        is defined.
-        is_primal (bool): True if the discrete vector field is primal, False otherwise.
-        coeffs (Array): array of the coefficients of the discrete vector fields.
-    """
+    """Inherited class for discrete vector fields."""
 
     def __init__(self, S: spx.SimplicialComplex, is_primal: bool,
                  coeffs: npt.NDArray | Array):
@@ -50,7 +42,7 @@ class DiscreteTensorFieldD(DiscreteTensorField):
     """Inherited class for dual discrete tensor fields."""
 
     def __init__(self, S: spx.SimplicialComplex, coeffs: npt.NDArray | Array,
-                 rank: float):
+                 rank: int):
         super().__init__(S, False, coeffs, rank)
 
 
