@@ -54,7 +54,7 @@ def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
     Returns:
         the dual cochain resulting from the application of the flat operator.
     """
-    dedges = v.S.dual_edges_vectors
+    dedges = v.S.dual_edges_vectors[:, :v.coeffs.shape[0]]
     flat_matrix = v.S.flat_weights
     # multiply weights of each dual edge by the vectors associated to the dual nodes
     # belonging to the edge

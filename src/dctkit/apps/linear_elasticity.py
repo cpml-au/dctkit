@@ -5,6 +5,7 @@ import dctkit.dec.vector as V
 from jax import Array
 import jax.numpy as jnp
 from typing import Tuple
+import jax
 
 
 class LinearElasticity():
@@ -35,18 +36,18 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        dim = self.S.dim
+        num_faces = self.S.S[2].shape[0]
         current_metric = self.S.get_current_metric_2D(node_coords=node_coords.coeffs)
-        current_metric_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=current_metric)
         # define the infinitesimal strain and its trace
-        epsilon = 1/2 * (current_metric_tensor - self.S.metric)
+        epsilon = 1/2 * (current_metric - self.S.metric)
         tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
         # get the stress via the consistutive equation for isotropic linear
         # elastic materials
-        stress = 2*self.mu*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
-            jnp.stack([jnp.identity(2)]*dim)
-        stress_integrated = V.flat_DPD(stress)
-        residual = C.coboundary(C.star(stress_integrated)) + f
+        stress = 2*self.mu_*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
+            jnp.stack([jnp.identity(2)]*num_faces)
+        stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
+        stress_integrated = V.flat_DPD(stress_tensor)
+        residual = C.add(C.coboundary(C.star(stress_integrated)), f)
         return residual
 
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
@@ -68,8 +69,10 @@ class LinearElasticity():
             the value of the objective function at node_coords.
 
         """
+        node_coords = node_coords.reshape(self.S.node_coord.shape)
+        f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
         idx, value = boundary_values
-        node_coords_coch = C.CochainP0(S=self.S, coeffs=node_coords)
+        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(node_coords_coch, f_coch).coeffs
         penalty = jnp.sum((node_coords[idx] - value)**2)
