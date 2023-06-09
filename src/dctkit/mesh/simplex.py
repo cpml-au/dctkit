@@ -51,6 +51,7 @@ class SimplicialComplex:
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
         self.bnd_faces_tags = bnd_faces_tags
+        self.change_basis_matrix = None
 
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
@@ -291,16 +292,30 @@ class SimplicialComplex:
         # corresponding 2-simplex
         primal_edges_per_2_simplex = primal_edge_vectors[B]
         # extract the first two rows, i.e. basis vectors, for each 3x3 matrix
+        # NOTE: basis_vectors is arranged row-wise!
         basis_vectors = primal_edges_per_2_simplex[:, :-1, :]
-        # extract metric multiarray in the local reference frame
-        metric_local = basis_vectors @ jnp.transpose(
-            basis_vectors, axes=(0, 2, 1))
-        # change basis to the global reference frame
-        print(basis_vectors[:, :, :-1])
-        global_to_local = jnp.transpose(basis_vectors[:, :, :-1], axes=(0, 2, 1))
-        global_to_local_inv = jnp.linalg.inv(global_to_local)
-        metric_global = (global_to_local_inv @ metric_local) @ global_to_local
-        return metric_global
+        # to compute the reference metric, we need to compute the change
+        # of basis matrix from the local to the global frame.
+        # This matrix is the inverse of the matrix having as columns the basis
+        # vectors (2x1 vectors) and since basis_vectors is the multiarray of the
+        # embeddeded coordinate in R^3 we have to discard the last column
+        basis_vectors_reshaped = jnp.transpose(
+            basis_vectors[:, :, :-1], axes=(0, 2, 1))
+        if self.change_basis_matrix is None:
+            basis_vectors_reshaped_inv = jnp.linalg.inv(basis_vectors_reshaped)
+            self.change_basis_matrix = basis_vectors_reshaped_inv
+        # we have to compute for any 2x2 matrix A_i in the multiarray change_basis_matrix
+        # the product A_i x_i, where x_i is the  i-th matrix having the coordinates of
+        # the basis_vectors of the i-th simplex arranged column-wise.
+        basis_vectors_global_frameT = self.change_basis_matrix @ basis_vectors_reshaped
+        # to compute the current metric we need to arrange basis-vectors in the global
+        # frame row-wise
+        basis_vectors_global_frame = np.transpose(
+            basis_vectors_global_frameT, axes=(0, 2, 1))
+        # extract metric multiarray in the global frame
+        metric = basis_vectors_global_frame @ jnp.transpose(
+            basis_vectors_global_frame, axes=(0, 2, 1))
+        return metric
 
 
 def __simplex_array_parity(s):
