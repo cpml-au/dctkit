@@ -310,7 +310,7 @@ class SimplicialComplex:
         basis_vectors_global_frameT = self.change_basis_matrix @ basis_vectors_reshaped
         # to compute the current metric we need to arrange basis-vectors in the global
         # frame row-wise
-        basis_vectors_global_frame = np.transpose(
+        basis_vectors_global_frame = jnp.transpose(
             basis_vectors_global_frameT, axes=(0, 2, 1))
         # extract metric multiarray in the global frame
         metric = basis_vectors_global_frame @ jnp.transpose(
