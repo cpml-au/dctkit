@@ -22,6 +22,21 @@ class LinearElasticity():
         self.mu_ = mu_
         self.lambda_ = lambda_
 
+    def get_strain(self, node_coords:  npt.NDArray | Array):
+        current_metric = self.S.get_current_metric_2D(node_coords=node_coords)
+        # define the infinitesimal strain and its trace
+        epsilon = 1/2 * (current_metric - self.S.metric)
+        return epsilon
+
+    def get_stress(self, epsilon: npt.NDArray | Array):
+        num_faces = self.S.S[2].shape[0]
+        tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
+        # get the stress via the consistutive equation for isotropic linear
+        # elastic materials
+        stress = 2*self.mu_*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
+            jnp.stack([jnp.identity(2)]*num_faces)
+        return stress
+
     def linear_elasticity_residual(self, node_coords: C.CochainP0,
                                    f: C.CochainP2) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
@@ -36,15 +51,8 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        num_faces = self.S.S[2].shape[0]
-        current_metric = self.S.get_current_metric_2D(node_coords=node_coords.coeffs)
-        # define the infinitesimal strain and its trace
-        epsilon = 1/2 * (current_metric - self.S.metric)
-        tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
-        # get the stress via the consistutive equation for isotropic linear
-        # elastic materials
-        stress = 2*self.mu_*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
-            jnp.stack([jnp.identity(2)]*num_faces)
+        epsilon = self.get_strain(node_coords=node_coords.coeffs)
+        stress = self.get_stress(epsilon=epsilon)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
         residual = C.add(C.coboundary(C.star(stress_integrated)), f)
@@ -75,6 +83,10 @@ class LinearElasticity():
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(node_coords_coch, f_coch).coeffs
-        penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+        # penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+        # FIXME: temporary setting
+        bnd_node_coords = node_coords_reshaped[idx, :]
+        penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
+            jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy
