@@ -42,16 +42,16 @@ class SimplicialComplex:
                  is_well_centered=False):
 
         # store the coordinates of the nodes
-        node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
-        tet_node_tags = np.array(tet_node_tags, dtype=dctkit.int_dtype)
-        self.node_coord = node_coord
+        self.node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
+        self.tet_node_tags = np.array(tet_node_tags, dtype=dctkit.int_dtype)
         self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
         self.bnd_faces_tags = bnd_faces_tags
-        self.change_basis_matrix = None
+        self.ref_covariant_basis = None
+        self.ref_metric_contravariant = None
 
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
@@ -63,6 +63,8 @@ class SimplicialComplex:
         self.__get_boundary_operators()
         if bnd_faces_tags is not None:
             self.__get_boundary_faces_indices()
+            # FIXME: maybe we don't want to compute the metric by default, in some
+            # applications is not needed...
             self.metric = self.get_current_metric_2D(self.node_coord)
 
     def __get_boundary_operators(self):
@@ -273,49 +275,57 @@ class SimplicialComplex:
             2-simplex.
 
             Args:
-                node_coords (np.array): matrix of shape (n, embedded_dim) in which i-th
+                node_coords: matrix of shape (n, embedded_dim) in which i-th
                 row is the vector of coordinates of i-th node of the simplex in the
                 current configuration.
 
             Returns:
-                (np.array): the current metric multiarray.
+                the current metric multiarray.
         """
+        # NOTATION:
+        # a_i, reference covariant basis (pairs of edge vectors of a primal 2-simplex)
+        # a^i = a^(ik)a_k, reference contravariant basis
+        # G = current metric
+        # g_(ij), covariant components of the current metric
+        # g_i, current covariant basis
+        # (a_k)r, r-th Cartesian component of the basis vector a_k
+        # e_r, global Cartesian basis
+        # g^(ij)_p the contravariant components of the the pull-back of the current metric
+
         dim = self.dim
         B = self.B[dim]
         primal_edges = self.S[1]
         # construct the matrix in which the i-th row corresponds to the vector
         # of coordinates of the i-th primal edge
-        primal_edge_vectors = node_coords[primal_edges[:, 1], :] - \
-            node_coords[primal_edges[:, 0], :]
-        # construct the multiarray of shape (n, 3, 3) where any 3x3 matrix represents
-        # the coordinates of the edge vectors (arranged in rows) belonging to the
-        # corresponding 2-simplex
-        primal_edges_per_2_simplex = primal_edge_vectors[B]
-        # extract the first two rows, i.e. basis vectors, for each 3x3 matrix
-        # NOTE: basis_vectors is arranged row-wise!
-        basis_vectors = primal_edges_per_2_simplex[:, :-1, :]
-        # to compute the reference metric, we need to compute the change
-        # of basis matrix from the local to the global frame.
-        # This matrix is the inverse of the matrix having as columns the basis
-        # vectors (2x1 vectors) and since basis_vectors is the multiarray of the
-        # embeddeded coordinate in R^3 we have to discard the last column
-        basis_vectors_reshaped = jnp.transpose(
-            basis_vectors[:, :, :-1], axes=(0, 2, 1))
-        if self.change_basis_matrix is None:
-            basis_vectors_reshaped_inv = jnp.linalg.inv(basis_vectors_reshaped)
-            self.change_basis_matrix = basis_vectors_reshaped_inv
-        # we have to compute for any 2x2 matrix A_i in the multiarray change_basis_matrix
-        # the product A_i x_i, where x_i is the  i-th matrix having the coordinates of
-        # the basis_vectors of the i-th simplex arranged column-wise.
-        basis_vectors_global_frameT = self.change_basis_matrix @ basis_vectors_reshaped
-        # to compute the current metric we need to arrange basis-vectors in the global
-        # frame row-wise
-        basis_vectors_global_frame = jnp.transpose(
-            basis_vectors_global_frameT, axes=(0, 2, 1))
-        # extract metric multiarray in the global frame
-        metric = basis_vectors_global_frame @ jnp.transpose(
-            basis_vectors_global_frame, axes=(0, 2, 1))
-        return metric
+        primal_edge_vectors = node_coords[primal_edges[:, 1], :2] - \
+            node_coords[primal_edges[:, 0], :2]
+        # construct the multiarray of shape (n, 2, 2) where any 2x2 matrix
+        # represents the coordinates of the first two edge vectors
+        # (arranged in rows) belonging to corresponding primal 2-simplex
+        # i.e. the rows are the vectors g_i
+        current_covariant_basis = primal_edge_vectors[B][:, :2, :]
+
+        # compute the matrix (a_k)r and its transpose
+        if self.ref_covariant_basis is None:
+            self.ref_covariant_basis = current_covariant_basis
+            self.ref_covariant_basis_T = jnp.transpose(
+                self.ref_covariant_basis, axes=(0, 2, 1))
+
+        # compute g_(ij) = g_i dot g_j
+        current_metric_covariant = current_covariant_basis @ jnp.transpose(
+            current_covariant_basis, axes=(0, 2, 1))
+
+        # compute a^(ij)
+        if self.ref_metric_contravariant is None:
+            ref_metric_covariant = current_metric_covariant
+            self.ref_metric_contravariant = jnp.linalg.inv(ref_metric_covariant)
+
+        # compute g^(km)_p = g_(ij) a^(ik) a^(jm)
+        pullback_current_metric_contravariant = self.ref_metric_contravariant @ current_metric_covariant @ self.ref_metric_contravariant
+
+        # compute the components of G = g^(km)_p (a_k)r (a_m)s e_r x e_s
+        current_cartesian_metric = self.ref_covariant_basis_T @ pullback_current_metric_contravariant @ self.ref_covariant_basis
+        return current_cartesian_metric
 
 
 def __simplex_array_parity(s):
