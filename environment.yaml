@@ -9,7 +9,7 @@ dependencies:
   - jaxopt
   - numpy=1.24.2
   - pygmo=2.19.5
-  - python=3.11.0
+  - python
   - python-gmsh
   - scipy=1.10.0
   - typeguard
