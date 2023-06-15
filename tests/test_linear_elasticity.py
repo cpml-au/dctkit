@@ -28,7 +28,7 @@ def test_linear_elasticity(setup_test):
 
     mu_ = 1.
     lambda_ = 10.
-    gamma = 100000.
+    gamma = 10000.
     # FIXME: temporary setting
     idx = [1, 3, 5]
     value = S.node_coord[idx, :]
@@ -37,7 +37,7 @@ def test_linear_elasticity(setup_test):
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
     f = np.zeros((num_faces, (embedded_dim-1)))
     # FIXME: temporary setting
-    f[[3, 6], 0] = 1.001*np.ones(2)
+    f[[3, 6], 0] = 1.1*np.ones(2)
     # f[:, 1] = 0.1*np.ones(num_faces)
     f = f.flatten()
     node_coords_reshaped = S.node_coord.flatten()
@@ -49,16 +49,21 @@ def test_linear_elasticity(setup_test):
     prb = optctrl.OptimizationProblem(dim=S.node_coord.size,
                                       state_dim=S.node_coord.size,
                                       objfun=ela.obj_linear_elasticity)
-    print(value)
     prb.set_obj_args(obj_args)
-    sol = prb.run(x0=node_coords_reshaped, maxeval=1000)
+    sol = prb.run(x0=node_coords_reshaped, maxeval=5000)
     sol_reshape = sol.reshape(S.node_coord.shape)
     print(prb.last_opt_result)
     print(sol.reshape(S.node_coord.shape))
-    epsilon = ela.get_strain(sol_reshape)
+    node_coords_final = S.node_coord.copy()
+    node_coords_final[:, 0] *= 1.1
+    node_coords_final_flat = node_coords_final.flatten()
+    epsilon = ela.get_strain(node_coords_final)
     stress = ela.get_stress(epsilon)
-    print("ref_metric=", S.metric)
-    print("curr_metric=", S.get_current_metric_2D(sol.reshape(S.node_coord.shape)))
+    print("-------------------------------------")
+    print(S.S[2])
+    print(S.node_coord)
+    print(S.S[1])
+    print("-------------------------------------")
     print("eps=", epsilon)
     print("stress=", stress)
     np.save("ref.npy", S.node_coord)

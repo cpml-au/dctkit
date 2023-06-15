@@ -55,7 +55,6 @@ class LinearElasticity():
         stress = self.get_stress(epsilon=epsilon)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
-        # residual = C.add(C.coboundary(C.star(stress_integrated)), f)
         forces = C.star(stress_integrated)
         # force on free boundary is 0
         # FIXME: temporary setting. Free edges indexes for the square mesh:
@@ -95,7 +94,7 @@ class LinearElasticity():
         # penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
         # FIXME: temporary setting
         bnd_node_coords = node_coords_reshaped[idx, :]
-        penalty = jnp.sum((bnd_node_coords[:, 0] - value[:, 0])**2) + \
-            jnp.sum((bnd_node_coords[:, 1] - value[:, 1])**2)
+        penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
+            jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy
