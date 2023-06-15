@@ -59,15 +59,16 @@ def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
     # multiply weights of each dual edge by the vectors associated to the dual nodes
     # belonging to the edge
     weighted_v = v.coeffs @ flat_matrix
-    weighted_v_T = weighted_v.T
     if v.rank == 1:
         # vector field case
         # perform dot product row-wise with the edge vectors
         # of the dual edges (see definition of DPD in Hirani, pag. 54).
+        weighted_v_T = weighted_v.T
         coch_coeffs = jnp.einsum("ij, ij -> i", weighted_v_T, dedges)
     elif v.rank == 2:
         # tensor field case
         # apply each matrix (rows of the multiarray weighted_v_T fixing the first axis)
         # to the edge vector of the corresponding dual edge
+        weighted_v_T = jnp.transpose(weighted_v, axes=(2, 0, 1))
         coch_coeffs = jnp.einsum("ijk, ik -> ij", weighted_v_T, dedges)
     return CochainD1(v.S, coch_coeffs)
