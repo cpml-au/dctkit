@@ -37,8 +37,14 @@ class LinearElasticity():
             jnp.stack([jnp.identity(2)]*num_faces)
         return stress
 
-    def linear_elasticity_residual(self, node_coords: C.CochainP0,
-                                   f: C.CochainP2) -> C.CochainP2:
+    def set_boundary_tractions(self, forces: C.CochainP1,
+                               boundary_tractions: Tuple[Array, Array]) -> C.CochainP1:
+        idx, values = boundary_tractions
+        forces.coeffs = forces.coeffs.at[idx, :].set(values)
+        return forces
+
+    def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
+                                   boundary_tractions: Tuple[Array, Array]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -57,19 +63,15 @@ class LinearElasticity():
         stress_integrated = V.flat_DPD(stress_tensor)
         # residual = C.add(C.coboundary(C.star(stress_integrated)), f)
         forces = C.star(stress_integrated)
-        # force on free boundary is 0
-        # FIXME: temporary setting. Free edges indexes for the square mesh:
-        # [0,3,6,10]
-        forces.coeffs = forces.coeffs.at[0].set(0)
-        forces.coeffs = forces.coeffs.at[3].set(0)
-        forces.coeffs = forces.coeffs.at[6].set(0)
-        forces.coeffs = forces.coeffs.at[10].set(0)
-        residual = C.add(C.coboundary(forces), f)
+        # force on free boundaries is 0
+        forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
+        residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
                               f: npt.NDArray | Array, gamma: float, boundary_values:
-                              Tuple[npt.NDArray, npt.NDArray]) -> float:
+                              Tuple[npt.NDArray, npt.NDArray],
+                              boundary_tractions: Tuple[Array, Array]) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
@@ -91,11 +93,8 @@ class LinearElasticity():
         idx, value = boundary_values
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        residual = self.linear_elasticity_residual(node_coords_coch, f_coch).coeffs
-        # penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
-        # FIXME: temporary setting
-        bnd_node_coords = node_coords_reshaped[idx, :]
-        penalty = jnp.sum((bnd_node_coords[:, 0] - value[:, 0])**2) + \
-            jnp.sum((bnd_node_coords[:, 1] - value[:, 1])**2)
+        residual = self.linear_elasticity_residual(
+            node_coords_coch, f_coch, boundary_tractions).coeffs
+        penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy
