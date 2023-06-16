@@ -119,7 +119,7 @@ class SimplicialComplex:
     def get_dual_volumes(self):
         """Compute all the dual volumes."""
         self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
-        self.dual_volumes[self.dim] = np.ones(self.S[self.embedded_dim - self.dim].
+        self.dual_volumes[self.dim] = np.ones(self.S[self.dim].
                                               shape[0], dtype=self.float_dtype)
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
@@ -135,7 +135,6 @@ class SimplicialComplex:
             # Loop over p-simplices
             for i in range(num_p):
                 # Loop over boundary simplices of the p-simplex
-
                 for j in range(num_bnd_simplices):
                     # ID of the boundary (p-1)-simplex
                     index = self.B[p][i, j]
@@ -154,7 +153,6 @@ class SimplicialComplex:
                     # of the barycentric coordinate of the circumcenter of the
                     # parent p-simplex relative to the opposite vertex
                     sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
-
                     # Update dual volume of the boundary (p-1)-simplex
                     dv[index] += sign * (length*self.dual_volumes[p][i] /
                                          (self.dim - p + 1))
@@ -179,7 +177,7 @@ class SimplicialComplex:
                 dv = 1
             else:
                 pv = self.primal_volumes[p]
-                dv = self.dual_volumes[n - p]
+                dv = self.dual_volumes[p]
             self.hodge_star[p] = dv/pv
             if self.is_well_centered:
                 self.hodge_star_inverse[p] = 1.0/self.hodge_star[p]
