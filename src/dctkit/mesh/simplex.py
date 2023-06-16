@@ -42,8 +42,8 @@ class SimplicialComplex:
                  is_well_centered=False):
 
         # store the coordinates of the nodes
-        self.node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
-        self.tet_node_tags = np.array(tet_node_tags, dtype=dctkit.int_dtype)
+        self.node_coord = node_coord.astype(dctkit.float_dtype)
+        tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
         self.float_dtype = dctkit.float_dtype
