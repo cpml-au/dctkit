@@ -37,7 +37,7 @@ class LinearElasticity():
         return epsilon
 
     def get_stress(self, epsilon: npt.NDArray | Array) -> npt.NDArray | Array:
-        """ Compute the discrete stress tensor applying the consistutive equation 
+        """ Compute the discrete stress tensor applying the consistutive equation
         for isotropic linear elastic materials to the discrete strain tensor.
 
         Args:
