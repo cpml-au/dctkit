@@ -5,7 +5,6 @@ import dctkit.dec.vector as V
 from jax import Array
 import jax.numpy as jnp
 from typing import Tuple
-import jax
 
 
 class LinearElasticity():
@@ -13,8 +12,8 @@ class LinearElasticity():
 
     Args:
         S: reference configuration simplicial complex.
-        mu_: Lamé modulus
-        lambda_: Lamé modulus
+        mu_: Lamé modulus.
+        lambda_: Lamé modulus.
     """
 
     def __init__(self, S: SimplicialComplex, mu_: float, lambda_: float):
@@ -22,13 +21,32 @@ class LinearElasticity():
         self.mu_ = mu_
         self.lambda_ = lambda_
 
-    def get_strain(self, node_coords:  npt.NDArray | Array):
+    def get_strain(self, node_coords:  npt.NDArray | Array) -> npt.NDArray | Array:
+        """ Compute the discrete strain tensor given the current node coordinates.
+
+        Args:
+            node_coords: current node coordinates.
+
+        Returns:
+            the discrete strain tensor.
+
+        """
         current_metric = self.S.get_current_metric_2D(node_coords=node_coords)
         # define the infinitesimal strain and its trace
         epsilon = 1/2 * (current_metric - self.S.metric)
         return epsilon
 
-    def get_stress(self, epsilon: npt.NDArray | Array):
+    def get_stress(self, epsilon: npt.NDArray | Array) -> npt.NDArray | Array:
+        """ Compute the discrete stress tensor applying the consistutive equation
+        for isotropic linear elastic materials to the discrete strain tensor.
+
+        Args:
+            epsilon: discrete strain tensor.
+
+        Returns:
+            the discrete stress tensor.
+
+        """
         num_faces = self.S.S[2].shape[0]
         tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
         # get the stress via the consistutive equation for isotropic linear
@@ -37,8 +55,27 @@ class LinearElasticity():
             jnp.stack([jnp.identity(2)]*num_faces)
         return stress
 
-    def linear_elasticity_residual(self, node_coords: C.CochainP0,
-                                   f: C.CochainP2) -> C.CochainP2:
+    def set_boundary_tractions(self, forces: C.CochainP1,
+                               boundary_tractions: Tuple[Array, Array]) -> C.CochainP1:
+        """ Set boundary tractions on primal edges.
+
+        Args:
+            forces: vector-valued primal 1-cochain containing forces acting on primal
+            edges.
+            boundary_tractions: tuple of two jax arrays, in which the first
+            encordes the indices where we want to impose the boundary tractions,
+            while the last encodes the boundary traction values themselves.
+
+        Returns:
+            the updated force 1-cochain.
+
+        """
+        idx, values = boundary_tractions
+        forces.coeffs = forces.coeffs.at[idx, :].set(values)
+        return forces
+
+    def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
+                                   boundary_tractions: Tuple[Array, Array]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -46,6 +83,9 @@ class LinearElasticity():
             node_coords: primal vector valued 0-cochain of
             node coordinates of the current configuration.
             f: primal vector-valued 2-cochain of sources.
+            boundary_tractions: tuple of two jax arrays, in which the first
+            encordes the indices where we want to impose the boundary tractions,
+            while the last encodes the boundary traction values themselves.
 
         Returns:
             the residual vector-valued cochain.
@@ -55,32 +95,32 @@ class LinearElasticity():
         stress = self.get_stress(epsilon=epsilon)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
-        # residual = C.add(C.coboundary(C.star(stress_integrated)), f)
         forces = C.star(stress_integrated)
-        # force on free boundary is 0
-        # FIXME: temporary setting. Free edges indexes for the square mesh:
-        # [0,3,6,10]
-        forces.coeffs = forces.coeffs.at[0].set(0)
-        forces.coeffs = forces.coeffs.at[3].set(0)
-        forces.coeffs = forces.coeffs.at[6].set(0)
-        forces.coeffs = forces.coeffs.at[10].set(0)
-        residual = C.add(C.coboundary(forces), f)
+        # force on free boundaries is 0
+        forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
+        residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
                               f: npt.NDArray | Array, gamma: float, boundary_values:
-                              Tuple[npt.NDArray, npt.NDArray]) -> float:
+                              Tuple[npt.NDArray, npt.NDArray],
+                              boundary_tractions: Tuple[Array, Array]) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
 
         Args:
-            node_coords: matrix with node coordinates arranged row-wise.
-            f: vector of external sources (constant term of the system).
+            node_coords: 1-dimensional array obtained after flattening
+            the matrix with node coordinates arranged row-wise.
+            f: 1-dimensional array obtained after flattening the
+            matrix of external sources (constant term of the system).
             gamma: penalty factor.
             boundary_values: tuple of two np.arrays in which the first
             encodes the indices of boundary values, while the last encodes the
             boundary values themselves.
+            boundary_tractions: tuple of two jax arrays, in which the first
+            encordes the indices where we want to impose the boundary tractions,
+            while the last encodes the boundary traction values themselves.
 
         Returns:
             the value of the objective function at node_coords.
@@ -91,11 +131,8 @@ class LinearElasticity():
         idx, value = boundary_values
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        residual = self.linear_elasticity_residual(node_coords_coch, f_coch).coeffs
-        # penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
-        # FIXME: temporary setting
-        bnd_node_coords = node_coords_reshaped[idx, :]
-        penalty = jnp.sum((bnd_node_coords[:, 0] - value[:, 0])**2) + \
-            jnp.sum((bnd_node_coords[:, 1] - value[:, 1])**2)
+        residual = self.linear_elasticity_residual(
+            node_coords_coch, f_coch, boundary_tractions).coeffs
+        penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy

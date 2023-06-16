@@ -42,8 +42,8 @@ class SimplicialComplex:
                  is_well_centered=False):
 
         # store the coordinates of the nodes
-        self.node_coord = np.array(node_coord, dtype=dctkit.float_dtype)
-        self.tet_node_tags = np.array(tet_node_tags, dtype=dctkit.int_dtype)
+        self.node_coord = node_coord.astype(dctkit.float_dtype)
+        tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coord.shape[0]
         self.embedded_dim = node_coord.shape[1]
         self.float_dtype = dctkit.float_dtype
@@ -319,10 +319,14 @@ class SimplicialComplex:
             self.ref_metric_contravariant = jnp.linalg.inv(ref_metric_covariant)
 
         # compute g^(km)_p = g_(ij) a^(ik) a^(jm)
-        pullback_current_metric_contravariant = self.ref_metric_contravariant @ current_metric_covariant @ self.ref_metric_contravariant
+        pullback_current_metric_contravariant = ((self.ref_metric_contravariant @
+                                                 current_metric_covariant) @
+                                                 self.ref_metric_contravariant)
 
         # compute the components of G = g^(km)_p (a_k)r (a_m)s e_r x e_s
-        current_cartesian_metric = self.ref_covariant_basis_T @ pullback_current_metric_contravariant @ self.ref_covariant_basis
+        current_cartesian_metric = ((self.ref_covariant_basis_T @
+                                     pullback_current_metric_contravariant) @
+                                    self.ref_covariant_basis)
         return current_cartesian_metric
 
 

@@ -196,9 +196,7 @@ def test_simplicial_complex_2(setup_test):
     dedges_lengths_true[3, 5] = 0
     dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
 
-    metric_true = np.zeros((4, 2, 2), dtype=dctkit.float_dtype)
-    for i in range(4):
-        metric_true[i] = np.array([[1., 0.5], [0.5, 0.5]])
+    metric_true = np.stack([np.identity(2)]*4)
 
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     assert S.circ[1].dtype == dctkit.float_dtype
