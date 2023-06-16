@@ -321,10 +321,14 @@ class SimplicialComplex:
             self.ref_metric_contravariant = jnp.linalg.inv(ref_metric_covariant)
 
         # compute g^(km)_p = g_(ij) a^(ik) a^(jm)
-        pullback_current_metric_contravariant = self.ref_metric_contravariant @ current_metric_covariant @ self.ref_metric_contravariant
+        pullback_current_metric_contravariant = ((self.ref_metric_contravariant @
+                                                 current_metric_covariant) @
+                                                 self.ref_metric_contravariant)
 
         # compute the components of G = g^(km)_p (a_k)r (a_m)s e_r x e_s
-        current_cartesian_metric = self.ref_covariant_basis_T @ pullback_current_metric_contravariant @ self.ref_covariant_basis
+        current_cartesian_metric = ((self.ref_covariant_basis_T @
+                                     pullback_current_metric_contravariant) @
+                                    self.ref_covariant_basis)
         return current_cartesian_metric
 
 

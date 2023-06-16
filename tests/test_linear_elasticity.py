@@ -10,7 +10,6 @@ import jax.numpy as jnp
 def test_linear_elasticity(setup_test):
     lc = 0.5
     _, _, S_2, node_coords, bnd_faces_tags = util.generate_square_mesh(lc)
-    # _, _, S_2, node_coords, bnd_faces_tags = util.generate_hexagon_mesh(1, 1)
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
     bnodes = bnodes.astype(dt.int_dtype)
