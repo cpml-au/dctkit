@@ -14,3 +14,8 @@ dependencies:
   - scipy=1.10.0
   - typeguard
   - yaml=0.2.5
+  - jupyterlab
+  - trame
+  - ipywidgets
+  - pyvista
+  - pygmsh
