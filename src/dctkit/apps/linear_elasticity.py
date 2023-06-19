@@ -71,7 +71,10 @@ class LinearElasticity():
 
         """
         idx, values = boundary_tractions
+        idx_y = jnp.array([1, 4, 7, 9])
+        val_y = jnp.zeros(4)
         forces.coeffs = forces.coeffs.at[idx, :].set(values)
+        forces.coeffs = forces.coeffs.at[idx_y, 1].set(val_y)
         return forces
 
     def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
@@ -97,7 +100,12 @@ class LinearElasticity():
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
         # force on free boundaries is 0
+        print(forces.coeffs)
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
+        print("*************************************")
+        print("forces", forces_bnd_update.coeffs)
+        print("cob_forces", C.coboundary(forces_bnd_update).coeffs)
+        print("*************************************")
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
@@ -133,6 +141,10 @@ class LinearElasticity():
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+        # penalty = jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+        bnd_node_coords = node_coords_reshaped[idx, :]
+        print(bnd_node_coords)
+        penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
+            jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy
