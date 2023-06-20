@@ -128,13 +128,20 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
         f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
-        idx, value = boundary_values
+        # idx, value = boundary_values
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        bnd_node_coords = node_coords_reshaped[idx, :]
-        penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
-            jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
+        penalty = 0.
+        for key in boundary_values:
+            idx, value = boundary_values[key]
+            if key == ":":
+                penalty += jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+            else:
+                penalty += jnp.sum((node_coords_reshaped[idx, :][:, int(key)] - value)**2)
+        # bnd_node_coords = node_coords_reshaped[idx, :]
+        # penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
+        #    jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy

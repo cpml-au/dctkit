@@ -29,11 +29,12 @@ def test_linear_elasticity(setup_test):
     gamma = 1000.
     num_faces = S.S[2].shape[0]
     embedded_dim = S.embedded_dim
-
     # set displacement boundary conditions
-    idx = [1, 3, 5]
-    value = S.node_coord[idx, :]
-    boundary_values = (idx, value)
+    # idx = [1, 3, 5]
+    # value = S.node_coord[idx, :]
+    # boundary_values = (idx, value)
+    boundary_values = {"0": ([3, 5], S.node_coord[[3, 5], :][:, 0]),
+                       ":": ([1], S.node_coord[[1], :])}
 
     # set tractions boundary conditions
     idx_tractions = jnp.array([0, 1, 3, 4, 6, 7, 9, 10])
@@ -49,7 +50,9 @@ def test_linear_elasticity(setup_test):
     f = f.flatten()
     node_coords_reshaped = S.node_coord.flatten()
 
-    obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
+    obj_args = {'f': f,
+                'gamma': gamma,
+                'boundary_values': boundary_values,
                 'boundary_tractions': boundary_tractions}
 
     prb = optctrl.OptimizationProblem(dim=S.node_coord.size,
@@ -60,6 +63,6 @@ def test_linear_elasticity(setup_test):
     curr_node_coords_reshape = curr_node_coords.reshape(S.node_coord.shape)
     node_coords_final_true = S.node_coord.copy()
     node_coords_final_true[:, 0] *= 1.1
-    node_coords_final_true[:, 1] *= (1-0.1*ni)
+    node_coords_final_true[:, 1] *= 1-0.1*ni
     error = np.sum((node_coords_final_true - curr_node_coords_reshape)**2)
     assert error < 1e-5
