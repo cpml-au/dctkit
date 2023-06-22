@@ -4,7 +4,6 @@ from dctkit.mesh import util, simplex
 from dctkit.math.opt import optctrl
 from dctkit.apps.linear_elasticity import LinearElasticity
 import dctkit as dt
-import jax.numpy as jnp
 
 
 def test_linear_elasticity(setup_test):

@@ -4,7 +4,7 @@ import dctkit.dec.cochain as C
 import dctkit.dec.vector as V
 from jax import Array
 import jax.numpy as jnp
-from typing import Tuple
+from typing import Tuple, Dict
 
 
 class LinearElasticity():
@@ -56,22 +56,23 @@ class LinearElasticity():
         return stress
 
     def set_boundary_tractions(self, forces: C.CochainP1,
-                               boundary_tractions: Tuple[Array, Array]) -> C.CochainP1:
+                               boundary_tractions:
+                               Dict[str, Tuple[Array, Array]]) -> C.CochainP1:
         """ Set boundary tractions on primal edges.
 
         Args:
             forces: vector-valued primal 1-cochain containing forces acting on primal
             edges.
-            boundary_tractions: tuple of two jax arrays, in which the first
-            encordes the indices where we want to impose the boundary tractions,
-            while the last encodes the boundary traction values themselves.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+            of coordinate to manipulate (x,y, or both), while each tuple consists of
+            two jax arrays, in which the first encordes the indices where we want to
+            impose the boundary tractions, while the last encodes the boundary traction
+            values themselves.
 
         Returns:
             the updated force 1-cochain.
 
         """
-        # idx, values = boundary_tractions
-        # FIXME: fix docs.
         for key in boundary_tractions:
             idx, values = boundary_tractions[key]
             if key == ":":
@@ -81,7 +82,8 @@ class LinearElasticity():
         return forces
 
     def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
-                                   boundary_tractions: Tuple[Array, Array]) -> C.CochainP2:
+                                   boundary_tractions:
+                                   Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -89,9 +91,11 @@ class LinearElasticity():
             node_coords: primal vector valued 0-cochain of
             node coordinates of the current configuration.
             f: primal vector-valued 2-cochain of sources.
-            boundary_tractions: tuple of two jax arrays, in which the first
-            encordes the indices where we want to impose the boundary tractions,
-            while the last encodes the boundary traction values themselves.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+            of coordinate to manipulate (x,y, or both), while each tuple consists of
+            two jax arrays, in which the first encordes the indices where we want to
+            impose the boundary tractions, while the last encodes the boundary traction
+            values themselves.
 
         Returns:
             the residual vector-valued cochain.
@@ -102,15 +106,16 @@ class LinearElasticity():
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
-        # force on free boundaries is 0
+        # set tractions on given sub-portions of the boundary
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
                               f: npt.NDArray | Array, gamma: float, boundary_values:
-                              Tuple[npt.NDArray, npt.NDArray],
-                              boundary_tractions: Tuple[Array, Array]) -> float:
+                              Dict[str, Tuple[Array, Array]],
+                              boundary_tractions: Dict[str, Tuple[Array,
+                                                                  Array]]) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
@@ -121,18 +126,20 @@ class LinearElasticity():
             f: 1-dimensional array obtained after flattening the
             matrix of external sources (constant term of the system).
             gamma: penalty factor.
-            boundary_values: tuple of two np.arrays in which the first
-            encodes the indices of boundary values, while the last encodes the
-            boundary values themselves.
-            boundary_tractions: tuple of two jax arrays, in which the first
-            encordes the indices where we want to impose the boundary tractions,
-            while the last encodes the boundary traction values themselves.
+            boundary_values: a dictionary of tuples. Each key represent the type
+            of coordinate to manipulate (x,y, or both), while each tuple consists of
+            two np.arrays in which the first encodes the indices of boundary values,
+            while the last encodes the boundary values themselves.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+            of coordinate to manipulate (x,y, or both), while each tuple consists of
+            two jax arrays, in which the first encordes the indices where we want to
+            impose the boundary tractions, while the last encodes the boundary traction
+            values themselves.
 
         Returns:
             the value of the objective function at node_coords.
 
         """
-        # FIXME: fix docs
         node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
         f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)

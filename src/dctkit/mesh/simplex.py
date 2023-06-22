@@ -6,19 +6,21 @@ from dctkit.math import volume, spmv
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
+from typing import Tuple
 
 
 class SimplicialComplex:
     """Simplicial complex class.
 
     Args:
-        tet_node_tags (int32 np.array): matrix containing the IDs of the nodes
-            (cols) belonging to each tetrahedron or top-level simplex (rows).
-        node_coord (float np.array): Cartesian coordinates (columns) of all the
-        nodes (rows) of the simplicial complex.
-        bnd_faces_tags (float np.array): matrix containing the IDs of the nodes
-            (cols) belonging to each boundary (n-1)-simplex (rows).
-        is_well_centered (bool): True if the mesh is well-centered.
+        tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to
+        each tetrahedron or top-level simplex (rows).
+        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the
+        simplicial complex.
+        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to
+        each boundary (n-1)-simplex (rows).
+        is_well_centered: True if the mesh is well-centered.
+
     Attributes:
         dim (int32): dimension of the complex.
         S (list): list where each entry p is a matrix containing the IDs of the
@@ -38,8 +40,8 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags, node_coord, bnd_faces_tags=None,
-                 is_well_centered=False):
+    def __init__(self, tet_node_tags: npt.NDArray, node_coord: npt.NDArray,
+                 bnd_faces_tags: npt.NDArray = None, is_well_centered: bool = False):
 
         # store the coordinates of the nodes
         self.node_coord = node_coord.astype(dctkit.float_dtype)
@@ -330,15 +332,15 @@ class SimplicialComplex:
         return current_cartesian_metric
 
 
-def __simplex_array_parity(s):
+def __simplex_array_parity(s: npt.NDArray) -> npt.NDArray:
     """Compute the number of transpositions needed to sort the array in
        ascending order modulo 2. (Copied from PyDEC, dec/simplex_array.py)
 
         Args:
-            s (np.array): array of the simplices.
+            s: array of the simplices.
 
         Returns:
-            np.array: array of the transpositions needed modulo 2.
+            array of the transpositions needed modulo 2.
 
     """
     s = s.copy()
@@ -363,16 +365,19 @@ def __simplex_array_parity(s):
     return trans
 
 
-def compute_boundary_COO(S):
+def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray]:
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
         S (np.array): matrix of the IDs of the nodes (cols) belonging to
-            each p-simplex (rows).
+        each p-simplex (rows).
+
     Returns:
-        tuple: tuple with the COO representation of the boundary.
-        np.array: np.array matrix of node tags per (p-1)-face
-        ordered lexicographically.
+        a tuple containing a list with the COO representation of the boundary,
+        the np.array matrix of node tags per (p-1)-face ordered lexicographically,
+        and a matrix containing the IDs of the (p-1)-simplices (cols) belonging to
+        each p-simplex (rows).
+
     """
     # number of p-simplices
     num_simplices = S.shape[0]
