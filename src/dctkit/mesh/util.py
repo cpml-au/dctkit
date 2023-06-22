@@ -5,13 +5,19 @@ import numpy.typing as npt
 from typing import Tuple
 
 
-def read_mesh(filename=None, format="gmsh"):
+def read_mesh(filename: str = None, format: str = "gmsh") -> Tuple[
+        int, int, npt.NDArray, npt.NDArray, npt.NDArray]:
     """Reads a mesh from file.
 
     Args:
         filename: name of the file containing the mesh.
+        format: format of the file containing the mesh.
+
     Returns:
-        numNodes: number of mesh points.
+        a tuple containing the number of mesh nodes; the number of faces; the matrix
+        containing the IDs of the nodes (cols) belonging to each face (rows); the node
+        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
+        each boundary element (rows).
     """
     assert format == "gmsh"
 
@@ -24,11 +30,9 @@ def read_mesh(filename=None, format="gmsh"):
     # Get nodes and corresponding coordinates
     nodeTags, coords, _ = gmsh.model.mesh.getNodes()
     numNodes = len(nodeTags)
-    # print("# nodes = ", numNodes)
 
     coords = np.array(coords, dtype=float_dtype)
     # Get 2D elements and associated node tags
-    # NOTE: ONLY GET TRIANGLES
     elemTags, nodeTagsPerElem = gmsh.model.mesh.getElementsByType(2)
 
     # Decrease element IDs by 1 to have node indices starting from 0
@@ -36,13 +40,6 @@ def read_mesh(filename=None, format="gmsh"):
     nodeTagsPerElem = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
     # Get number of TRIANGLES
     numElements = len(elemTags)
-    # print("# elements = ", numElements)
-
-    # physicalGrps = gmsh.model.getPhysicalGroups()
-    # print("physical groups: ", physicalGrps)
-
-    # edgeNodesTags = gmsh.model.mesh.getElementEdgeNodes(2)
-    # print("edge nodes tags: ", edgeNodesTags)
 
     # Position vectors of mesh points
     node_coords = coords.reshape(len(coords)//3, 3)
@@ -57,7 +54,20 @@ def read_mesh(filename=None, format="gmsh"):
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
-def generate_square_mesh(lc):
+def generate_square_mesh(lc: float) -> Tuple[int, int, npt.NDArray,
+                                             npt.NDArray, npt.NDArray]:
+    """ Generate a simple square mesh.
+
+    Args:
+        lc: target mesh size (lc) close to a given point.
+
+    Returns:
+        a tuple containing the number of mesh nodes; the number of faces; the matrix
+        containing the IDs of the nodes (cols) belonging to each face (rows); the node
+        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
+        each boundary element (rows).
+
+    """
     if not gmsh.is_initialized():
         gmsh.initialize()
 
@@ -84,11 +94,20 @@ def generate_square_mesh(lc):
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
-def generate_hexagon_mesh(a, lc):
+def generate_hexagon_mesh(a: float, lc: float) -> Tuple[int, int, npt.NDArray,
+                                                        npt.NDArray, npt.NDArray]:
     """Generate a regular hexagonal mesh
 
-       Args:
-            a (float): length of the hexagonal edges.
+    Args:
+        a: length of the hexagonal edges.
+        lc: target mesh size (lc) close to a given point.
+
+    Returns:
+        a tuple containing the number of mesh nodes; the number of faces; the matrix
+        containing the IDs of the nodes (cols) belonging to each face (rows); the node
+        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
+        each boundary element (rows).
+
     """
     if not gmsh.is_initialized():
         gmsh.initialize()
@@ -138,23 +157,44 @@ def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArra
     return S_1, x
 
 
-def get_nodes_from_physical_group(dim: int, tag: int):
-    """Wrap-function for gmsh.model.mesh.getNodesForPhysicalGroup that indexes 
-    correctly node_tags."""
+def get_nodes_from_physical_group(dim: int, tag: int) -> Tuple[npt.NDArray, npt.NDArray]:
+    """Wrap-function for gmsh.model.mesh.getNodesForPhysicalGroup that indexes
+    correctly node_tags.
+
+    Args:
+        dim: dimension of the physical group.
+        tag: tag of the physical group.
+
+    Returns:
+        a tuple consisting of the tags of node belonging to the physical group and the
+        (x,y,z) coordinates of these nodes concatenated.
+
+    """
     node_tags, node_coords_flatten = gmsh.model.mesh.getNodesForPhysicalGroup(dim, tag)
     node_tags -= 1
     return node_tags, node_coords_flatten
 
 
-def get_belonging_elements(dim: int, tag: int, nodeTagsPerElem: npt.NDArray):
+def get_belonging_elements(dim: int, tag: int, nodeTagsPerElem: npt.NDArray) -> list[int]:
+    """Compute the sub-elements of a fixed dimension belonging to a given sub-portion,
+    equal to the union of the sub-elements wanted.
+
+    Args:
+        dim: dimension of the given element.
+        tag: tag of the given element.
+        nodeTagsPerElem: matrix containing the IDs of the nodes (cols) belonging
+        to each element (rows) of the same dimension of the sub-elements wanted.
+
+    Returns:
+        a list of indices containing the sub-elements in the given sub-portion.
+
+    """
     _, elem_coords_in_tag_elem_flatten = gmsh.model.mesh.getElementsByType(dim, tag)
     elem_coords_in_tag_elem_flatten -= 1
     elem_coords_in_tag_elem = elem_coords_in_tag_elem_flatten.reshape(
         len(elem_coords_in_tag_elem_flatten) // 2, 2)
     elem_coords_in_tag_elem = np.sort(elem_coords_in_tag_elem)
-    print(elem_coords_in_tag_elem)
     inside_elems_idx = [int(np.argwhere(
         np.all(nodeTagsPerElem == bnd_face, axis=1)))
         for bnd_face in elem_coords_in_tag_elem]
-    # inside_elems_idx = np.sort(inside_elems_idx)
     return inside_elems_idx
