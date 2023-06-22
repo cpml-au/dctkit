@@ -75,6 +75,8 @@ def generate_square_mesh(lc):
     gmsh.model.geo.addPlaneSurface([1], 1)
     gmsh.model.geo.synchronize()
     gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4], 1)
+    gmsh.model.addPhysicalGroup(1, [2], 2, name="left")
+    gmsh.model.addPhysicalGroup(1, [4], 3, name="right")
     gmsh.model.mesh.generate(2)
 
     numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
@@ -134,3 +136,25 @@ def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArra
     S_1[:, 0] = np.arange(num_nodes-1)
     S_1[:, 1] = np.arange(1, num_nodes)
     return S_1, x
+
+
+def get_nodes_from_physical_group(dim: int, tag: int):
+    """Wrap-function for gmsh.model.mesh.getNodesForPhysicalGroup that indexes 
+    correctly node_tags."""
+    node_tags, node_coords_flatten = gmsh.model.mesh.getNodesForPhysicalGroup(dim, tag)
+    node_tags -= 1
+    return node_tags, node_coords_flatten
+
+
+def get_belonging_elements(dim: int, tag: int, nodeTagsPerElem: npt.NDArray):
+    _, elem_coords_in_tag_elem_flatten = gmsh.model.mesh.getElementsByType(dim, tag)
+    elem_coords_in_tag_elem_flatten -= 1
+    elem_coords_in_tag_elem = elem_coords_in_tag_elem_flatten.reshape(
+        len(elem_coords_in_tag_elem_flatten) // 2, 2)
+    elem_coords_in_tag_elem = np.sort(elem_coords_in_tag_elem)
+    print(elem_coords_in_tag_elem)
+    inside_elems_idx = [int(np.argwhere(
+        np.all(nodeTagsPerElem == bnd_face, axis=1)))
+        for bnd_face in elem_coords_in_tag_elem]
+    # inside_elems_idx = np.sort(inside_elems_idx)
+    return inside_elems_idx

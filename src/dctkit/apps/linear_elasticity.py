@@ -70,8 +70,14 @@ class LinearElasticity():
             the updated force 1-cochain.
 
         """
-        idx, values = boundary_tractions
-        forces.coeffs = forces.coeffs.at[idx, :].set(values)
+        # idx, values = boundary_tractions
+        # FIXME: fix docs.
+        for key in boundary_tractions:
+            idx, values = boundary_tractions[key]
+            if key == ":":
+                forces.coeffs = forces.coeffs.at[idx, :].set(values)
+            else:
+                forces.coeffs = forces.coeffs.at[idx, int(key)].set(values)
         return forces
 
     def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
@@ -126,22 +132,19 @@ class LinearElasticity():
             the value of the objective function at node_coords.
 
         """
+        # FIXME: fix docs
         node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
         f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
-        # idx, value = boundary_values
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.linear_elasticity_residual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
         penalty = 0.
         for key in boundary_values:
-            idx, value = boundary_values[key]
+            idx, values = boundary_values[key]
             if key == ":":
-                penalty += jnp.sum((node_coords_reshaped[idx, :] - value)**2)
+                penalty += jnp.sum((node_coords_reshaped[idx, :] - values)**2)
             else:
-                penalty += jnp.sum((node_coords_reshaped[idx, :][:, int(key)] - value)**2)
-        # bnd_node_coords = node_coords_reshaped[idx, :]
-        # penalty = jnp.sum((bnd_node_coords[1:, 0] - value[1:, 0])**2) + \
-        #    jnp.sum((bnd_node_coords[0, :] - value[0, :])**2)
+                penalty += jnp.sum((node_coords_reshaped[idx, :][:, int(key)] - values)**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy
