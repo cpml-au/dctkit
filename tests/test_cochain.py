@@ -59,7 +59,8 @@ def test_cochain(setup_test):
 
     # primal codifferential test (we need a well-centered mesh)
 
-    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
+    util.generate_square_mesh(0.4)
+    _, _, S_2_new, node_coords_new, _ = util.read_mesh()
     triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
 
     plt.triplot(triang, 'ko-')

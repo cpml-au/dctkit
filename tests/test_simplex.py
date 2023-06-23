@@ -230,7 +230,7 @@ def test_simplicial_complex_2(setup_test):
     assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
 
     # test metric
-    assert np.allclose(S.metric, metric_true)
+    assert np.allclose(S.reference_metric, metric_true)
 
     # test hodge star inverse
     _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)

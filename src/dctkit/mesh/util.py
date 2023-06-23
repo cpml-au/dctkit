@@ -5,13 +5,13 @@ import numpy.typing as npt
 from typing import Tuple
 
 
-def read_mesh(filename: str = None, format: str = "gmsh") -> Tuple[
-        int, int, npt.NDArray, npt.NDArray, npt.NDArray]:
-    """Reads a mesh from file.
+def read_mesh(filename: str | None = None) -> Tuple[int, int, npt.NDArray,
+                                                    npt.NDArray, npt.NDArray]:
+    """Process the current mesh model. If a filename is provided, read the mesh from a
+        .msh file.
 
     Args:
-        filename: name of the file containing the mesh.
-        format: format of the file containing the mesh.
+        filename: name of the .msh file containing the mesh.
 
     Returns:
         a tuple containing the number of mesh nodes; the number of faces; the matrix
@@ -19,8 +19,6 @@ def read_mesh(filename: str = None, format: str = "gmsh") -> Tuple[
         coordinates; the matrix containing the IDs of the nodes (cols) belonging to
         each boundary element (rows).
     """
-    assert format == "gmsh"
-
     if not gmsh.is_initialized():
         gmsh.initialize()
 
@@ -54,19 +52,11 @@ def read_mesh(filename: str = None, format: str = "gmsh") -> Tuple[
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
-def generate_square_mesh(lc: float) -> Tuple[int, int, npt.NDArray,
-                                             npt.NDArray, npt.NDArray]:
-    """ Generate a simple square mesh.
+def generate_square_mesh(lc: float):
+    """Generate a mesh for the unit square.
 
     Args:
         lc: target mesh size (lc) close to a given point.
-
-    Returns:
-        a tuple containing the number of mesh nodes; the number of faces; the matrix
-        containing the IDs of the nodes (cols) belonging to each face (rows); the node
-        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
-        each boundary element (rows).
-
     """
     if not gmsh.is_initialized():
         gmsh.initialize()
@@ -89,25 +79,13 @@ def generate_square_mesh(lc: float) -> Tuple[int, int, npt.NDArray,
     gmsh.model.addPhysicalGroup(1, [4], 3, name="right")
     gmsh.model.mesh.generate(2)
 
-    numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
 
-    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
-
-
-def generate_hexagon_mesh(a: float, lc: float) -> Tuple[int, int, npt.NDArray,
-                                                        npt.NDArray, npt.NDArray]:
-    """Generate a regular hexagonal mesh
+def generate_hexagon_mesh(a: float, lc: float):
+    """Generate a regular hexagonal mesh.
 
     Args:
         a: length of the hexagonal edges.
         lc: target mesh size (lc) close to a given point.
-
-    Returns:
-        a tuple containing the number of mesh nodes; the number of faces; the matrix
-        containing the IDs of the nodes (cols) belonging to each face (rows); the node
-        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
-        each boundary element (rows).
-
     """
     if not gmsh.is_initialized():
         gmsh.initialize()
@@ -131,10 +109,6 @@ def generate_hexagon_mesh(a: float, lc: float) -> Tuple[int, int, npt.NDArray,
     gmsh.model.geo.synchronize()
     gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4, 5, 6], 1)
     gmsh.model.mesh.generate(2)
-
-    numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem = read_mesh()
-
-    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
 def generate_tet_mesh(lc: float) -> None:
