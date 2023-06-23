@@ -21,7 +21,8 @@ class LinearElasticity():
         self.mu_ = mu_
         self.lambda_ = lambda_
 
-    def get_strain(self, node_coords:  npt.NDArray | Array) -> npt.NDArray | Array:
+    def get_GreenLagrange_strain(self, node_coords:
+                                 npt.NDArray | Array) -> npt.NDArray | Array:
         """ Compute the discrete strain tensor given the current node coordinates.
 
         Args:
@@ -33,32 +34,32 @@ class LinearElasticity():
         """
         current_metric = self.S.get_current_metric_2D(node_coords=node_coords)
         # define the infinitesimal strain and its trace
-        epsilon = 1/2 * (current_metric - self.S.metric)
+        epsilon = 1/2 * (current_metric - self.S.reference_metric)
         return epsilon
 
-    def get_stress(self, epsilon: npt.NDArray | Array) -> npt.NDArray | Array:
+    def get_stress(self, strain: npt.NDArray | Array) -> npt.NDArray | Array:
         """ Compute the discrete stress tensor applying the consistutive equation
         for isotropic linear elastic materials to the discrete strain tensor.
 
         Args:
-            epsilon: discrete strain tensor.
+            strain: discrete strain tensor.
 
         Returns:
             the discrete stress tensor.
 
         """
         num_faces = self.S.S[2].shape[0]
-        tr_epsilon = jnp.trace(epsilon, axis1=1, axis2=2)
+        tr_epsilon = jnp.trace(strain, axis1=1, axis2=2)
         # get the stress via the consistutive equation for isotropic linear
         # elastic materials
-        stress = 2*self.mu_*epsilon + self.lambda_*tr_epsilon[:, None, None] * \
+        stress = 2*self.mu_*strain + self.lambda_*tr_epsilon[:, None, None] * \
             jnp.stack([jnp.identity(2)]*num_faces)
         return stress
 
     def set_boundary_tractions(self, forces: C.CochainP1,
                                boundary_tractions:
                                Dict[str, Tuple[Array, Array]]) -> C.CochainP1:
-        """ Set boundary tractions on primal edges.
+        """Set the boundary tractions on primal edges.
 
         Args:
             forces: vector-valued primal 1-cochain containing forces acting on primal
@@ -82,8 +83,8 @@ class LinearElasticity():
         return forces
 
     def force_balance_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
-                                   boundary_tractions:
-                                   Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
+                               boundary_tractions:
+                               Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -101,8 +102,8 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        epsilon = self.get_strain(node_coords=node_coords.coeffs)
-        stress = self.get_stress(epsilon=epsilon)
+        epsilon = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        stress = self.get_stress(strain=epsilon)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
@@ -152,6 +153,7 @@ class LinearElasticity():
             if key == ":":
                 penalty += jnp.sum((node_coords_reshaped[idx, :] - values)**2)
             else:
-                penalty += jnp.sum((node_coords_reshaped[idx, :][:, int(key)] - values)**2)
+                penalty += jnp.sum((node_coords_reshaped[idx, :]
+                                   [:, int(key)] - values)**2)
         energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
         return energy

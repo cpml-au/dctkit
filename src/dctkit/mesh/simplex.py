@@ -13,12 +13,12 @@ class SimplicialComplex:
     """Simplicial complex class.
 
     Args:
-        tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to each tetrahedron
-            or top-level simplex (rows).
-        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the simplicial
-            complex.
-        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to each boundary
-            (n-1)-simplex (rows).
+        tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to each
+            tetrahedron or top-level simplex (rows).
+        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the
+            simplicial complex.
+        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to each
+            boundary (n-1)-simplex (rows).
         is_well_centered: True if the mesh is well-centered.
 
     Attributes:
@@ -41,9 +41,9 @@ class SimplicialComplex:
     """
 
     def __init__(self, tet_node_tags: npt.NDArray, node_coord: npt.NDArray,
-                 bnd_faces_tags: npt.NDArray | None = None, is_well_centered: bool = False):
+                 bnd_faces_tags: npt.NDArray | None = None,
+                 is_well_centered: bool = False):
 
-        # store the coordinates of the nodes
         self.node_coord = node_coord.astype(dctkit.float_dtype)
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coord.shape[0]
@@ -61,13 +61,12 @@ class SimplicialComplex:
         self.S = [None] * (self.dim + 1)
         self.S[-1] = tet_node_tags
 
-        # populate boundary operators and boundary elements indices
         self.__get_boundary_operators()
         if bnd_faces_tags is not None:
             self.__get_boundary_faces_indices()
             # FIXME: maybe we don't want to compute the metric by default, in some
             # applications is not needed...
-            self.metric = self.get_current_metric_2D(self.node_coord)
+            self.reference_metric = self.get_current_metric_2D(self.node_coord)
 
     def __get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
@@ -105,9 +104,6 @@ class SimplicialComplex:
 
     def get_primal_volumes(self):
         """Compute all the primal volumes."""
-        # loop over all p-simplices (1..dim + 1)
-        # (volume of 0-simplices is 1, we do not store it)
-        # self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
         self.primal_volumes = [None]*(self.dim + 1)
         self.primal_volumes[0] = np.ones(self.num_nodes, dtype=self.float_dtype)
         for p in range(1, self.dim + 1):
@@ -145,8 +141,7 @@ class SimplicialComplex:
 
                     # Distance between circumcenters of the p-simplex and the
                     # boundary (p-1)-simplex
-                    length = np.linalg.norm(self.circ[p][i, :] -
-                                            circ_pm1[index, :])
+                    length = np.linalg.norm(self.circ[p][i, :] - circ_pm1[index, :])
 
                     # Find opposite vertex to the (p-1)-simplex
                     opp_vert = list(
@@ -169,12 +164,14 @@ class SimplicialComplex:
         n = self.dim
 
         self.hodge_star = [None]*(n + 1)
-        self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i] for i in range(n + 1)]
+        self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i]
+                           for i in range(n + 1)]
 
         if self.is_well_centered:
             self.hodge_star_inverse = [None]*(n + 1)
             # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
-            self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i] for i in range(n + 1)]
+            self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
+                                       for i in range(n + 1)]
 
     def get_dual_edge_vectors(self):
         """Compute dual edges vectors taking into account their orientations."""
@@ -255,14 +252,12 @@ class SimplicialComplex:
         self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
         # in the case of non-well centered mesh an entry of the flat weights matrix
         # can be NaN. In this case, the corresponding dual edge is the null vector,
-        # hence we shouldn't take in account dot product with it. We then substitute
+        # hence we shouldn't take in account dot product with it. We then replace
         # any NaN with 0.
         self.flat_weights = np.nan_to_num(self.flat_weights)
 
-    def get_current_metric_2D(self, node_coords: npt.NDArray | Array) -> npt.NDArray:
-        """Compute the multiarray of shape (n, 2, 2) where n is the number of
-            2-simplices and any 2x2 matrix is the metric of the corresponding
-            2-simplex.
+    def get_current_metric_2D(self, node_coords: npt.NDArray | Array) -> Array:
+        """Compute the current metric of a 2D simplicial complex.
 
             Args:
                 node_coords: matrix of shape (n, embedded_dim) in which i-th
@@ -270,7 +265,9 @@ class SimplicialComplex:
                 current configuration.
 
             Returns:
-                the current metric multiarray.
+                the multiarray of shape (n, 2, 2), where n is the number of
+                2-simplices and each 2x2 matrix is the current metric of the
+                corresponding 2-simplex.
         """
         # NOTATION:
         # a_i, reference covariant basis (pairs of edge vectors of a primal 2-simplex)
@@ -280,7 +277,8 @@ class SimplicialComplex:
         # g_i, current covariant basis
         # (a_k)r, r-th Cartesian component of the basis vector a_k
         # e_r, global Cartesian basis
-        # g^(ij)_p the contravariant components of the the pull-back of the current metric
+        # g^(ij)_p the contravariant components of the the pull-back of the current
+        # metric
 
         dim = self.dim
         B = self.B[dim]

@@ -5,7 +5,8 @@ import dctkit.dec.vector as V
 
 
 def test_vector_cochain(setup_test):
-    _, _, S_2, node_coords, bnd_faces_tags = util.generate_hexagon_mesh(1, 1)
+    util.generate_hexagon_mesh(1., 1.)
+    _, _, S_2, node_coords, bnd_faces_tags = util.read_mesh()
     S = simplex.SimplicialComplex(S_2, node_coords, bnd_faces_tags=bnd_faces_tags)
     S.get_circumcenters()
     S.get_primal_volumes()
