@@ -8,7 +8,8 @@ import dctkit as dt
 
 def test_linear_elasticity(setup_test):
     lc = 0.5
-    _, _, S_2, node_coords, bnd_faces_tags = util.generate_square_mesh(lc)
+    util.generate_square_mesh(lc)
+    _, _, S_2, node_coords, bnd_faces_tags = util.read_mesh()
     bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
     bnodes -= 1
     bnodes = bnodes.astype(dt.int_dtype)
@@ -24,8 +25,10 @@ def test_linear_elasticity(setup_test):
     bnd_edges_idx = S.bnd_faces_indices
     left_bnd_nodes_idx, _ = util.get_nodes_from_physical_group(1, 2)
     right_bnd_nodes_idx, _ = util.get_nodes_from_physical_group(1, 3)
-    left_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=2, nodeTagsPerElem=S.S[1])
-    right_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=4, nodeTagsPerElem=S.S[1])
+    left_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=2,
+                                                     nodeTagsPerElem=S.S[1])
+    right_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=4,
+                                                      nodeTagsPerElem=S.S[1])
 
     # conversion to lists makes concatenation easier when assigning bcs
     left_bnd_nodes_idx = list(left_bnd_nodes_idx)
@@ -45,7 +48,8 @@ def test_linear_elasticity(setup_test):
                              np.vstack((left_bnd_nodes_pos, right_bnd_nodes_pos)).flatten()),
                        ":": (bottom_left_corner, bottom_left_corner_pos)}
 
-    idx_free_edges = list(set(bnd_edges_idx) - set(right_bnd_edges_idx) - set(left_bnd_edges_idx))
+    idx_free_edges = list(set(bnd_edges_idx) -
+                          set(right_bnd_edges_idx) - set(left_bnd_edges_idx))
     bnd_tractions_free_values = np.zeros((len(idx_free_edges), 2), dtype=dt.float_dtype)
     boundary_tractions = {':': (idx_free_edges, bnd_tractions_free_values)}
 
