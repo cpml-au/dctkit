@@ -13,12 +13,12 @@ class SimplicialComplex:
     """Simplicial complex class.
 
     Args:
-        tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to
-        each tetrahedron or top-level simplex (rows).
-        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the
-        simplicial complex.
-        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to
-        each boundary (n-1)-simplex (rows).
+        tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to each tetrahedron
+            or top-level simplex (rows).
+        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the simplicial
+            complex.
+        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to each boundary
+            (n-1)-simplex (rows).
         is_well_centered: True if the mesh is well-centered.
 
     Attributes:
@@ -41,7 +41,7 @@ class SimplicialComplex:
     """
 
     def __init__(self, tet_node_tags: npt.NDArray, node_coord: npt.NDArray,
-                 bnd_faces_tags: npt.NDArray = None, is_well_centered: bool = False):
+                 bnd_faces_tags: npt.NDArray | None = None, is_well_centered: bool = False):
 
         # store the coordinates of the nodes
         self.node_coord = node_coord.astype(dctkit.float_dtype)
@@ -107,7 +107,9 @@ class SimplicialComplex:
         """Compute all the primal volumes."""
         # loop over all p-simplices (1..dim + 1)
         # (volume of 0-simplices is 1, we do not store it)
-        self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
+        # self.primal_volumes = sl.ShiftedList([None] * (self.dim), -1)
+        self.primal_volumes = [None]*(self.dim + 1)
+        self.primal_volumes[0] = np.ones(self.num_nodes, dtype=self.float_dtype)
         for p in range(1, self.dim + 1):
             S = self.S[p]
             num_p_simplices, _ = S.shape
@@ -120,7 +122,7 @@ class SimplicialComplex:
 
     def get_dual_volumes(self):
         """Compute all the dual volumes."""
-        self.dual_volumes = sl.ShiftedList([None] * (self.dim), -1)
+        self.dual_volumes = [None] * (self.dim+1)
         self.dual_volumes[self.dim] = np.ones(self.S[self.dim].
                                               shape[0], dtype=self.float_dtype)
         # loop over simplices at all dimensions
@@ -162,29 +164,17 @@ class SimplicialComplex:
             self.dual_volumes[p - 1] = dv
 
     def get_hodge_star(self):
-        """Compute all the hodge stars and their inverse if the mesh is well-centered.
+        """Compute all the Hodge stars, and their inverse if the mesh is well-centered.
         """
         n = self.dim
+
         self.hodge_star = [None]*(n + 1)
+        self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i] for i in range(n + 1)]
+
         if self.is_well_centered:
             self.hodge_star_inverse = [None]*(n + 1)
-        for p in range(n + 1):
-            if p == 0:
-                # volumes of vertices are 1 by definition
-                pv = 1
-                dv = self.dual_volumes[n - p]
-            elif p == n:
-                pv = self.primal_volumes[p]
-                # volumes of vertices are 1 by definition
-                dv = 1
-            else:
-                pv = self.primal_volumes[p]
-                dv = self.dual_volumes[p]
-            self.hodge_star[p] = dv/pv
-            if self.is_well_centered:
-                self.hodge_star_inverse[p] = 1.0/self.hodge_star[p]
-                # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
-                self.hodge_star_inverse[p] *= (-1)**(p*(n-p))
+            # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
+            self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i] for i in range(n + 1)]
 
     def get_dual_edge_vectors(self):
         """Compute dual edges vectors taking into account their orientations."""

@@ -247,3 +247,157 @@ def test_simplicial_complex_2(setup_test):
         assert np.allclose(
             cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
                 p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
+
+
+def test_simplicial_complex_3(setup_test):
+    # FIXME: correct according to new read_mesh function
+    util.generate_tet_mesh(2)
+    # read mesh
+    tet_type = {"familyName": "Tetrahedron",
+                "numNodesPerTet": 4}
+    numNodes, numElements, S_n, x, bnd_faces_tags = util.read_mesh(tet_type)
+
+    print(f"The number of nodes in the mesh is {numNodes}")
+    print(f"The number of faces in the mesh is {numElements}")
+    print(f"The face matrix is \n {S_n}")
+
+    S = simplex.SimplicialComplex(S_n, x, bnd_faces_tags=bnd_faces_tags)
+    S.get_circumcenters()
+    S.get_primal_volumes()
+    S.get_dual_volumes()
+    S.get_hodge_star()
+    S.get_dual_edge_vectors()
+    S.get_flat_weights()
+
+    # test boundary
+    boundary_true = sl.ShiftedList([], -1)
+    rows_1_true = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3], dtype=dctkit.int_dtype)
+    cols_1_true = np.array([0, 1, 2, 0, 3, 4, 1, 3, 5, 2, 4, 5], dtype=dctkit.int_dtype)
+    values_1_true = np.array([-1, -1, -1,  1, -1, -1,  1,  1, -1,
+                             1,  1,  1], dtype=dctkit.int_dtype)
+    rows_2_true = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5], dtype=dctkit.int_dtype)
+    cols_2_true = np.array([0, 1, 0, 2, 1, 2, 0, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
+    values_2_true = np.array([1,  1, -1,  1, -1, -1,  1,  1,  1, -
+                             1,  1,  1], dtype=dctkit.int_dtype)
+    rows_3_true = np.array([0, 1, 2, 3], dtype=dctkit.int_dtype)
+    cols_3_true = np.array([0, 0, 0, 0], dtype=dctkit.int_dtype)
+    values_3_true = np.array([-1,  1, -1,  1], dtype=dctkit.int_dtype)
+    boundary_true.append((rows_1_true, cols_1_true, values_1_true))
+    boundary_true.append((rows_2_true, cols_2_true, values_2_true))
+    boundary_true.append((rows_3_true, cols_3_true, values_3_true))
+
+    assert S.boundary[1][0].dtype == dctkit.int_dtype
+    for i in range(3):
+        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
+        assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
+        assert np.alltrue(S.boundary[3][i] == boundary_true[3][i])
+
+    # test circumcenter
+    circ_true = sl.ShiftedList([], -1)
+    circ_1_true = np.array([[0.5, 0., 0.],
+                            [0.25, 0.5, 0.],
+                            [0., 0., 0.5],
+                            [0.75, 0.5, 0.],
+                            [0.5, 0., 0.5],
+                            [0.25, 0.5, 0.5]], dtype=dctkit.float_dtype)
+    circ_2_true = np.array([[0.5, 0.375, 0.],
+                            [0.5, 0., 0.5],
+                            [0.25, 0.5, 0.5],
+                            [0.41666667, 0.33333333, 0.41666667]], dtype=dctkit.float_dtype)
+    circ_3_true = np.array([[0.5, 0.375, 0.5]], dtype=dctkit.float_dtype)
+    circ_true.append(circ_1_true)
+    circ_true.append(circ_2_true)
+    circ_true.append(circ_3_true)
+
+    for i in range(1, 4):
+        assert np.allclose(S.circ[i], circ_true[i])
+    assert S.circ[1].dtype == dctkit.float_dtype
+
+    # test primal volumes
+    pv_true = sl.ShiftedList([], -1)
+    pv_1_true = np.array([1., np.sqrt(5)/2, 1., np.sqrt(5)/2,
+                         np.sqrt(2), 1.5], dtype=dctkit.float_dtype)
+    pv_2_true = np.array([0.5, 0.5, 0.55901699, 0.75], dtype=dctkit.float_dtype)
+    pv_3_true = np.array([5/30], dtype=dctkit.float_dtype)
+    pv_true.append(pv_1_true)
+    pv_true.append(pv_2_true)
+    pv_true.append(pv_3_true)
+
+    assert S.primal_volumes[1].dtype == dctkit.float_dtype
+    for i in range(1, 4):
+        assert np.allclose(S.primal_volumes[i], pv_true[i])
+
+    # define true dual volumes values
+    dv_true = []
+    dv_0_true = [0.0859375, 0.03255208, 0.02864583, 0.01953125]
+    dv_1_true = np.array([0.1875,  0.13975425,  0.171875,  0.03493856, -0.02209709,
+                          -0.015625], dtype=dctkit.float_dtype)
+    dv_2_true = np.array([0.5,  0.375,  0.2795085, -0.125], dtype=dctkit.float_dtype)
+    dv_true.append(dv_0_true)
+    dv_true.append(dv_1_true)
+    dv_true.append(dv_2_true)
+
+    assert S.dual_volumes[1].dtype == dctkit.float_dtype
+    for i in range(3):
+        assert np.allclose(S.dual_volumes[i], dv_true[i])
+
+    assert False
+
+    # define true hodge star values
+    hodge_true = []
+    hodge_0_true = np.array([1/8, 1/8, 1/8, 1/8, 1/2], dtype=dctkit.float_dtype)
+    hodge_1_true = np.array([0, 0, 1, 0, 1, 0, 1, 1], dtype=dctkit.float_dtype)
+    hodge_2_true = np.array([4, 4, 4, 4], dtype=dctkit.float_dtype)
+    hodge_true.append(hodge_0_true)
+    hodge_true.append(hodge_1_true)
+    hodge_true.append(hodge_2_true)
+
+    # define true dual edges
+    dedges_true = np.array([[0, 0, 0], [0, 0, 0], [0.5, 0.5, 0],
+                            [0, 0, 0], [0.5, -0.5, 0], [0, 0, 0],
+                            [-0.5, 0.5, 0], [-0.5, -0.5, 0]])
+
+    # define true dual edges lengths
+    num_n_simplices = S.S[S.dim].shape[0]
+    num_nm1_simplices = S.S[S.dim-1].shape[0]
+    dedges_lengths_true = np.zeros(
+        (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
+    dedges_lengths_true[0, 0] = 0
+    dedges_lengths_true[0, [2, 4]] = np.sqrt(2)/4
+    dedges_lengths_true[1, 1] = 0
+    dedges_lengths_true[1, [2, 6]] = np.sqrt(2)/4
+    dedges_lengths_true[2, 3] = 0
+    dedges_lengths_true[2, [4, 7]] = np.sqrt(2)/4
+    dedges_lengths_true[3, 5] = 0
+    dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
+
+    metric_true = np.stack([np.identity(2)]*4)
+
+    assert S.hodge_star[0].dtype == dctkit.float_dtype
+
+    # test hodge star
+    for i in range(3):
+        assert np.allclose(S.hodge_star[i], hodge_true[i])
+
+    # test dual edge and dual edge lengths
+    assert np.allclose(S.dual_edges_vectors, dedges_true)
+    assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
+
+    # test metric
+    assert np.allclose(S.metric, metric_true)
+
+    # test hodge star inverse
+    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(tet_type, 0.4)
+
+    # FIXME: make this part of the test more clear (remove long instructions between
+    # paretheses)
+    cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
+    cpx_new.get_circumcenters()
+    cpx_new.get_primal_volumes()
+    cpx_new.get_dual_volumes()
+    cpx_new.get_hodge_star()
+    n = cpx_new. dim
+    for p in range(3):
+        assert np.allclose(
+            cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
+                p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
