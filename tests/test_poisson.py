@@ -4,7 +4,7 @@ import jax
 import dctkit as dt
 from scipy.optimize import minimize
 from dctkit.mesh import simplex, util
-from dctkit.apps import poisson as p
+from dctkit.physics import poisson as p
 from dctkit.dec import cochain as C
 from dctkit.math.opt import optctrl as oc
 import matplotlib.tri as tri

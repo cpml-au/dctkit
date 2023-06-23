@@ -81,7 +81,7 @@ class LinearElasticity():
                 forces.coeffs = forces.coeffs.at[idx, int(key)].set(values)
         return forces
 
-    def linear_elasticity_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
+    def force_balance_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
                                    boundary_tractions:
                                    Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
@@ -144,7 +144,7 @@ class LinearElasticity():
         f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        residual = self.linear_elasticity_residual(
+        residual = self.force_balance_residual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
         penalty = 0.
         for key in boundary_values:
