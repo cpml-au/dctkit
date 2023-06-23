@@ -137,6 +137,49 @@ def generate_hexagon_mesh(a: float, lc: float) -> Tuple[int, int, npt.NDArray,
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
+def generate_tet_mesh(lc: float) -> None:
+    """Generate the mesh of a tetrahedron.
+
+    Args:
+        lc: target mesh size (lc) close to a given point.
+
+    Returns:
+        a tuple containing the number of mesh nodes; the number of faces; the matrix
+        containing the IDs of the nodes (cols) belonging to each face (rows); the node
+        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
+        each boundary element (rows).
+
+    """
+    # FIXME: FIX DOCS.
+    if not gmsh.is_initialized():
+        gmsh.initialize()
+
+    gmsh.model.add("tet")
+    gmsh.model.geo.addPoint(0, 0, 0, lc, 1)
+    gmsh.model.geo.addPoint(1, 0, 0, lc, 2)
+    gmsh.model.geo.addPoint(1/2, 1, 0, lc, 3)
+    gmsh.model.geo.addPoint(0, 0, 1, lc, 4)
+
+    gmsh.model.geo.addLine(1, 2, 1)
+    gmsh.model.geo.addLine(2, 3, 2)
+    gmsh.model.geo.addLine(3, 1, 3)
+    gmsh.model.geo.addLine(1, 4, 4)
+    gmsh.model.geo.addLine(2, 4, 5)
+    gmsh.model.geo.addLine(3, 4, 6)
+    gmsh.model.geo.addCurveLoop([1, 2, 3], 1)
+    gmsh.model.geo.addCurveLoop([1, 5, -4], 2)
+    gmsh.model.geo.addCurveLoop([-3, 6, -4], 3)
+    gmsh.model.geo.addCurveLoop([2, 6, -5], 4)
+    gmsh.model.geo.addPlaneSurface([1], 1)
+    gmsh.model.geo.addPlaneSurface([2], 2)
+    gmsh.model.geo.addPlaneSurface([3], 3)
+    gmsh.model.geo.addPlaneSurface([4], 4)
+    gmsh.model.geo.addSurfaceLoop([1, 2, 3, 4], 1)
+    gmsh.model.geo.addVolume([1], 1)
+    gmsh.model.geo.synchronize()
+    gmsh.model.mesh.generate(3)
+
+
 def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArray]:
     """Generate a uniform 1D mesh.
 
