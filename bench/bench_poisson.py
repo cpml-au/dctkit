@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 import dctkit as dt
 from dctkit.mesh import simplex, util
-from dctkit.apps import poisson as p
+from dctkit.physics import poisson as p
 import os
 import sys
 import matplotlib.tri as tri
@@ -14,7 +14,7 @@ import jax
 import pygmo as pg
 from functools import partial
 
-from dctkit import config, FloatDtype, IntDtype, Backend, Platform
+from dctkit import config, FloatDtype, Platform
 
 cwd = os.path.dirname(simplex.__file__)
 
@@ -39,9 +39,9 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
 
     # NOTE: NLOpt only works with float64
     if platform == "cpu":
-        config(FloatDtype.float64, IntDtype.int64, Backend.jax, Platform.cpu)
+        config(FloatDtype.float64, Platform.cpu)
     else:
-        config(FloatDtype.float64, IntDtype.int64, Backend.jax, Platform.gpu)
+        config(FloatDtype.float64, Platform.gpu)
 
     if jax.config.read("jax_enable_x64"):
         assert dt.float_dtype == "float64"
