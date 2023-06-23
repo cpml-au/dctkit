@@ -5,7 +5,7 @@ from jax import jit, grad, Array
 from dctkit.math.opt import optctrl
 from scipy import sparse
 import os
-from dctkit.apps import elastica as el
+from dctkit.physics import elastica as el
 import numpy.typing as npt
 from dctkit.dec import cochain as C
 from typing import Tuple
