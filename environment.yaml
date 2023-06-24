@@ -18,5 +18,6 @@ dependencies:
   - trame
   - ipywidgets
   - pyvista
-pip:
-  - pygmsh
+  - pip
+  - pip:
+    - pygmsh

@@ -107,7 +107,6 @@ def test_elastica_energy(setup_test):
     theta = x[:-1]
     theta = np.insert(theta, 0, theta_true[0])
 
-    # reconstruct x, y
     x, y = reconstruct_xy(theta, h, num_nodes)
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
@@ -169,9 +168,7 @@ def test_elastica_equation(setup_test):
         moment = curv
 
         residual = C.sub(C.codifferential(C.star(moment)), load)
-        # mask_residual = C.cochain_mul(mask_coch, residual)
 
-        # return C.inner_product(mask_residual, mask_residual)
         return jnp.linalg.norm(residual.coeffs[1:])
 
     prb = optctrl.OptimizationProblem(
@@ -181,7 +178,6 @@ def test_elastica_equation(setup_test):
     sol = prb.run(x0=theta_0)
     theta = jnp.insert(sol, 0, theta_true[0])
 
-    # reconstruct x, y
     x, y = reconstruct_xy(theta, h, num_nodes)
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
@@ -245,9 +241,7 @@ def test_elastica_equation_tuneB(setup_test):
         moment = curv
 
         residual = C.sub(C.codifferential(C.star(moment)), load)
-        # mask_residual = C.cochain_mul(mask_coch, residual)
 
-        # return jnp.linalg.norm(residual.coeffs[1:])
         return residual.coeffs[1:]
 
     energy_grad = energy
@@ -285,10 +279,7 @@ def test_elastica_equation_tuneB(setup_test):
     theta = x[:-1]
     theta = np.insert(theta, 0, theta_true[0])
 
-    # reconstruct x, y
     x, y = reconstruct_xy(theta, h, num_nodes)
 
     error = np.linalg.norm(x - x_true) + np.linalg.norm(y - y_true)
-    print(jnp.sum(jnp.square(theta-theta_true)))
-    # assert False
     assert error <= 2e-2

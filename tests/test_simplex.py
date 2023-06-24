@@ -118,10 +118,7 @@ def test_simplicial_complex_2(setup_test):
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_2}")
 
-    S = simplex.SimplicialComplex(S_2, x, bnd_faces_tags=bnd_faces_tags)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
+    S = simplex.SimplicialComplex(S_2, x)
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()
@@ -233,14 +230,12 @@ def test_simplicial_complex_2(setup_test):
     assert np.allclose(S.reference_metric, metric_true)
 
     # test hodge star inverse
-    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(0.4)
+    util.generate_square_mesh(0.4)
+    _, _, S_2_new, node_coords_new, _ = util.read_mesh()
 
     # FIXME: make this part of the test more clear (remove long instructions between
     # paretheses)
     cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
-    cpx_new.get_circumcenters()
-    cpx_new.get_primal_volumes()
-    cpx_new.get_dual_volumes()
     cpx_new.get_hodge_star()
     n = cpx_new. dim
     for p in range(3):
@@ -255,16 +250,13 @@ def test_simplicial_complex_3(setup_test):
     # read mesh
     tet_type = {"familyName": "Tetrahedron",
                 "numNodesPerTet": 4}
-    numNodes, numElements, S_n, x, bnd_faces_tags = util.read_mesh(tet_type)
+    numNodes, numElements, S_n, x, bnd_faces_tags = util.read_mesh()
 
     print(f"The number of nodes in the mesh is {numNodes}")
     print(f"The number of faces in the mesh is {numElements}")
     print(f"The face matrix is \n {S_n}")
 
-    S = simplex.SimplicialComplex(S_n, x, bnd_faces_tags=bnd_faces_tags)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
+    S = simplex.SimplicialComplex(S_n, x)
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()

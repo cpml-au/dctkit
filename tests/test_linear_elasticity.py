@@ -8,23 +8,15 @@ import dctkit as dt
 
 def test_linear_elasticity(setup_test):
     lc = 0.5
-    util.generate_square_mesh(lc)
-    _, _, S_2, node_coords, bnd_faces_tags = util.read_mesh()
-    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-    bnodes -= 1
-    bnodes = bnodes.astype(dt.int_dtype)
-    S = simplex.SimplicialComplex(
-        S_2, node_coords, bnd_faces_tags=bnd_faces_tags, is_well_centered=True)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
+    mesh, _ = util.generate_square_mesh(lc)
+    S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()
 
     bnd_edges_idx = S.bnd_faces_indices
-    left_bnd_nodes_idx, _ = util.get_nodes_from_physical_group(1, 2)
-    right_bnd_nodes_idx, _ = util.get_nodes_from_physical_group(1, 3)
+    left_bnd_nodes_idx, _ = util.get_nodes_for_physical_group(1, 2)
+    right_bnd_nodes_idx, _ = util.get_nodes_for_physical_group(1, 3)
     left_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=2,
                                                      nodeTagsPerElem=S.S[1])
     right_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=4,
@@ -59,7 +51,7 @@ def test_linear_elasticity(setup_test):
     gamma = 1000.
 
     num_faces = S.S[2].shape[0]
-    embedded_dim = S.embedded_dim
+    embedded_dim = S.space_dim
 
     f = np.zeros((num_faces, (embedded_dim-1)))
     f_flattened = f.flatten()

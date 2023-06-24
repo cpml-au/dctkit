@@ -3,30 +3,13 @@ import jax.numpy as jnp
 import jax
 import dctkit as dt
 from scipy.optimize import minimize
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 from dctkit.physics import poisson as p
 from dctkit.dec import cochain as C
 from dctkit.math.opt import optctrl as oc
-import matplotlib.tri as tri
 import jaxopt
-import gmsh
 import pytest
 from functools import partial
-
-
-def get_complex(S_p, node_coords):
-    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-    bnodes -= 1
-    bnodes = bnodes.astype(dt.int_dtype)
-    triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
-    # initialize simplicial complex
-    S = simplex.SimplicialComplex(S_p, node_coords, is_well_centered=True)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
-    S.get_hodge_star()
-
-    return S, bnodes, triang
 
 
 cases = [["jaxopt", False], ["jaxopt", True], ["pygmo", True],
@@ -43,10 +26,11 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
     lc = 0.5
 
-    util.generate_square_mesh(lc)
-    _, _, S_2, node_coord, _ = util.read_mesh()
-
-    S, bnodes, _ = get_complex(S_2, node_coord)
+    mesh, _ = util.generate_square_mesh(lc)
+    S = util.build_complex_from_mesh(mesh)
+    S.get_hodge_star()
+    bnodes = mesh.cell_sets_dict["boundary"]["line"]
+    node_coord = S.node_coord
 
     k = 1.
 
