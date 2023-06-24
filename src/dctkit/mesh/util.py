@@ -1,8 +1,11 @@
 from dctkit import int_dtype, float_dtype
+from dctkit.mesh.simplex import SimplicialComplex
 import gmsh  # type: ignore
+import pygmsh
+import meshio as mo
 import numpy as np
 import numpy.typing as npt
-from typing import Tuple
+from typing import Tuple, Any
 
 
 def read_mesh(filename: str | None = None) -> Tuple[int, int, npt.NDArray,
@@ -52,40 +55,36 @@ def read_mesh(filename: str | None = None) -> Tuple[int, int, npt.NDArray,
     return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
 
 
-def generate_square_mesh(lc: float):
+def build_complex_from_mesh(mesh: mo.Mesh) -> SimplicialComplex:
+    node_coord = mesh.points
+    # TODO: only works with triangles, detect top-level simplices as tets
+    tet_node_tags = mesh.cells_dict["triangle"]
+    S = SimplicialComplex(tet_node_tags, node_coord, is_well_centered=True)
+    return S
+
+
+def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[mo.Mesh, Any]:
     """Generate a mesh for the unit square.
 
     Args:
-        lc: target mesh size (lc) close to a given point.
+        lc: target mesh size.
+        L: side length.
     """
-    if not gmsh.is_initialized():
-        gmsh.initialize()
+    with pygmsh.geo.Geometry() as geom:
+        p = geom.add_polygon([[0., 0.], [L, 0.], [L, L], [0., L]], mesh_size=lc)
+        # create a default physical group for the boundary lines
+        geom.add_physical(p.lines, label="boundary")
+        mesh = geom.generate_mesh()
 
-    gmsh.model.add("t1")
-    gmsh.model.geo.addPoint(1, 0, 0, lc, 1)
-    gmsh.model.geo.addPoint(0, 0, 0, lc, 2)
-    gmsh.model.geo.addPoint(1, 1, 0, lc, 3)
-    gmsh.model.geo.addPoint(0, 1, 0, lc, 4)
-
-    gmsh.model.geo.addLine(1, 2, 1)
-    gmsh.model.geo.addLine(2, 4, 2)
-    gmsh.model.geo.addLine(4, 3, 3)
-    gmsh.model.geo.addLine(3, 1, 4)
-    gmsh.model.geo.addCurveLoop([1, 2, 3, 4], 1)
-    gmsh.model.geo.addPlaneSurface([1], 1)
-    gmsh.model.geo.synchronize()
-    gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4], 1)
-    gmsh.model.addPhysicalGroup(1, [2], 2, name="left")
-    gmsh.model.addPhysicalGroup(1, [4], 3, name="right")
-    gmsh.model.mesh.generate(2)
+    return mesh, p
 
 
 def generate_hexagon_mesh(a: float, lc: float):
-    """Generate a regular hexagonal mesh.
+    """Generate a mesh for the regular hexagon.
 
     Args:
-        a: length of the hexagonal edges.
-        lc: target mesh size (lc) close to a given point.
+        a: edge length.
+        lc: target mesh size.
     """
     if not gmsh.is_initialized():
         gmsh.initialize()
@@ -111,7 +110,7 @@ def generate_hexagon_mesh(a: float, lc: float):
     gmsh.model.mesh.generate(2)
 
 
-def generate_tet_mesh(lc: float) -> None:
+def generate_tet_mesh(lc: float):
     """Generate the mesh of a tetrahedron.
 
     Args:
@@ -174,7 +173,7 @@ def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArra
     return S_1, x
 
 
-def get_nodes_from_physical_group(dim: int, tag: int) -> Tuple[npt.NDArray, npt.NDArray]:
+def get_nodes_for_physical_group(dim: int, tag: int) -> Tuple[npt.NDArray, npt.NDArray]:
     """Wrap-function for gmsh.model.mesh.getNodesForPhysicalGroup that indexes
     correctly node_tags.
 

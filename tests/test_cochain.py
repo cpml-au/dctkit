@@ -3,12 +3,12 @@ import dctkit
 from dctkit.mesh import simplex, util
 from dctkit.dec import cochain
 import os
-import matplotlib.tri as tri
-import matplotlib.pyplot as plt
 
 cwd = os.path.dirname(__file__)
 
 # FIXME: tests should involve different dimensions (of cochains and complex)
+
+# FIXME: SPLIT INTO MULTIPLE TESTS - ONE FOR EACH FUNCTIONALITY TO BE TESTED!
 
 
 def test_cochain(setup_test):
@@ -40,9 +40,6 @@ def test_cochain(setup_test):
     assert np.allclose(dc_1.coeffs, dc_1_true.coeffs)
 
     # hodge star test
-    cpx.get_circumcenters()
-    cpx.get_primal_volumes()
-    cpx.get_dual_volumes()
     cpx.get_hodge_star()
     star_c_0 = cochain.star(c_0)
     coeffs_0 = star_c_0.coeffs
@@ -59,17 +56,8 @@ def test_cochain(setup_test):
 
     # primal codifferential test (we need a well-centered mesh)
 
-    util.generate_square_mesh(0.4)
-    _, _, S_2_new, node_coords_new, _ = util.read_mesh()
-    triang = tri.Triangulation(node_coords_new[:, 0], node_coords_new[:, 1])
-
-    plt.triplot(triang, 'ko-')
-    plt.show()
-
-    cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
-    cpx_new.get_circumcenters()
-    cpx_new.get_primal_volumes()
-    cpx_new.get_dual_volumes()
+    mesh, _ = util.generate_square_mesh(0.4)
+    cpx_new = util.build_complex_from_mesh(mesh)
     cpx_new.get_hodge_star()
 
     num_0 = cpx_new.num_nodes
@@ -88,9 +76,6 @@ def test_cochain(setup_test):
     # dual codifferential test 1D
     S_1, x = util.generate_1_D_mesh(10, 1)
     S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
     S.get_hodge_star()
     n_0 = S.num_nodes
     n_1 = S.S[1].shape[0]

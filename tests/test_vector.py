@@ -16,8 +16,8 @@ def test_vector_cochain(setup_test):
     S.get_flat_weights()
 
     # test flat operator
-    v_coeffs = np.ones((S.embedded_dim, S.S[2].shape[0]), dtype=dt.float_dtype)
-    T_coeffs = np.ones((S.embedded_dim, S.embedded_dim,
+    v_coeffs = np.ones((S.space_dim, S.S[2].shape[0]), dtype=dt.float_dtype)
+    T_coeffs = np.ones((S.space_dim, S.space_dim,
                        S.S[2].shape[0]), dtype=dt.float_dtype)
     v = V.DiscreteVectorFieldD(S, v_coeffs)
     T = V.DiscreteTensorFieldD(S, T_coeffs, 2)

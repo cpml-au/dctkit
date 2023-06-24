@@ -3,30 +3,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import dctkit as dt
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 from dctkit.dec import cochain as C
-import gmsh
-import matplotlib.tri as tri
-from dctkit import config, FloatDtype, Platform
 import numpy.typing as npt
 from jax import grad
-
-config(FloatDtype.float32, Platform.cpu)
-
-
-def get_complex(S_p, node_coords):
-    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-    bnodes -= 1
-    bnodes = bnodes.astype(dt.int_dtype)
-    triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
-    # initialize simplicial complex
-    S = simplex.SimplicialComplex(S_p, node_coords, is_well_centered=True)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
-    S.get_hodge_star()
-
-    return S, bnodes, triang
 
 
 def test_optimal_control_toy(setup_test):
@@ -88,10 +68,11 @@ def test_optimal_control_poisson(setup_test):
 
     lc = 0.5
 
-    util.generate_square_mesh(lc)
-    _, _, S_2, node_coord, _ = util.read_mesh()
-
-    S, bnodes, _ = get_complex(S_2, node_coord)
+    mesh, _ = util.generate_square_mesh(lc)
+    S = util.build_complex_from_mesh(mesh)
+    S.get_hodge_star()
+    bnodes = mesh.cell_sets_dict["boundary"]["line"]
+    node_coord = S.node_coord
 
     k = 1.
 

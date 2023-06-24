@@ -142,7 +142,7 @@ class LinearElasticity():
 
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
-        f = f.reshape((self.S.S[2].shape[0], self.S.embedded_dim-1))
+        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual(
