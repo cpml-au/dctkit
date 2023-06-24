@@ -1,16 +1,12 @@
 import numpy as np
 import dctkit as dt
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 import dctkit.dec.vector as V
 
 
 def test_vector_cochain(setup_test):
-    util.generate_hexagon_mesh(1., 1.)
-    _, _, S_2, node_coords, bnd_faces_tags = util.read_mesh()
-    S = simplex.SimplicialComplex(S_2, node_coords, bnd_faces_tags=bnd_faces_tags)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
+    mesh, _ = util.generate_hexagon_mesh(1., 1.)
+    S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()

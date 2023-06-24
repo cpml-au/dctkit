@@ -1,6 +1,5 @@
-import gmsh
 import numpy as np
-from dctkit.mesh import util, simplex
+from dctkit.mesh import util
 from dctkit.math.opt import optctrl
 from dctkit.physics.elasticity import LinearElasticity
 import dctkit as dt

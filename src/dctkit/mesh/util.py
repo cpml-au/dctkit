@@ -79,35 +79,20 @@ def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[mo.Mesh, Any]:
     return mesh, p
 
 
-def generate_hexagon_mesh(a: float, lc: float):
+def generate_hexagon_mesh(a: float, lc: float) -> Tuple[mo.Mesh, Any]:
     """Generate a mesh for the regular hexagon.
 
     Args:
         a: edge length.
         lc: target mesh size.
     """
-    if not gmsh.is_initialized():
-        gmsh.initialize()
+    with pygmsh.geo.Geometry() as geom:
+        p = geom.add_polygon([[2*a, np.sqrt(3)/2*a], [3/2*a, np.sqrt(3)*a],
+                              [a/2, np.sqrt(3)*a], [0., np.sqrt(3)/2*a], [a/2, 0.],
+                              [3/2*a, 0.]], mesh_size=lc)
+        mesh = geom.generate_mesh()
 
-    gmsh.model.add("hexagon")
-    gmsh.model.geo.addPoint(2*a, np.sqrt(3)/2 * a, 0, lc, 1)
-    gmsh.model.geo.addPoint(3/2 * a, np.sqrt(3)*a, 0, lc, 2)
-    gmsh.model.geo.addPoint(a/2, np.sqrt(3)*a, 0, lc, 3)
-    gmsh.model.geo.addPoint(0, np.sqrt(3)/2 * a, 0, lc, 4)
-    gmsh.model.geo.addPoint(a/2, 0, 0, lc, 5)
-    gmsh.model.geo.addPoint(3/2 * a, 0, 0, lc, 6)
-
-    gmsh.model.geo.addLine(1, 2, 1)
-    gmsh.model.geo.addLine(2, 3, 2)
-    gmsh.model.geo.addLine(3, 4, 3)
-    gmsh.model.geo.addLine(4, 5, 4)
-    gmsh.model.geo.addLine(5, 6, 5)
-    gmsh.model.geo.addLine(6, 1, 6)
-    gmsh.model.geo.addCurveLoop([1, 2, 3, 4, 5, 6], 1)
-    gmsh.model.geo.addPlaneSurface([1], 1)
-    gmsh.model.geo.synchronize()
-    gmsh.model.addPhysicalGroup(1, [1, 2, 3, 4, 5, 6], 1)
-    gmsh.model.mesh.generate(2)
+    return mesh, p
 
 
 def generate_tet_mesh(lc: float):
