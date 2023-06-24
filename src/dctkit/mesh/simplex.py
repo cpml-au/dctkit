@@ -38,13 +38,13 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags: npt.NDArray, node_coord: npt.NDArray,
+    def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray,
                  is_well_centered: bool = False):
 
-        self.node_coord = node_coord.astype(dctkit.float_dtype)
+        self.node_coord = node_coords.astype(dctkit.float_dtype)
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
-        self.num_nodes = node_coord.shape[0]
-        self.space_dim = node_coord.shape[1]
+        self.num_nodes = node_coords.shape[0]
+        self.space_dim = node_coords.shape[1]
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
@@ -75,18 +75,11 @@ class SimplicialComplex:
             self.B[self.dim - p] = B
             self.S[self.dim - p - 1] = vals
 
-    def get_boundary_faces(self):
-        pass
-
-    def __get_boundary_faces_indices(self):
-        """Compute the (sorted) indices of the boundary faces in the matrix S[dim-1]."""
-        faces = self.S[self.dim - 1]
-        num_bnd_faces = self.bnd_faces_tags.shape[0]
-        self.bnd_faces_indices = np.zeros(num_bnd_faces, dtype=dctkit.int_dtype)
-        # extract row indices of the faces matrix corresponding to the boundary faces
-        self.bnd_faces_indices = [int(np.argwhere(
-            np.all(faces == bnd_face, axis=1))) for bnd_face in self.bnd_faces_tags]
-        self.bnd_faces_indices = np.sort(self.bnd_faces_indices)
+    def get_complex_boundary_faces_indices(self):
+        """Find the IDs of the boundary faces of the complex, i.e. the row indices of
+        the boundary faces in the matrix S[dim-1]."""
+        unique_elements, counts = np.unique(self.B[self.dim], return_counts=True)
+        self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
@@ -122,16 +115,16 @@ class SimplicialComplex:
             self.get_circumcenters()
 
         self.dual_volumes = [None] * (self.dim+1)
-        self.dual_volumes[self.dim] = np.ones(self.S[self.dim].
-                                              shape[0], dtype=self.float_dtype)
+        self.dual_volumes[self.dim] = np.ones(self.S[self.dim].shape[0],
+                                              dtype=self.float_dtype)
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             num_p, num_bnd_simplices = self.B[p].shape
             num_pm1, _ = self.S[p - 1].shape
             dv = np.zeros(num_pm1, dtype=self.float_dtype)
             if p == 1:
-                # circ_pm1 = circumcenters of the (p-1)-simplices and the
-                # circumcenters of the nodes (0-simplices) are the nodes itself.
+                # circ_pm1 = circumcenters of the (p-1)-simplices and the circumcenters
+                # of the nodes (0-simplices) are the nodes itself.
                 circ_pm1 = self.node_coord
             else:
                 circ_pm1 = self.circ[p - 1]
@@ -142,18 +135,17 @@ class SimplicialComplex:
                     # ID of the boundary (p-1)-simplex
                     index = self.B[p][i, j]
 
-                    # Distance between circumcenters of the p-simplex and the
-                    # boundary (p-1)-simplex
+                    # Distance between circumcenters of the p-simplex and the boundary
+                    # (p-1)-simplex
                     length = np.linalg.norm(self.circ[p][i, :] - circ_pm1[index, :])
 
                     # Find opposite vertex to the (p-1)-simplex
-                    opp_vert = list(
-                        set(self.S[p][i]) - set(self.S[p - 1][index]))[0]
+                    opp_vert = list(set(self.S[p][i]) - set(self.S[p - 1][index]))[0]
                     opp_vert_index = list(self.S[p][i]).index(opp_vert)
 
-                    # Sign of the dual volume of the boundary (p-1)-simplex = sign
-                    # of the barycentric coordinate of the circumcenter of the
-                    # parent p-simplex relative to the opposite vertex
+                    # Sign of the dual volume of the boundary (p-1)-simplex = sign of
+                    # the barycentric coordinate of the circumcenter of the parent
+                    # p-simplex relative to the opposite vertex
                     sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
                     # Update dual volume of the boundary (p-1)-simplex
                     dv[index] += sign * (length*self.dual_volumes[p][i] /
@@ -172,18 +164,18 @@ class SimplicialComplex:
         if not hasattr(self, "dual_volumes"):
             self.get_dual_volumes()
 
-        self.hodge_star = [None]*(n + 1)
+        # self.hodge_star = [None]*(n + 1)
         self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i]
                            for i in range(n + 1)]
 
         if self.is_well_centered:
-            self.hodge_star_inverse = [None]*(n + 1)
+            # self.hodge_star_inverse = [None]*(n + 1)
             # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
             self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
                                        for i in range(n + 1)]
 
     def get_dual_edge_vectors(self):
-        """Compute dual edges vectors taking into account their orientations."""
+        """Compute the dual edge vectors."""
         dim = self.dim
         # dual nodes == circumcenters of the n-simplices
         if not hasattr(self, "circ"):
@@ -202,10 +194,9 @@ class SimplicialComplex:
         # separately, as described below
 
         # construct the array consisting of the positions of the circumcenters of the
-        # boundary faces arranged by rows, padded with zeros for the non-boundary
-        # edges
+        # boundary faces arranged by rows, padded with zeros for the non-boundary edges
         if not hasattr(self, "bnd_faces_indices"):
-            self.__get_boundary_faces_indices()
+            self.get_complex_boundary_faces_indices()
         circ_faces = self.circ[dim-1]
         circ_bnd_faces = np.zeros(circ_faces.shape, dtype=dctkit.float_dtype)
         circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
@@ -219,12 +210,12 @@ class SimplicialComplex:
         _, idx, count = np.unique(rows, return_index=True, return_counts=True)
         boundary_rows_idx = idx[count == 1]
 
-        # the action of the dual coboundary on the collection of the
-        # coordinates of the dual nodes produces incomplete results on the dual edges
-        # having only one dual node as a boundary (i.e. those who are incident on the
-        # boundary faces). To compensate for this, add the coordinates of the
-        # circumcenters of the boundary faces with the appropriate sign, given by the
-        # orientation of the dual edge contained in the dual coboundary matrix.
+        # the action of the dual coboundary on the collection of the coordinates of the
+        # dual nodes produces incomplete results on the dual edges having only one dual
+        # node as a boundary (i.e. those who are incident on the boundary faces). To
+        # compensate for this, add the coordinates of the circumcenters of the boundary
+        # faces with the appropriate sign, given by the orientation of the dual edge
+        # contained in the dual coboundary matrix.
         # NOTE: vals must be a COLUMN vector
         # NOTE: the (-1)**dim factor accounts for the correct sign of the dual
         # coboundary matrix
@@ -237,12 +228,12 @@ class SimplicialComplex:
         self.dual_edges_lengths = np.linalg.norm(self.dual_edges_vectors, axis=1)
 
     def get_flat_weights(self):
-        """Compute the matrix where each non-negative entry (i,j) is the
-           ratio between the length of the j-th dual edge contained in the
-           i-th n-simplex and the total length of the j-th dual edge.
+        """Compute the matrix where each non-negative entry (i,j) is the ratio between
+           the length of the j-th dual edge contained in the i-th n-simplex and the
+           total length of the j-th dual edge.
 
-           This ratio appears as a weighitng factor in the computation of the
-           discrete flat operator.
+           This ratio appears as a weighting factor in the computation of the discrete
+           flat operator.
         """
         dim = self.dim
         B = self.B[dim]
@@ -273,14 +264,14 @@ class SimplicialComplex:
         """Compute the current metric of a 2D simplicial complex.
 
             Args:
-                node_coords: matrix of shape (n, embedded_dim) in which i-th
-                row is the vector of coordinates of i-th node of the simplex in the
-                current configuration.
+                node_coords: matrix of shape (n, space_dim) where the i-th row is the
+                    vector of coordinates of i-th node of the simplex in the current
+                    configuration.
 
             Returns:
-                the multiarray of shape (n, 2, 2), where n is the number of
-                2-simplices and each 2x2 matrix is the current metric of the
-                corresponding 2-simplex.
+                the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
+                    and each 2x2 matrix is the current metric of the corresponding
+                    2-simplex.
         """
         # NOTATION:
         # a_i, reference covariant basis (pairs of edge vectors of a primal 2-simplex)
@@ -300,10 +291,9 @@ class SimplicialComplex:
         # of coordinates of the i-th primal edge
         primal_edge_vectors = node_coords[primal_edges[:, 1], :2] - \
             node_coords[primal_edges[:, 0], :2]
-        # construct the multiarray of shape (n, 2, 2) where any 2x2 matrix
-        # represents the coordinates of the first two edge vectors
-        # (arranged in rows) belonging to corresponding primal 2-simplex
-        # i.e. the rows are the vectors g_i
+        # construct the multiarray of shape (n, 2, 2) where any 2x2 matrix represents
+        # the coordinates of the first two edge vectors (arranged in rows) belonging to
+        # corresponding primal 2-simplex i.e. the rows are the vectors g_i
         current_covariant_basis = primal_edge_vectors[B][:, :2, :]
 
         # compute the matrix (a_k)r and its transpose
@@ -397,9 +387,6 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     # FIXME: avoid making a copy and sorting every time
     F = S.copy()
     F.sort(axis=1)
-    # ic(F)
-    # F_2 = S[np.lexsort(S.T[::-1])]
-    # ic(F_2)
 
     # S_(p-1) matrix with repeated (p-1)-simplices and with two extra columns
     S_pm1_ext = np.empty((N, nodes_per_simplex + 1), dtype=dctkit.int_dtype)
