@@ -17,8 +17,6 @@ class SimplicialComplex:
             tetrahedron or top-level simplex (rows).
         node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the
             simplicial complex.
-        bnd_faces_tags: matrix containing the IDs of the nodes (cols) belonging to each
-            boundary (n-1)-simplex (rows).
         is_well_centered: True if the mesh is well-centered.
 
     Attributes:
@@ -41,17 +39,15 @@ class SimplicialComplex:
     """
 
     def __init__(self, tet_node_tags: npt.NDArray, node_coord: npt.NDArray,
-                 bnd_faces_tags: npt.NDArray | None = None,
                  is_well_centered: bool = False):
 
         self.node_coord = node_coord.astype(dctkit.float_dtype)
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coord.shape[0]
-        self.embedded_dim = node_coord.shape[1]
+        self.space_dim = node_coord.shape[1]
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
-        self.bnd_faces_tags = bnd_faces_tags
         self.ref_covariant_basis = None
         self.ref_metric_contravariant = None
 
@@ -61,14 +57,14 @@ class SimplicialComplex:
         self.S = [None] * (self.dim + 1)
         self.S[-1] = tet_node_tags
 
-        self.__get_boundary_operators()
-        if bnd_faces_tags is not None:
-            self.__get_boundary_faces_indices()
-            # FIXME: maybe we don't want to compute the metric by default, in some
-            # applications is not needed...
+        self.get_boundary_operators()
+
+        # FIXME: maybe we don't want to compute the metric by default, in some
+        # applications is not needed...
+        if self.dim == 2:
             self.reference_metric = self.get_current_metric_2D(self.node_coord)
 
-    def __get_boundary_operators(self):
+    def get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
@@ -78,6 +74,9 @@ class SimplicialComplex:
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
             self.S[self.dim - p - 1] = vals
+
+    def get_boundary_faces(self):
+        pass
 
     def __get_boundary_faces_indices(self):
         """Compute the (sorted) indices of the boundary faces in the matrix S[dim-1]."""
@@ -95,7 +94,7 @@ class SimplicialComplex:
         self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            C = np.empty((S.shape[0], self.embedded_dim), dtype=self.float_dtype)
+            C = np.empty((S.shape[0], self.space_dim), dtype=self.float_dtype)
             B = np.empty((S.shape[0], S.shape[1]), dtype=self.float_dtype)
             for i in range(S.shape[0]):
                 C[i, :], B[i, :] = circ.circumcenter(S[i, :], self.node_coord)
@@ -110,7 +109,7 @@ class SimplicialComplex:
             S = self.S[p]
             num_p_simplices, _ = S.shape
             primal_volumes = np.empty(num_p_simplices)
-            if p == self.embedded_dim:
+            if p == self.space_dim:
                 primal_volumes = volume.signed_volume(S, self.node_coord)
             else:
                 primal_volumes = volume.unsigned_volume(S, self.node_coord)
@@ -118,6 +117,10 @@ class SimplicialComplex:
 
     def get_dual_volumes(self):
         """Compute all the dual volumes."""
+
+        if not hasattr(self, "circ"):
+            self.get_circumcenters()
+
         self.dual_volumes = [None] * (self.dim+1)
         self.dual_volumes[self.dim] = np.ones(self.S[self.dim].
                                               shape[0], dtype=self.float_dtype)
@@ -163,6 +166,12 @@ class SimplicialComplex:
         """
         n = self.dim
 
+        if not hasattr(self, "primal_volumes"):
+            self.get_primal_volumes()
+
+        if not hasattr(self, "dual_volumes"):
+            self.get_dual_volumes()
+
         self.hodge_star = [None]*(n + 1)
         self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i]
                            for i in range(n + 1)]
@@ -177,6 +186,8 @@ class SimplicialComplex:
         """Compute dual edges vectors taking into account their orientations."""
         dim = self.dim
         # dual nodes == circumcenters of the n-simplices
+        if not hasattr(self, "circ"):
+            self.get_circumcenters()
         dual_nodes_coords = self.circ[dim]
         num_dual_edges = self.S[dim-1].shape[0]
 
@@ -193,6 +204,8 @@ class SimplicialComplex:
         # construct the array consisting of the positions of the circumcenters of the
         # boundary faces arranged by rows, padded with zeros for the non-boundary
         # edges
+        if not hasattr(self, "bnd_faces_indices"):
+            self.__get_boundary_faces_indices()
         circ_faces = self.circ[dim-1]
         circ_bnd_faces = np.zeros(circ_faces.shape, dtype=dctkit.float_dtype)
         circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
