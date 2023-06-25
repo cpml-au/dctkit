@@ -23,7 +23,7 @@ class LinearElasticity():
 
     def get_GreenLagrange_strain(self, node_coords:
                                  npt.NDArray | Array) -> npt.NDArray | Array:
-        """ Compute the discrete strain tensor given the current node coordinates.
+        """Compute the discrete strain tensor given the current node coordinates.
 
         Args:
             node_coords: current node coordinates.
@@ -141,7 +141,7 @@ class LinearElasticity():
             the value of the objective function at node_coords.
 
         """
-        node_coords_reshaped = node_coords.reshape(self.S.node_coord.shape)
+        node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)

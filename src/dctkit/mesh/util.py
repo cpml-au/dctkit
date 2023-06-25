@@ -56,10 +56,10 @@ def read_mesh(filename: str | None = None) -> Tuple[int, int, npt.NDArray,
 
 
 def build_complex_from_mesh(mesh: mo.Mesh) -> SimplicialComplex:
-    node_coord = mesh.points
+    node_coords = mesh.points
     # TODO: only works with triangles, detect top-level simplices as tets
     tet_node_tags = mesh.cells_dict["triangle"]
-    S = SimplicialComplex(tet_node_tags, node_coord, is_well_centered=True)
+    S = SimplicialComplex(tet_node_tags, node_coords, is_well_centered=True)
     return S
 
 
@@ -108,7 +108,7 @@ def generate_tet_mesh(lc: float):
         each boundary element (rows).
 
     """
-    # FIXME: FIX DOCS.
+    # FIXME: REWRITE USING PYGMSH PRIMITIVES; return meshio.Mesh and polygon objs
     if not gmsh.is_initialized():
         gmsh.initialize()
 
@@ -158,44 +158,35 @@ def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArra
     return S_1, x
 
 
-def get_nodes_for_physical_group(dim: int, tag: int) -> Tuple[npt.NDArray, npt.NDArray]:
-    """Wrap-function for gmsh.model.mesh.getNodesForPhysicalGroup that indexes
-    correctly node_tags.
+def get_nodes_for_physical_group(mesh: mo.Mesh, dim: int, group_name: str) -> list:
+    """Find the IDs of the nodes belonging to a physical group within the mesh object.
 
     Args:
+        mesh: a meshio object.
         dim: dimension of the physical group.
-        tag: tag of the physical group.
+        group_name: tag of the physical group.
 
     Returns:
-        a tuple consisting of the tags of node belonging to the physical group and the
-        (x,y,z) coordinates of these nodes concatenated.
+        list of the node IDs belonging to the physical group.
 
     """
-    node_tags, node_coords_flatten = gmsh.model.mesh.getNodesForPhysicalGroup(dim, tag)
-    node_tags -= 1
-    return node_tags, node_coords_flatten
+    if dim == 1:
+        cell_type = "line"
+    elif dim == 2:
+        cell_type = "triangle"
+    else:
+        raise NotImplementedError
+
+    group_cells = mesh.cell_sets_dict[group_name].get(cell_type)
+    nodes_ids = list(set(mesh.cells_dict[cell_type][group_cells].flatten()))
+    return nodes_ids
 
 
-def get_belonging_elements(dim: int, tag: int, nodeTagsPerElem: npt.NDArray) -> list[int]:
-    """Compute the sub-elements of a fixed dimension belonging to a given sub-portion,
-    equal to the union of the sub-elements wanted.
-
-    Args:
-        dim: dimension of the given element.
-        tag: tag of the given element.
-        nodeTagsPerElem: matrix containing the IDs of the nodes (cols) belonging
-        to each element (rows) of the same dimension of the sub-elements wanted.
-
-    Returns:
-        a list of indices containing the sub-elements in the given sub-portion.
-
-    """
-    _, elem_coords_in_tag_elem_flatten = gmsh.model.mesh.getElementsByType(dim, tag)
-    elem_coords_in_tag_elem_flatten -= 1
-    elem_coords_in_tag_elem = elem_coords_in_tag_elem_flatten.reshape(
-        len(elem_coords_in_tag_elem_flatten) // 2, 2)
-    elem_coords_in_tag_elem = np.sort(elem_coords_in_tag_elem)
-    inside_elems_idx = [int(np.argwhere(
-        np.all(nodeTagsPerElem == bnd_face, axis=1)))
-        for bnd_face in elem_coords_in_tag_elem]
-    return inside_elems_idx
+def get_edges_for_physical_group(S: SimplicialComplex, mesh: mo.Mesh, group_name: str):
+    edges_ids_in_mesh = mesh.cell_sets_dict[group_name]["line"]
+    edges_nodes_ids = mesh.cells_dict["line"][edges_ids_in_mesh]
+    # nodes ids for edges in S[1] are sorted lexicographycally
+    edges_nodes_ids.sort()
+    edges_ids = [int(np.argwhere(np.all(S.S[1] == edge_nodes, axis=1)))
+                 for edge_nodes in edges_nodes_ids]
+    return edges_ids

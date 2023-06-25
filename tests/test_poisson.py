@@ -30,7 +30,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
     bnodes = mesh.cell_sets_dict["boundary"]["line"]
-    node_coord = S.node_coord
+    node_coord = S.node_coords
 
     k = 1.
 

@@ -3,40 +3,56 @@ from dctkit.mesh import util
 from dctkit.math.opt import optctrl
 from dctkit.physics.elasticity import LinearElasticity
 import dctkit as dt
+import pygmsh
 
 
 def test_linear_elasticity(setup_test):
     lc = 0.5
-    mesh, _ = util.generate_square_mesh(lc)
+    L = 1.
+    with pygmsh.geo.Geometry() as geom:
+        p = geom.add_polygon([[0., 0.], [L, 0.], [L, L], [0., L]], mesh_size=lc)
+        # create a default physical group for the boundary lines
+        geom.add_physical(p.lines, label="boundary")
+        geom.add_physical(p.lines[1], label="right")
+        geom.add_physical(p.lines[3], label="left")
+        mesh = geom.generate_mesh()
+
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
     S.get_dual_edge_vectors()
     S.get_flat_weights()
 
-    bnd_edges_idx = S.bnd_faces_indices
-    left_bnd_nodes_idx, _ = util.get_nodes_for_physical_group(1, 2)
-    right_bnd_nodes_idx, _ = util.get_nodes_for_physical_group(1, 3)
-    left_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=2,
-                                                     nodeTagsPerElem=S.S[1])
-    right_bnd_edges_idx = util.get_belonging_elements(dim=1, tag=4,
-                                                      nodeTagsPerElem=S.S[1])
+    ref_node_coords = S.node_coords
 
-    # conversion to lists makes concatenation easier when assigning bcs
-    left_bnd_nodes_idx = list(left_bnd_nodes_idx)
-    right_bnd_nodes_idx = list(right_bnd_nodes_idx)
+    bnd_edges_idx = S.bnd_faces_indices
+    left_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "left")
+    right_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "right")
+    left_bnd_edges_idx = util.get_edges_for_physical_group(S, mesh, "left")
+    right_bnd_edges_idx = util.get_edges_for_physical_group(S, mesh, "right")
+
     bottom_left_corner = left_bnd_nodes_idx.pop(0)
 
-    # Dirichlet bcs
-    applied_strain = 0.02
+    mu_ = 1.
+    lambda_ = 10.
+    true_strain_xx = 0.02
+    true_strain_yy = -(lambda_/(2*mu_+lambda_))*true_strain_xx
+    true_curr_node_coords = S.node_coords.copy()
+    true_curr_node_coords[:, 0] *= 1 + true_strain_xx
+    true_curr_node_coords[:, 1] *= 1 + true_strain_yy
     left_bnd_pos_components = [0]
     right_bnd_pos_components = [0]
-    left_bnd_nodes_pos = S.node_coord[left_bnd_nodes_idx, :][:, left_bnd_pos_components]
-    right_bnd_nodes_pos = S.node_coord[right_bnd_nodes_idx,
-                                       :][:, right_bnd_pos_components]*(1.+applied_strain)
-    bottom_left_corner_pos = S.node_coord[bottom_left_corner, :]
 
+    left_bnd_nodes_pos = ref_node_coords[left_bnd_nodes_idx,
+                                         :][:, left_bnd_pos_components]
+    right_bnd_nodes_pos = true_curr_node_coords[right_bnd_nodes_idx,
+                                                :][:, right_bnd_pos_components]
+    bottom_left_corner_pos = ref_node_coords[bottom_left_corner, :]
+
+    # NOTE: without flatten it does not work properly when concatenating multiple bcs;
+    # fix this so that flatten is not needed (not intuitive)
     boundary_values = {"0": (left_bnd_nodes_idx + right_bnd_nodes_idx,
-                             np.vstack((left_bnd_nodes_pos, right_bnd_nodes_pos)).flatten()),
+                             np.vstack((left_bnd_nodes_pos,
+                                        right_bnd_nodes_pos)).flatten()),
                        ":": (bottom_left_corner, bottom_left_corner_pos)}
 
     idx_free_edges = list(set(bnd_edges_idx) -
@@ -44,35 +60,23 @@ def test_linear_elasticity(setup_test):
     bnd_tractions_free_values = np.zeros((len(idx_free_edges), 2), dtype=dt.float_dtype)
     boundary_tractions = {':': (idx_free_edges, bnd_tractions_free_values)}
 
-    mu_ = 1.
-    lambda_ = 10.
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
     gamma = 1000.
 
     num_faces = S.S[2].shape[0]
     embedded_dim = S.space_dim
+    f = np.zeros((num_faces, (embedded_dim-1))).flatten()
 
-    f = np.zeros((num_faces, (embedded_dim-1)))
-    f_flattened = f.flatten()
-    node_coords_flattened = S.node_coord.flatten()
-
-    obj_args = {'f': f_flattened,
-                'gamma': gamma,
-                'boundary_values': boundary_values,
+    obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
                 'boundary_tractions': boundary_tractions}
 
-    prb = optctrl.OptimizationProblem(dim=S.node_coord.size,
-                                      state_dim=S.node_coord.size,
+    prb = optctrl.OptimizationProblem(dim=S.node_coords.size,
+                                      state_dim=S.node_coords.size,
                                       objfun=ela.obj_linear_elasticity)
+
     prb.set_obj_args(obj_args)
-    curr_node_coords_flatten = prb.run(x0=node_coords_flattened)
-    curr_node_coords = curr_node_coords_flatten.reshape(S.node_coord.shape)
+    node_coords_flattened = S.node_coords.flatten()
+    sol = prb.run(x0=node_coords_flattened)
+    curr_node_coords = sol.reshape(S.node_coords.shape)
 
-    true_strain_xx = applied_strain
-    true_strain_yy = -(lambda_/(2*mu_+lambda_))*applied_strain
-    node_coords_final_true = S.node_coord.copy()
-    node_coords_final_true[:, 0] *= 1+true_strain_xx
-    node_coords_final_true[:, 1] *= 1+true_strain_yy
-
-    error = np.sum((node_coords_final_true - curr_node_coords)**2)
-    assert error < 1e-5
+    assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-5

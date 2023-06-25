@@ -12,25 +12,20 @@ cwd = os.path.dirname(__file__)
 
 
 def test_cochain(setup_test):
-    filename = "data/test1.msh"
-    full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, node_coord, _ = util.read_mesh(full_path)
-
-    print(f"The number of nodes in the mesh is {numNodes}")
-    print(f"The number of faces in the mesh is {numElements}")
-    print(f"The vectorization of the face matrix is \n {S_2}")
+    mesh, _ = util.generate_square_mesh(1.0)
+    cpx = util.build_complex_from_mesh(mesh)
 
     v_0 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
     v_1 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=dctkit.float_dtype)
-    cpx = simplex.SimplicialComplex(S_2, node_coord)
+    # cpx = simplex.SimplicialComplex(S_2, node_coord)
     c_0 = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=v_0)
     c_1 = cochain.Cochain(dim=1, is_primal=True, complex=cpx, coeffs=v_1)
 
     # coboundary test
     dc_0 = cochain.coboundary(c_0)
     dc_1 = cochain.coboundary(c_1)
-    dc_v_0_true = np.array([1, 2, 4, 2, 3, 1, 2, 1], dtype=dctkit.float_dtype)
-    dc_v_1_true = np.array([3, -6, 7, -7], dtype=dctkit.float_dtype)
+    dc_v_0_true = np.array([1, 3, 4, 1, 3, 1, 2, 1], dtype=dctkit.float_dtype)
+    dc_v_1_true = np.array([3, -7, 6, 7], dtype=dctkit.float_dtype)
     dc_0_true = cochain.Cochain(dim=0, is_primal=True, complex=cpx, coeffs=dc_v_0_true)
     dc_1_true = cochain.Cochain(dim=1, is_primal=True, complex=cpx, coeffs=dc_v_1_true)
 
@@ -118,17 +113,18 @@ def test_cochain(setup_test):
     dc0_v = cochain.coboundary(c0_v)
     dc1_v = cochain.coboundary(c1_v)
     dc0_v_true = np.array([[3, 3, 3],
-                           [6,  6,  6],
+                           [9,  9,  9],
                            [12, 12, 12],
-                           [6, 6, 6],
+                           [3, 3, 3],
                            [9, 9, 9],
                            [3, 3, 3],
                            [6, 6, 6],
                            [3, 3, 3]], dtype=dctkit.float_dtype)
     dc1_v_true = np.array([[6, 7, 8],
-                           [-15, -16, -17],
-                           [18, 19, 20],
-                           [-18, -19, -20]], dtype=dctkit.float_dtype)
+                           [-18, -19, -20],
+                           [15, 16, 17],
+                           [18, 19, 20]], dtype=dctkit.float_dtype)
+
     assert np.allclose(dc0_v.coeffs, dc0_v_true)
     assert np.allclose(dc1_v.coeffs, dc1_v_true)
 
