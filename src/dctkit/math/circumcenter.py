@@ -1,24 +1,30 @@
 import numpy as np
 import dctkit
+import numpy.typing as npt
+from typing import Tuple
+
+# FIXME: pass only the coordinates of the nodes of the simplex
 
 
-def circumcenter(s, node_coord):
-    """Compute the circumcenter of a given simplex s. (References: Bell, Hirani,
+def circumcenter(s: npt.NDArray,
+                 node_coords: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
+    """Compute the circumcenter of a given simplex. (Reference: Bell, Hirani,
         PyDEC: Software and Algorithms for Discretization of Exterior Calculus,
         2012, Section 10.1).
 
         Args:
-            s (np.array): array containing the IDs of the nodes beloging to s.
-            node_coord (np.array): coordinates of every node of the cell complex
-                in which s is defined.
+            s: array containing the IDs of the nodes beloging to the given simplex.
+            node_coords: coordinates (cols) of each node of the complex to which the
+                given simplex belongs.
         Returns:
-            np.array: coordinates of the circumcenter of s.
+            a tuple consisting of the Cartesian coordinates of the circumcenter and the
+                barycentric coordinates.
     """
     # get global data type
     float_dtype = dctkit.float_dtype
 
     # store the coordinates of the nodes in s
-    simplex_coord = node_coord[s[:]]
+    simplex_coord = node_coords[s[:]]
     rows, cols = simplex_coord.shape
 
     assert (rows <= cols + 1)

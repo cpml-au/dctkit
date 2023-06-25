@@ -41,7 +41,7 @@ class SimplicialComplex:
     def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray,
                  is_well_centered: bool = False):
 
-        self.node_coord = node_coords.astype(dctkit.float_dtype)
+        self.node_coords = node_coords.astype(dctkit.float_dtype)
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coords.shape[0]
         self.space_dim = node_coords.shape[1]
@@ -62,7 +62,7 @@ class SimplicialComplex:
         # FIXME: maybe we don't want to compute the metric by default, in some
         # applications is not needed...
         if self.dim == 2:
-            self.reference_metric = self.get_current_metric_2D(self.node_coord)
+            self.reference_metric = self.get_current_metric_2D(self.node_coords)
 
     def get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
@@ -90,7 +90,7 @@ class SimplicialComplex:
             C = np.empty((S.shape[0], self.space_dim), dtype=self.float_dtype)
             B = np.empty((S.shape[0], S.shape[1]), dtype=self.float_dtype)
             for i in range(S.shape[0]):
-                C[i, :], B[i, :] = circ.circumcenter(S[i, :], self.node_coord)
+                C[i, :], B[i, :] = circ.circumcenter(S[i, :], self.node_coords)
             self.circ[p] = C
             self.bary_circ[p] = B
 
@@ -100,12 +100,10 @@ class SimplicialComplex:
         self.primal_volumes[0] = np.ones(self.num_nodes, dtype=self.float_dtype)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            num_p_simplices, _ = S.shape
-            primal_volumes = np.empty(num_p_simplices)
             if p == self.space_dim:
-                primal_volumes = volume.signed_volume(S, self.node_coord)
+                primal_volumes = volume.signed_volume(S, self.node_coords)
             else:
-                primal_volumes = volume.unsigned_volume(S, self.node_coord)
+                primal_volumes = volume.unsigned_volume(S, self.node_coords)
             self.primal_volumes[p] = primal_volumes
 
     def get_dual_volumes(self):
@@ -117,6 +115,7 @@ class SimplicialComplex:
         self.dual_volumes = [None] * (self.dim+1)
         self.dual_volumes[self.dim] = np.ones(self.S[self.dim].shape[0],
                                               dtype=self.float_dtype)
+
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             num_p, num_bnd_simplices = self.B[p].shape
@@ -125,7 +124,7 @@ class SimplicialComplex:
             if p == 1:
                 # circ_pm1 = circumcenters of the (p-1)-simplices and the circumcenters
                 # of the nodes (0-simplices) are the nodes itself.
-                circ_pm1 = self.node_coord
+                circ_pm1 = self.node_coords
             else:
                 circ_pm1 = self.circ[p - 1]
             # Loop over p-simplices
@@ -154,7 +153,7 @@ class SimplicialComplex:
             self.dual_volumes[p - 1] = dv
 
     def get_hodge_star(self):
-        """Compute all the Hodge stars, and their inverse if the mesh is well-centered.
+        """Compute all the Hodge stars, and their inverses if the mesh is well-centered.
         """
         n = self.dim
 
@@ -164,12 +163,10 @@ class SimplicialComplex:
         if not hasattr(self, "dual_volumes"):
             self.get_dual_volumes()
 
-        # self.hodge_star = [None]*(n + 1)
         self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i]
                            for i in range(n + 1)]
 
         if self.is_well_centered:
-            # self.hodge_star_inverse = [None]*(n + 1)
             # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
             self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
                                        for i in range(n + 1)]
@@ -324,21 +321,20 @@ class SimplicialComplex:
 
 
 def __simplex_array_parity(s: npt.NDArray) -> npt.NDArray:
-    """Compute the number of transpositions needed to sort the array in
-       ascending order modulo 2. (Copied from PyDEC, dec/simplex_array.py)
+    """Compute the number of transpositions needed to sort the array in ascending order
+       modulo 2. (Copied from PyDEC, dec/simplex_array.py)
 
         Args:
             s: array of the simplices.
 
         Returns:
-            array of the transpositions needed modulo 2.
+            array of the transpositions modulo 2.
 
     """
     s = s.copy()
     M, N = s.shape
 
-    # number of transpositions used to sort the
-    # indices of each simplex (row of s)
+    # number of transpositions used to sort the indices of each simplex (row of s)
     trans = np.zeros_like(s[:, 0])
     seq = np.arange(M)
 
@@ -360,14 +356,13 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     """Compute the COO representation of the boundary matrix of all p-simplices.
 
     Args:
-        S (np.array): matrix of the IDs of the nodes (cols) belonging to
-        each p-simplex (rows).
+        S: matrix of the IDs of the nodes (cols) belonging to each p-simplex (rows).
 
     Returns:
-        a tuple containing a list with the COO representation of the boundary,
-        the np.array matrix of node tags per (p-1)-face ordered lexicographically,
-        and a matrix containing the IDs of the (p-1)-simplices (cols) belonging to
-        each p-simplex (rows).
+        a tuple containing a list with the COO representation of the boundary, the
+            matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
+            and a matrix containing the IDs of the (p-1)-simplices (cols) belonging to
+            each p-simplex (rows).
 
     """
     # number of p-simplices

@@ -8,25 +8,17 @@ cwd = os.path.dirname(__file__)
 
 
 def test_boundary_COO(setup_test):
-    filename = "data/test1.msh"
-    full_path = os.path.join(cwd, filename)
-    numNodes, numElements, S_2, _, _ = util.read_mesh(full_path)
+    mesh, _ = util.generate_square_mesh(1.0)
+    S2 = mesh.cells_dict["triangle"]
 
-    print(f"The number of nodes in the mesh is {numNodes}")
-    print(f"The number of faces in the mesh is {numElements}")
-    print(f"The face matrix is \n {S_2}")
+    boundary_tuple, _, _ = simplex.compute_boundary_COO(S2)
 
-    boundary_tuple, _, _ = simplex.compute_boundary_COO(
-        S_2)
-    print(f"The row index vector is \n {boundary_tuple[0]}")
-    print(f"The column index vector is \n {boundary_tuple[1]}")
-    print(f"The values vector is \n {boundary_tuple[2]}")
     rows_index_true = np.array(
         [0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7], dtype=dctkit.int_dtype)
     column_index_true = np.array(
-        [0, 1, 0, 1, 2, 0, 2, 3, 1, 3, 2, 3], dtype=dctkit.int_dtype)
-    values_true = np.array([1, -1, -1, 1, 1, 1, -1, -1, -1,
-                           1, 1, -1], dtype=dctkit.int_dtype)
+        [0, 1, 0, 1, 2, 0, 2, 3, 2, 3, 1, 3], dtype=dctkit.int_dtype)
+    values_true = np.array(
+        [1, -1, -1, 1, 1, 1, -1, 1, 1, -1, -1, 1], dtype=dctkit.int_dtype)
 
     assert boundary_tuple[0].dtype == dctkit.int_dtype
     boundary_true = (rows_index_true, column_index_true, values_true)
@@ -295,7 +287,8 @@ def test_simplicial_complex_3(setup_test):
     circ_2_true = np.array([[0.5, 0.375, 0.],
                             [0.5, 0., 0.5],
                             [0.25, 0.5, 0.5],
-                            [0.41666667, 0.33333333, 0.41666667]], dtype=dctkit.float_dtype)
+                            [0.41666667, 0.33333333, 0.41666667]],
+                           dtype=dctkit.float_dtype)
     circ_3_true = np.array([[0.5, 0.375, 0.5]], dtype=dctkit.float_dtype)
     circ_true.append(circ_1_true)
     circ_true.append(circ_2_true)
