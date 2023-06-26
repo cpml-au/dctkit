@@ -113,7 +113,7 @@ def test_elastica_energy(setup_test):
     assert error <= 2e-2
 
 
-def test_elastica_equation(setup_test):
+def test_elastica_residual(setup_test):
     data = "data/xy_F_35.txt"
     F = -35.
     np.random.seed(42)
@@ -184,7 +184,7 @@ def test_elastica_equation(setup_test):
     assert error <= 2e-2
 
 
-def test_elastica_equation_tuneB(setup_test):
+def test_elastica_residual_tuneB(setup_test):
     data = "data/xy_F_35.txt"
     F = -35.
     np.random.seed(42)

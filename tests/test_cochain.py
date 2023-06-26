@@ -1,10 +1,7 @@
 import numpy as np
 import dctkit
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 from dctkit.dec import cochain
-import os
-
-cwd = os.path.dirname(__file__)
 
 # FIXME: tests should involve different dimensions (of cochains and complex)
 
@@ -69,8 +66,8 @@ def test_cochain(setup_test):
     assert np.allclose(inner_product_standard, inner_product_codiff)
 
     # dual codifferential test 1D
-    S_1, x = util.generate_1_D_mesh(10, 1)
-    S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+    mesh, _ = util.generate_line_mesh(10, 1)
+    S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
     n_0 = S.num_nodes
     n_1 = S.S[1].shape[0]
