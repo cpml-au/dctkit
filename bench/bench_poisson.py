@@ -110,8 +110,6 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
         algo.extract(pg.nlopt).ftol_rel = 1e-5
         pop = pg.population(prb)
         pop.push_back(u_0)
-        print(algo)
-        # algo.set_verbosity(1)
         pop = algo.evolve(pop)
         u = pop.champion_x
         toc = time.time()

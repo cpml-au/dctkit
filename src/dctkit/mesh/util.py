@@ -1,7 +1,7 @@
 from dctkit.mesh.simplex import SimplicialComplex
 import gmsh  # type: ignore
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 from pygmsh.geo import Geometry
 from meshio import Mesh
 
@@ -30,14 +30,14 @@ def build_complex_from_mesh(mesh: Mesh) -> SimplicialComplex:
 
 
 def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
-    """Generate a mesh for the unit square.
+    """Generate the mesh of a square.
 
     Args:
         lc: target mesh size.
         L: side length.
 
     Returns:
-        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
+        a tuple containing a meshio Mesh and a pygmsh Geometry objects.
     """
     with Geometry() as geom:
         p = geom.add_polygon([[0., 0.], [L, 0.], [L, L], [0., L]], mesh_size=lc)
@@ -49,14 +49,14 @@ def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
 
 
 def generate_hexagon_mesh(a: float, lc: float) -> Tuple[Mesh, Geometry]:
-    """Generate a mesh for the regular hexagon.
+    """Generate the mesh of a regular hexagon.
 
     Args:
         a: edge length.
         lc: target mesh size.
 
     Returns:
-        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
+        a tuple containing a meshio Mesh and a pygmsh Geometry objects.
     """
     with Geometry() as geom:
         geom.add_polygon([[2*a, np.sqrt(3)/2*a], [3/2*a, np.sqrt(3)*a],
@@ -74,9 +74,9 @@ def generate_tet_mesh(lc: float) -> Tuple[Mesh, Geometry]:
         lc: target mesh size.
 
     Returns:
-        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
+        a tuple containing a meshio Mesh and a pygmsh Geometry objects.
     """
-    # FIXME: REWRITE USING PYGMSH PRIMITIVES; return meshio.Mesh and polygon objs
+    # FIXME: REWRITE USING PYGMSH PRIMITIVES
     if not gmsh.is_initialized():
         gmsh.initialize()
 
@@ -106,7 +106,16 @@ def generate_tet_mesh(lc: float) -> Tuple[Mesh, Geometry]:
     gmsh.model.mesh.generate(3)
 
 
-def generate_cube_mesh(lc: float, L: float = 1.):
+def generate_cube_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
+    """Generate the mesh of a cube.
+
+    Args:
+        lc: target mesh size.
+        L: side length.
+
+    Returns:
+        a tuple containing a meshio Mesh and a pygmsh Geometry objects.
+    """
     with Geometry() as geom:
         poly = geom.add_polygon([[0.0, 0.0], [L, 0.0], [L, L], [0.0, L]], lc)
         geom.extrude(poly, [0, 0, L])
@@ -115,7 +124,7 @@ def generate_cube_mesh(lc: float, L: float = 1.):
     return mesh, geom
 
 
-def generate_line_mesh(num_nodes: int, L: float) -> Tuple[Mesh, Geometry]:
+def generate_line_mesh(num_nodes: int, L: float = 1.) -> Tuple[Mesh, Geometry]:
     """Generate a uniform mesh in an interval of given length.
 
     Args:
@@ -123,7 +132,7 @@ def generate_line_mesh(num_nodes: int, L: float) -> Tuple[Mesh, Geometry]:
         L: length of the interval.
 
     Returns:
-        a tuple containing a meshio Mesh and a pygmsh Line objects.
+        a tuple containing a meshio Mesh and a pygmsh Geometry objects.
     """
     lc = L/(num_nodes-1)
     points = [None]*num_nodes
@@ -137,18 +146,18 @@ def generate_line_mesh(num_nodes: int, L: float) -> Tuple[Mesh, Geometry]:
             # see also test_hex in pygmsh library's tests
             new_line_points = [points[i-1], points[i]]
             g.add_line(*new_line_points)
-            mesh = g.generate_mesh(1)
+            mesh = g.generate_mesh()
 
     return mesh, g
 
 
-def get_nodes_for_physical_group(mesh: Mesh, dim: int, group_name: str) -> list:
+def get_nodes_for_physical_group(mesh: Mesh, dim: int, group_name: str) -> List[int]:
     """Find the IDs of the nodes belonging to a physical group within the mesh object.
 
     Args:
         mesh: a meshio object.
-        dim: dimension of the physical group.
-        group_name: tag of the physical group.
+        dim: dimension of the cells belonging to the physical group.
+        group_name: name of the physical group.
 
     Returns:
         list of the node IDs belonging to the physical group.
@@ -157,6 +166,8 @@ def get_nodes_for_physical_group(mesh: Mesh, dim: int, group_name: str) -> list:
         cell_type = "line"
     elif dim == 2:
         cell_type = "triangle"
+    elif dim == 3:
+        cell_type = "tetra"
     else:
         raise NotImplementedError
 
@@ -165,7 +176,18 @@ def get_nodes_for_physical_group(mesh: Mesh, dim: int, group_name: str) -> list:
     return nodes_ids
 
 
-def get_edges_for_physical_group(S: SimplicialComplex, mesh: Mesh, group_name: str):
+def get_edges_for_physical_group(S: SimplicialComplex, mesh: Mesh,
+                                 group_name: str) -> List[int]:
+    """Find the IDs of the edges belonging to a physical group within the mesh object.
+
+    Args:
+        S: SimplicialComplex object associated to the mesh.
+        mesh: a meshio object.
+        group_name: name of the physical group.
+
+    Returns:
+        list of the node IDs belonging to the physical group.
+    """
     edges_ids_in_mesh = mesh.cell_sets_dict[group_name]["line"]
     edges_nodes_ids = mesh.cells_dict["line"][edges_ids_in_mesh]
     # nodes ids for edges in S[1] are sorted lexicographycally

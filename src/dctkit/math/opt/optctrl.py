@@ -88,7 +88,8 @@ class OptimizationProblem():
         return "Optimization problem"
 
     def run(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
-            ftol_rel: float = 1e-5, maxeval: int = 500) -> npt.NDArray:
+            ftol_rel: float = 1e-5, maxeval: int = 500,
+            verbose: bool = False) -> npt.NDArray:
         prb = pg.problem(self)
 
         if self.constr_problem:
@@ -99,7 +100,7 @@ class OptimizationProblem():
         algo.extract(pg.nlopt).maxeval = maxeval  # type: ignore
         pop = pg.population(prb)
         pop.push_back(x0)
-        # algo.set_verbosity(1)
+        algo.set_verbosity(verbose)
         pop = algo.evolve(pop)  # type: ignore
         self.last_opt_result = algo.extract(  # type: ignore
             pg.nlopt).get_last_opt_result()
