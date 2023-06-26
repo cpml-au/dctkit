@@ -81,7 +81,7 @@ def test_simplicial_complex_1(setup_test):
 
 def test_simplicial_complex_2(setup_test):
     mesh, _ = util.generate_square_mesh(1.0)
-    S = util.build_complex_from_mesh(mesh)
+    S = util.build_complex_from_mesh(mesh, False)
     S.get_hodge_star()
     S.get_flat_weights()
 
@@ -281,63 +281,16 @@ def test_simplicial_complex_3(setup_test):
     for i in range(3):
         assert np.allclose(S.dual_volumes[i], dv_true[i])
 
-    assert False
-
-    # define true hodge star values
-    hodge_true = []
-    hodge_0_true = np.array([1/8, 1/8, 1/8, 1/8, 1/2], dtype=dctkit.float_dtype)
-    hodge_1_true = np.array([0, 0, 1, 0, 1, 0, 1, 1], dtype=dctkit.float_dtype)
-    hodge_2_true = np.array([4, 4, 4, 4], dtype=dctkit.float_dtype)
-    hodge_true.append(hodge_0_true)
-    hodge_true.append(hodge_1_true)
-    hodge_true.append(hodge_2_true)
-
-    # define true dual edges
-    dedges_true = np.array([[0, 0, 0], [0, 0, 0], [0.5, 0.5, 0],
-                            [0, 0, 0], [0.5, -0.5, 0], [0, 0, 0],
-                            [-0.5, 0.5, 0], [-0.5, -0.5, 0]])
-
-    # define true dual edges lengths
-    num_n_simplices = S.S[S.dim].shape[0]
-    num_nm1_simplices = S.S[S.dim-1].shape[0]
-    dedges_lengths_true = np.zeros(
-        (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
-    dedges_lengths_true[0, 0] = 0
-    dedges_lengths_true[0, [2, 4]] = np.sqrt(2)/4
-    dedges_lengths_true[1, 1] = 0
-    dedges_lengths_true[1, [2, 6]] = np.sqrt(2)/4
-    dedges_lengths_true[2, 3] = 0
-    dedges_lengths_true[2, [4, 7]] = np.sqrt(2)/4
-    dedges_lengths_true[3, 5] = 0
-    dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
-
-    metric_true = np.stack([np.identity(2)]*4)
-
-    assert S.hodge_star[0].dtype == dctkit.float_dtype
-
     # test hodge star
-    for i in range(3):
+    hodge_true = [dv_0_true] + [dv_true[i]/pv_true[i]
+                                for i in range(1, 3)] + [1/pv_3_true]
+    for i in range(4):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
 
-    # test dual edge and dual edge lengths
-    assert np.allclose(S.dual_edges_vectors, dedges_true)
-    assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
-
-    # test metric
-    assert np.allclose(S.metric, metric_true)
-
     # test hodge star inverse
-    _, _, S_2_new, node_coords_new, _ = util.generate_square_mesh(tet_type, 0.4)
+    n = S.dim
+    signed_identity = [S.hodge_star[i]*S.hodge_star_inverse[i] for i in range(4)]
+    signed_identity_true = [(-1)**(i*(n-i))*np.ones(S.S[i].shape[0]) for i in range(4)]
 
-    # FIXME: make this part of the test more clear (remove long instructions between
-    # paretheses)
-    cpx_new = simplex.SimplicialComplex(S_2_new, node_coords_new, is_well_centered=True)
-    cpx_new.get_circumcenters()
-    cpx_new.get_primal_volumes()
-    cpx_new.get_dual_volumes()
-    cpx_new.get_hodge_star()
-    n = cpx_new. dim
-    for p in range(3):
-        assert np.allclose(
-            cpx_new.hodge_star[p]*cpx_new.hodge_star_inverse[p], (-1)**(
-                p*(n-p))*np.ones(cpx_new.S[p].shape[0]))
+    for i in range(4):
+        assert np.allclose(signed_identity[i], signed_identity_true[i])
