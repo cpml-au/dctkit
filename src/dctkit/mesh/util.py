@@ -76,34 +76,22 @@ def generate_tet_mesh(lc: float) -> Tuple[Mesh, Geometry]:
     Returns:
         a tuple containing a meshio Mesh and a pygmsh Geometry objects.
     """
-    # FIXME: REWRITE USING PYGMSH PRIMITIVES
-    if not gmsh.is_initialized():
-        gmsh.initialize()
+    nodes = np.array([[0, 0, 0], [1, 0, 0], [1/2, 1, 0], [0, 0, 1]])
+    lines = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]
+    curve_loops = []
+    with Geometry() as geom:
+        points = np.array([geom.add_point(node, lc) for node in nodes])
+        edges = [geom.add_line(*points[line_idx]) for line_idx in lines]
+        curve_loops.append(geom.add_curve_loop([edges[0], edges[3], -edges[1]]))
+        curve_loops.append(geom.add_curve_loop([edges[0], edges[4], -edges[2]]))
+        curve_loops.append(geom.add_curve_loop([edges[1], edges[5], -edges[2]]))
+        curve_loops.append(geom.add_curve_loop([edges[3], edges[5], -edges[4]]))
+        surfaces = [geom.add_surface(curve_loops[i]) for i in range(len(curve_loops))]
+        surface_loop = geom.add_surface_loop(surfaces)
+        geom.add_volume(surface_loop)
+        mesh = geom.generate_mesh()
 
-    gmsh.model.add("tet")
-    gmsh.model.geo.addPoint(0, 0, 0, lc, 1)
-    gmsh.model.geo.addPoint(1, 0, 0, lc, 2)
-    gmsh.model.geo.addPoint(1/2, 1, 0, lc, 3)
-    gmsh.model.geo.addPoint(0, 0, 1, lc, 4)
-
-    gmsh.model.geo.addLine(1, 2, 1)
-    gmsh.model.geo.addLine(2, 3, 2)
-    gmsh.model.geo.addLine(3, 1, 3)
-    gmsh.model.geo.addLine(1, 4, 4)
-    gmsh.model.geo.addLine(2, 4, 5)
-    gmsh.model.geo.addLine(3, 4, 6)
-    gmsh.model.geo.addCurveLoop([1, 2, 3], 1)
-    gmsh.model.geo.addCurveLoop([1, 5, -4], 2)
-    gmsh.model.geo.addCurveLoop([-3, 6, -4], 3)
-    gmsh.model.geo.addCurveLoop([2, 6, -5], 4)
-    gmsh.model.geo.addPlaneSurface([1], 1)
-    gmsh.model.geo.addPlaneSurface([2], 2)
-    gmsh.model.geo.addPlaneSurface([3], 3)
-    gmsh.model.geo.addPlaneSurface([4], 4)
-    gmsh.model.geo.addSurfaceLoop([1, 2, 3, 4], 1)
-    gmsh.model.geo.addVolume([1], 1)
-    gmsh.model.geo.synchronize()
-    gmsh.model.mesh.generate(3)
+    return mesh, geom
 
 
 def generate_cube_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:

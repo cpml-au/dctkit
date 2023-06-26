@@ -203,6 +203,9 @@ def test_simplicial_complex_2(setup_test):
 
 def test_simplicial_complex_3(setup_test):
     # FIXME: generate mesh and complex after defining appropriate functions in util
+    mesh, _ = util.generate_tet_mesh(2.0)
+    S = util.build_complex_from_mesh(mesh)
+    S.get_hodge_star()
 
     # test boundary
     boundary_true = sl.ShiftedList([], -1)
@@ -265,7 +268,8 @@ def test_simplicial_complex_3(setup_test):
 
     # define true dual volumes values
     dv_true = []
-    dv_0_true = [0.0859375, 0.03255208, 0.02864583, 0.01953125]
+    dv_0_true = np.array([0.0859375, 0.03255208, 0.02864583,
+                         0.01953125], dtype=dctkit.float_dtype)
     dv_1_true = np.array([0.1875,  0.13975425,  0.171875,  0.03493856, -0.02209709,
                           -0.015625], dtype=dctkit.float_dtype)
     dv_2_true = np.array([0.5,  0.375,  0.2795085, -0.125], dtype=dctkit.float_dtype)
