@@ -88,9 +88,10 @@ class SimplicialComplex:
         self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
         for p in range(1, self.dim + 1):
             S = self.S[p]
-            C = np.empty((S.shape[0], self.space_dim), dtype=self.float_dtype)
-            B = np.empty((S.shape[0], S.shape[1]), dtype=self.float_dtype)
-            for i in range(S.shape[0]):
+            num_p_simplices = S.shape[0]
+            C = np.empty((num_p_simplices, self.space_dim), dtype=self.float_dtype)
+            B = np.empty(S.shape, dtype=self.float_dtype)
+            for i in range(num_p_simplices):
                 C[i, :], B[i, :] = circ.circumcenter(S[i, :], self.node_coords)
             self.circ[p] = C
             self.bary_circ[p] = B
