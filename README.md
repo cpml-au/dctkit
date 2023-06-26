@@ -9,11 +9,16 @@ Discrete Differential Geometry to provide a *mathematical language for building 
 
 Features:
 - uses [`jax`](http://github.com/google/jax/) as a backend for numerical computations
-- manipulation of simplicial complexes of any dimension: computation of boundary/coboundary operators, circumcenters, dual/primal volumes
-- manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner product, coboundary, Hodge star, codifferential, Laplace-de Rham
+- manipulation of simplicial complexes of any dimension: computation of
+  boundary/coboundary operators, circumcenters, dual/primal volumes
+- manipulation of (primal/dual) cochains: addition, multiplication by scalar, inner
+  product, coboundary, Hodge star, codifferential, Laplace-de Rham
+- manipulation of vector-valued and tensor-valued cochains: discrete vector and tensor
+  fields, sharp operator
 - interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
-- interface for solving optimal control problems
-- implementation of discrete physical models: Dirichlet energy, Poisson, Euler's Elastica
+- routines for solving optimal control problems
+- implementation of discrete physical models: Dirichlet energy, Poisson, Euler's
+  Elastica, linear isotropic elasticity
 
 ## Installation
 
@@ -71,13 +76,11 @@ docs).
 
 ```python
 import dctkit as dt
-from dctkit import config, FloatDtype, Platform
-from dctkit.mesh import simplex, util
+from dctkit import config
+from dctkit.mesh import util
 from dctkit.dec import cochain as C
 from dctkit.math.opt import optctrl as oc
 import jax.numpy as jnp
-from jax import jit, grad
-from scipy.optimize import minimize
 from matplotlib.pyplot import plot
 
 # set backend for computations, precision and platform (CPU/GPU)
@@ -88,13 +91,10 @@ config()
 # generate mesh and create SimplicialComplex object
 num_nodes = 10
 L = 1.
-S_1, x = util.generate_1_D_mesh(num_nodes, L)
-S = simplex.SimplicialComplex(S_1, x, is_well_centered=True)
+mesh, _ = util.generate_line_mesh(num_nodes, L)
+S = util.build_complex_from_mesh(mesh)
 
-# perform some computations and cache results for later use
-S.get_circumcenters()
-S.get_primal_volumes()
-S.get_dual_volumes()
+# compute Hodge star operator for later use
 S.get_hodge_star()
 
 # initial guess for the solution vector (coefficients of a primal 0-chain)
@@ -113,10 +113,14 @@ def energy(u):
      du = C.coboundary(uc)
      return C.inner_product(du, du)-C.inner_product(uc, f)
 
-# minimization of the energy
+# set optimization problem
 prb = oc.OptimizationProblem(dim=num_nodes-1, state_dim=num_nodes-1, objfun=energy)
+# set additional arguments (empty dictionary) of the objective function, other than the state array
 prb.set_obj_args({})
-x = prb.run(x0=u, algo="lbfgs")
+
+x = prb.run(x0=u)
+
+# add boundary condition
 x = jnp.insert(x, 0, 0.)
 
 plot(x)
