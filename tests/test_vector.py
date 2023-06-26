@@ -8,7 +8,6 @@ def test_vector_cochain(setup_test):
     mesh, _ = util.generate_hexagon_mesh(1., 1.)
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
-    S.get_dual_edge_vectors()
     S.get_flat_weights()
 
     # test flat operator
