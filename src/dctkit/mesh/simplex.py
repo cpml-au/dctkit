@@ -1,8 +1,8 @@
 import numpy as np
 import dctkit
-from dctkit.math import circumcenter as circ
+from dctkit.mesh import circumcenter as circ, volume
 from dctkit.math import shifted_list as sl
-from dctkit.math import volume, spmv
+from dctkit.math import spmv
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
@@ -54,7 +54,7 @@ class SimplicialComplex:
         # compute complex dimension from top-level simplices
         self.dim = tet_node_tags.shape[1] - 1
 
-        self.S = [None] * (self.dim + 1)
+        self.S = [npt.NDArray] * (self.dim + 1)
         self.S[-1] = tet_node_tags
 
         self.get_boundary_operators()
@@ -78,6 +78,7 @@ class SimplicialComplex:
     def get_complex_boundary_faces_indices(self):
         """Find the IDs of the boundary faces of the complex, i.e. the row indices of
         the boundary faces in the matrix S[dim-1]."""
+        # boundary faces IDs appear only once in the matrix B[dim]
         unique_elements, counts = np.unique(self.B[self.dim], return_counts=True)
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
