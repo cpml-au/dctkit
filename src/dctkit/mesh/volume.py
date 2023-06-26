@@ -4,20 +4,21 @@ import numpy.typing as npt
 from scipy.special import factorial
 
 
-def unsigned_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
-    """Compute the unsigned volume of a set of simplices S.
+def unsigned_volume(S: npt.NDArray, node_coords: npt.NDArray) -> float:
+    """Compute the unsigned volume of a set of simplices.
 
     Args:
-        S (np.array): matrix containing the IDs of the nodes belonging to each simplex.
-        node_coord (np.array): coordinates of every node of the cell complex in
-            which s is defined.
+        S: matrix containing the IDs of the nodes belonging to each simplex.
+        node_coords: coordinates of the points of the cell complex to which the set of
+        simplices belongs.
+
     Returns:
-        float: unsigned volume of the simplex.
+        unsigned volume of the simplex.
     """
     int_dtype = dctkit.int_dtype
 
     # store the coordinates of the nodes of every simplex in S
-    S_coord = node_coord[S]
+    S_coord = node_coords[S]
     rows = S_coord.shape[1]
 
     # indices to extract the matrix with rows equal to the rows of S with indices
@@ -36,19 +37,19 @@ def unsigned_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
     return vol
 
 
-def signed_volume(S: npt.NDArray, node_coord: npt.NDArray) -> float:
-    """Compute the signed volume of a set of n-simplices.
+def signed_volume(S: npt.NDArray, node_coords: npt.NDArray) -> float:
+    """Compute the signed volume of a set of simplices.
 
     Args:
-        S (np.array): matrix containing the IDs (cols) of the nodes belonging to each
-        simplex (rows).
-        node_coord (np.array): coordinates of every node of the cell complex.
+        S: matrix containing the IDs (cols) of the nodes belonging to each simplex
+            (rows).
+        node_coords: coordinates of every node of the cell complex.
     Returns:
-        float: signed volume of the simplex.
+        signed volume of the simplex.
     """
     int_dtype = dctkit.int_dtype
 
-    S_coord = node_coord[S]
+    S_coord = node_coords[S]
     _, rows, cols = S_coord.shape
 
     assert (rows == cols + 1)
