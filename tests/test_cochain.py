@@ -294,9 +294,7 @@ def test_cochain(setup_test):
 
     # vector-valued cochain test
     c0_v_coeffs = np.arange(15).reshape((5, 3))
-    c1_v_coeffs = np.arange(24).reshape((8, 3))
     c0_v = C.CochainP0(cpx, c0_v_coeffs)
-    c1_v = C.CochainP1(cpx, c1_v_coeffs)
 
     star_c0_v = C.star(c0_v)
     star_c0_v_true = 0.125*c0_v_coeffs
