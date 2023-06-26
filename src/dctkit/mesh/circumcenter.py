@@ -31,9 +31,9 @@ def circumcenter(s: npt.NDArray,
     assert (rows <= cols + 1)
 
     # construct the matrix A
-    A = np.bmat([[2*np.dot(simplex_coord, simplex_coord.T),
+    A = np.block([[2*np.dot(simplex_coord, simplex_coord.T),
                   np.ones((rows, 1), dtype=float_dtype)],
-                [np.ones((1, rows), dtype=float_dtype),
+                  [np.ones((1, rows), dtype=float_dtype),
                  np.zeros((1, 1), dtype=float_dtype)]])
     b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1),
                    np.ones((1), dtype=float_dtype)))

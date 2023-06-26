@@ -10,7 +10,7 @@ from dctkit.dec import cochain
 
 def test_cochain(setup_test):
     mesh, _ = util.generate_square_mesh(1.0)
-    cpx = util.build_complex_from_mesh(mesh)
+    cpx = util.build_complex_from_mesh(mesh, is_well_centered=False)
 
     v_0 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
     v_1 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=dctkit.float_dtype)

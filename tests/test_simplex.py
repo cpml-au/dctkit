@@ -81,7 +81,7 @@ def test_simplicial_complex_1(setup_test):
 
 def test_simplicial_complex_2(setup_test):
     mesh, _ = util.generate_square_mesh(1.0)
-    S = util.build_complex_from_mesh(mesh, False)
+    S = util.build_complex_from_mesh(mesh, is_well_centered=False)
     S.get_hodge_star()
     S.get_flat_weights()
 
