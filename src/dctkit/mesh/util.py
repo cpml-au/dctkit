@@ -1,16 +1,16 @@
 from dctkit.mesh.simplex import SimplicialComplex
-import gmsh  # type: ignore
 import numpy as np
 from typing import Tuple, List
 from pygmsh.geo import Geometry
 from meshio import Mesh
 
 
-def build_complex_from_mesh(mesh: Mesh) -> SimplicialComplex:
+def build_complex_from_mesh(mesh: Mesh, is_well_centered=True) -> SimplicialComplex:
     """Build a SimplicialComplex object from a meshio.Mesh object.
 
     Args:
         mesh: a meshio.Mesh object.
+        is_well_centered: True if the mesh is well centered.
 
     Returns:
         a SimplicialComplex object.
@@ -25,7 +25,7 @@ def build_complex_from_mesh(mesh: Mesh) -> SimplicialComplex:
     elif "line" in cell_types:
         tet_node_tags = mesh.cells_dict["line"]
 
-    S = SimplicialComplex(tet_node_tags, node_coords, is_well_centered=True)
+    S = SimplicialComplex(tet_node_tags, node_coords, is_well_centered=is_well_centered)
     return S
 
 
