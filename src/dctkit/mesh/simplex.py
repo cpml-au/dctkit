@@ -15,7 +15,7 @@ class SimplicialComplex:
     Args:
         tet_node_tags: matrix containing the IDs of the nodes (cols) belonging to each
             tetrahedron or top-level simplex (rows).
-        node_coord: Cartesian coordinates (columns) of all the nodes (rows) of the
+        node_coords: Cartesian coordinates (columns) of all the nodes (rows) of the
             simplicial complex.
         is_well_centered: True if the mesh is well-centered.
 
@@ -26,7 +26,7 @@ class SimplicialComplex:
         circ (list): list where each entry p is a matrix containing the
             coordinates of the circumcenters (cols) of all the p-simplexes (rows).
         boundary (list): list of the boundary matrices at all dimensions (0..dim-1).
-        node_coord (float np.array): Cartesian coordinates (columns) of all the
+        node_coords (float np.array): Cartesian coordinates (cols) of the
             nodes (rows) of the simplicial complex.
         primal_volumes (list): list where each entry p is an array containing all the
             volumes of the primal p-simplices.
@@ -232,6 +232,9 @@ class SimplicialComplex:
            This ratio appears as a weighting factor in the computation of the discrete
            flat operator.
         """
+        if not hasattr(self, "dual_edges_lengths"):
+            self.get_dual_edge_vectors()
+
         dim = self.dim
         B = self.B[dim]
         num_n_simplices = self.S[dim].shape[0]

@@ -1,112 +1,80 @@
-from dctkit import int_dtype, float_dtype
 from dctkit.mesh.simplex import SimplicialComplex
 import gmsh  # type: ignore
-import pygmsh
-import meshio as mo
 import numpy as np
-import numpy.typing as npt
-from typing import Tuple, Any
+from typing import Tuple
+from pygmsh.geo import Geometry
+from meshio import Mesh
 
 
-def read_mesh(filename: str | None = None) -> Tuple[int, int, npt.NDArray,
-                                                    npt.NDArray, npt.NDArray]:
-    """Process the current mesh model. If a filename is provided, read the mesh from a
-        .msh file.
+def build_complex_from_mesh(mesh: Mesh) -> SimplicialComplex:
+    """Build a SimplicialComplex object from a meshio.Mesh object.
 
     Args:
-        filename: name of the .msh file containing the mesh.
+        mesh: a meshio.Mesh object.
 
     Returns:
-        a tuple containing the number of mesh nodes; the number of faces; the matrix
-        containing the IDs of the nodes (cols) belonging to each face (rows); the node
-        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
-        each boundary element (rows).
+        a SimplicialComplex object.
     """
-    if not gmsh.is_initialized():
-        gmsh.initialize()
-
-    if filename is not None:
-        gmsh.open(filename)
-
-    # Get nodes and corresponding coordinates
-    nodeTags, coords, _ = gmsh.model.mesh.getNodes()
-    numNodes = len(nodeTags)
-
-    coords = np.array(coords, dtype=float_dtype)
-    # Get 2D elements and associated node tags
-    elemTags, nodeTagsPerElem = gmsh.model.mesh.getElementsByType(2)
-
-    # Decrease element IDs by 1 to have node indices starting from 0
-    nodeTagsPerElem = np.array(nodeTagsPerElem, dtype=int_dtype) - 1
-    nodeTagsPerElem = nodeTagsPerElem.reshape(len(nodeTagsPerElem) // 3, 3)
-    # Get number of TRIANGLES
-    numElements = len(elemTags)
-
-    # Position vectors of mesh points
-    node_coords = coords.reshape(len(coords)//3, 3)
-
-    # get node tags per boundary elements
-    _, nodeTagsPerBElem = gmsh.model.mesh.getElementsByType(1)
-    nodeTagsPerBElem = np.array(nodeTagsPerBElem, dtype=int_dtype) - 1
-    nodeTagsPerBElem = nodeTagsPerBElem.reshape(len(nodeTagsPerBElem) // 2, 2)
-    # we sort every row to get the orientation used for our simulations
-    nodeTagsPerBElem = np.sort(nodeTagsPerBElem)
-
-    return numNodes, numElements, nodeTagsPerElem, node_coords, nodeTagsPerBElem
-
-
-def build_complex_from_mesh(mesh: mo.Mesh) -> SimplicialComplex:
     node_coords = mesh.points
-    # TODO: only works with triangles, detect top-level simplices as tets
-    tet_node_tags = mesh.cells_dict["triangle"]
+    cell_types = mesh.cells_dict.keys()
+
+    if "tetra" in cell_types:
+        tet_node_tags = mesh.cells_dict["tetra"]
+    elif "triangle" in cell_types:
+        tet_node_tags = mesh.cells_dict["triangle"]
+    elif "line" in cell_types:
+        tet_node_tags = mesh.cells_dict["line"]
+
     S = SimplicialComplex(tet_node_tags, node_coords, is_well_centered=True)
     return S
 
 
-def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[mo.Mesh, Any]:
+def generate_square_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
     """Generate a mesh for the unit square.
 
     Args:
         lc: target mesh size.
         L: side length.
+
+    Returns:
+        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
     """
-    with pygmsh.geo.Geometry() as geom:
+    with Geometry() as geom:
         p = geom.add_polygon([[0., 0.], [L, 0.], [L, L], [0., L]], mesh_size=lc)
         # create a default physical group for the boundary lines
         geom.add_physical(p.lines, label="boundary")
         mesh = geom.generate_mesh()
 
-    return mesh, p
+    return mesh, geom
 
 
-def generate_hexagon_mesh(a: float, lc: float) -> Tuple[mo.Mesh, Any]:
+def generate_hexagon_mesh(a: float, lc: float) -> Tuple[Mesh, Geometry]:
     """Generate a mesh for the regular hexagon.
 
     Args:
         a: edge length.
         lc: target mesh size.
+
+    Returns:
+        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
     """
-    with pygmsh.geo.Geometry() as geom:
-        p = geom.add_polygon([[2*a, np.sqrt(3)/2*a], [3/2*a, np.sqrt(3)*a],
-                              [a/2, np.sqrt(3)*a], [0., np.sqrt(3)/2*a], [a/2, 0.],
-                              [3/2*a, 0.]], mesh_size=lc)
+    with Geometry() as geom:
+        geom.add_polygon([[2*a, np.sqrt(3)/2*a], [3/2*a, np.sqrt(3)*a],
+                          [a/2, np.sqrt(3)*a], [0., np.sqrt(3)/2*a], [a/2, 0.],
+                          [3/2*a, 0.]], mesh_size=lc)
         mesh = geom.generate_mesh()
 
-    return mesh, p
+    return mesh, geom
 
 
-def generate_tet_mesh(lc: float):
+def generate_tet_mesh(lc: float) -> Tuple[Mesh, Geometry]:
     """Generate the mesh of a tetrahedron.
 
     Args:
-        lc: target mesh size (lc) close to a given point.
+        lc: target mesh size.
 
     Returns:
-        a tuple containing the number of mesh nodes; the number of faces; the matrix
-        containing the IDs of the nodes (cols) belonging to each face (rows); the node
-        coordinates; the matrix containing the IDs of the nodes (cols) belonging to
-        each boundary element (rows).
-
+        a tuple containing a meshio Mesh and a pygmsh Polygon objects.
     """
     # FIXME: REWRITE USING PYGMSH PRIMITIVES; return meshio.Mesh and polygon objs
     if not gmsh.is_initialized():
@@ -138,27 +106,43 @@ def generate_tet_mesh(lc: float):
     gmsh.model.mesh.generate(3)
 
 
-def generate_1_D_mesh(num_nodes: int, L: float) -> Tuple[npt.NDArray, npt.NDArray]:
-    """Generate a uniform 1D mesh.
+def generate_cube_mesh(lc: float, L: float = 1.):
+    with Geometry() as geom:
+        poly = geom.add_polygon([[0.0, 0.0], [L, 0.0], [L, L], [0.0, L]], lc)
+        geom.extrude(poly, [0, 0, L])
+        mesh = geom.generate_mesh()
+
+    return mesh, geom
+
+
+def generate_line_mesh(num_nodes: int, L: float) -> Tuple[Mesh, Geometry]:
+    """Generate a uniform mesh in an interval of given length.
 
     Args:
         num_nodes: number of nodes.
         L: length of the interval.
+
     Returns:
-        a tuple consisting of the matrix of node coordinates (rows = node IDs, cols =
-            x,y coords) and a matrix containing the IDs of the nodes belonging to
-            each 1-simplex.
+        a tuple containing a meshio Mesh and a pygmsh Line objects.
     """
-    node_coords = np.linspace(0, L, num=num_nodes)
-    x = np.zeros((num_nodes, 2))
-    x[:, 0] = node_coords
-    S_1 = np.empty((num_nodes - 1, 2))
-    S_1[:, 0] = np.arange(num_nodes-1)
-    S_1[:, 1] = np.arange(1, num_nodes)
-    return S_1, x
+    lc = L/(num_nodes-1)
+    points = [None]*num_nodes
+    with Geometry() as g:
+        points[0] = g.add_point([0., 0.], lc)
+        # we have to add one line for each element of the mesh, otherwise if we mesh one
+        # line for the whole interval [0, L] the end nodes are going to be the first two
+        # items in the mesh.points matrix.
+        for i in range(1, num_nodes):
+            points[i] = g.add_point([i*lc, 0.], lc)
+            # see also test_hex in pygmsh library's tests
+            new_line_points = [points[i-1], points[i]]
+            g.add_line(*new_line_points)
+            mesh = g.generate_mesh(1)
+
+    return mesh, g
 
 
-def get_nodes_for_physical_group(mesh: mo.Mesh, dim: int, group_name: str) -> list:
+def get_nodes_for_physical_group(mesh: Mesh, dim: int, group_name: str) -> list:
     """Find the IDs of the nodes belonging to a physical group within the mesh object.
 
     Args:
@@ -168,7 +152,6 @@ def get_nodes_for_physical_group(mesh: mo.Mesh, dim: int, group_name: str) -> li
 
     Returns:
         list of the node IDs belonging to the physical group.
-
     """
     if dim == 1:
         cell_type = "line"
@@ -182,7 +165,7 @@ def get_nodes_for_physical_group(mesh: mo.Mesh, dim: int, group_name: str) -> li
     return nodes_ids
 
 
-def get_edges_for_physical_group(S: SimplicialComplex, mesh: mo.Mesh, group_name: str):
+def get_edges_for_physical_group(S: SimplicialComplex, mesh: Mesh, group_name: str):
     edges_ids_in_mesh = mesh.cell_sets_dict[group_name]["line"]
     edges_nodes_ids = mesh.cells_dict["line"][edges_ids_in_mesh]
     # nodes ids for edges in S[1] are sorted lexicographycally

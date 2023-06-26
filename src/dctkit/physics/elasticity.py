@@ -37,9 +37,9 @@ class LinearElasticity():
         epsilon = 1/2 * (current_metric - self.S.reference_metric)
         return epsilon
 
-    def get_stress(self, strain: npt.NDArray | Array) -> npt.NDArray | Array:
-        """ Compute the discrete stress tensor applying the consistutive equation
-        for isotropic linear elastic materials to the discrete strain tensor.
+    def get_stress(self, strain: npt.NDArray | Array) -> Array:
+        """Compute the discrete stress tensor from strains using the consistutive
+        equation for isotropic linear elastic materials.
 
         Args:
             strain: discrete strain tensor.
@@ -49,10 +49,10 @@ class LinearElasticity():
 
         """
         num_faces = self.S.S[2].shape[0]
-        tr_epsilon = jnp.trace(strain, axis1=1, axis2=2)
+        tr_strain = jnp.trace(strain, axis1=1, axis2=2)
         # get the stress via the consistutive equation for isotropic linear
         # elastic materials
-        stress = 2*self.mu_*strain + self.lambda_*tr_epsilon[:, None, None] * \
+        stress = 2.*self.mu_*strain + self.lambda_*tr_strain[:, None, None] * \
             jnp.stack([jnp.identity(2)]*num_faces)
         return stress
 
@@ -102,8 +102,8 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        epsilon = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
-        stress = self.get_stress(strain=epsilon)
+        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)

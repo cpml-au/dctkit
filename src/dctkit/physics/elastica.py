@@ -1,7 +1,6 @@
 import numpy as np
 import jax.numpy as jnp
 from dctkit.dec import cochain as C
-from dctkit.mesh import simplex as sim
 import dctkit as dt
 from dctkit.mesh import util
 import numpy.typing as npt
@@ -23,12 +22,10 @@ class Elastica():
 
     def get_elastica_mesh(self):
         """Constructs the normalized simplicial complex in the interval [0,1]."""
+
         num_nodes = self.num_elements + 1
-        S_1, x = util.generate_1_D_mesh(num_nodes, 1)
-        self.S = sim.SimplicialComplex(S_1, x, is_well_centered=True)
-        self.S.get_circumcenters()
-        self.S.get_primal_volumes()
-        self.S.get_dual_volumes()
+        mesh, _ = util.generate_line_mesh(num_nodes, 1.)
+        self.S = util.build_complex_from_mesh(mesh)
         self.S.get_hodge_star()
 
         # define internal cochain to compute the energy only in the interior points
