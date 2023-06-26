@@ -1,37 +1,17 @@
 import numpy as np
 from scipy.optimize import minimize
 import dctkit as dt
-from dctkit.mesh import simplex, util
+from dctkit.mesh import util
 from dctkit.physics import poisson as p
-import os
 import sys
-import matplotlib.tri as tri
 import time
 import jax.numpy as jnp
 import jaxopt
-import gmsh
 import jax
 import pygmo as pg
 from functools import partial
 
 from dctkit import config, FloatDtype, Platform
-
-cwd = os.path.dirname(simplex.__file__)
-
-
-def get_complex(S_p, node_coords):
-    bnodes, _ = gmsh.model.mesh.getNodesForPhysicalGroup(1, 1)
-    bnodes -= 1
-    bnodes = bnodes.astype(dt.int_dtype)
-    triang = tri.Triangulation(node_coords[:, 0], node_coords[:, 1])
-    # initialize simplicial complex
-    S = simplex.SimplicialComplex(S_p, node_coords, is_well_centered=True)
-    S.get_circumcenters()
-    S.get_primal_volumes()
-    S.get_dual_volumes()
-    S.get_hodge_star()
-
-    return S, bnodes, triang
 
 
 def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
@@ -49,28 +29,33 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
     np.random.seed(42)
     lc = 0.05
 
-    _, _, S_2, node_coord = util.generate_square_mesh(lc)
-    S, bnodes, _ = get_complex(S_2, node_coord)
+    mesh, _ = util.generate_square_mesh(lc)
+    S = util.build_complex_from_mesh(mesh)
+    node_coords = S.node_coords
+    S.get_hodge_star()
+    # extract the IDs of all the boundary nodes
+    S.get_complex_boundary_faces_indices()
+    bnodes = np.unique(S.S[1][S.bnd_faces_indices])
 
     gamma = 1000.
 
     # NOTE: exact solution of Delta u + f = 0
-    u_true = np.array(node_coord[:, 0]**2 + node_coord[:, 1]
+    u_true = np.array(node_coords[:, 0]**2 + node_coords[:, 1]
                       ** 2, dtype=dt.float_dtype)
     b_values = u_true[bnodes]
 
-    boundary_values = (np.array(bnodes, dtype=dt.int_dtype), b_values)
+    boundary_values = (bnodes, b_values)
 
     k = 1.
 
-    dim_0 = S.num_nodes
-    f_vec = -4.*np.ones(dim_0, dtype=dt.float_dtype)
+    num_nodes = S.num_nodes
+    f_vec = -4.*np.ones(num_nodes, dtype=dt.float_dtype)
 
-    mask = np.ones(dim_0, dtype=dt.float_dtype)
+    mask = np.ones(num_nodes, dtype=dt.float_dtype)
     mask[bnodes] = 0.
 
     # initial guess
-    u_0 = 0.01*np.random.rand(dim_0).astype(dt.float_dtype)
+    u_0 = np.zeros(num_nodes, dtype=dt.float_dtype)
 
     # Dirichlet energy and its gradient (computed using JAX's autodiff)
     energy = jax.jit(partial(p.energy_poisson, f=f_vec, S=S,
@@ -114,7 +99,7 @@ def bench_poisson(optimizer="scipy", platform="cpu", float_dtype="float32",
                 return grad
 
             def get_bounds(self):
-                return ([-100]*dim_0, [100]*dim_0)
+                return ([-100]*num_nodes, [100]*num_nodes)
 
             def get_name(self):
                 return "Poisson problem"

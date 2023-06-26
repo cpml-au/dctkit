@@ -3,7 +3,8 @@ import dctkit
 import numpy.typing as npt
 from typing import Tuple
 
-# FIXME: pass only the coordinates of the nodes of the simplex
+# FIXME: pass only the coordinates of the nodes of the simplex or consider making this a
+# method of the SimplicialComplex class.
 
 
 def circumcenter(s: npt.NDArray,

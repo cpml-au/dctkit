@@ -1,7 +1,7 @@
 import numpy as np
 import dctkit
 from dctkit.mesh import util
-from dctkit.math import circumcenter as circ
+from dctkit.mesh import circumcenter as circ
 import os
 
 cwd = os.path.dirname(__file__)
