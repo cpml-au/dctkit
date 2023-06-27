@@ -3,47 +3,49 @@ import dctkit
 import numpy.typing as npt
 from typing import Tuple
 
-# FIXME: pass only the coordinates of the nodes of the simplex or consider making this a
-# method of the SimplicialComplex class.
 
-
-def circumcenter(s: npt.NDArray,
+def circumcenter(S: npt.NDArray,
                  node_coords: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
     """Compute the circumcenter of a given simplex. (Reference: Bell, Hirani,
         PyDEC: Software and Algorithms for Discretization of Exterior Calculus,
         2012, Section 10.1).
 
         Args:
-            s: array containing the IDs of the nodes beloging to the given simplex.
+            S: matrix containing the IDs of the nodes belonging to each simplex.
             node_coords: coordinates (cols) of each node of the complex to which the
-                given simplex belongs.
+            simplices belongs.
         Returns:
             a tuple consisting of the Cartesian coordinates of the circumcenter and the
-                barycentric coordinates.
+            barycentric coordinates.
     """
     # get global data type
     float_dtype = dctkit.float_dtype
 
-    # store the coordinates of the nodes in s
-    simplex_coord = node_coords[s[:]]
-    rows, cols = simplex_coord.shape
+    # store the coordinates of the nodes for each simplex in
+    S_coord = node_coords[S]
 
-    assert (rows <= cols + 1)
+    transpose_S_coord = np.transpose(S_coord, [0, 2, 1])
+    # extract number of p-simplices and number of nodes per simplex
+    num_p, num_nodes_per_spx = S.shape
 
     # construct the matrix A
-    A = np.block([[2*np.dot(simplex_coord, simplex_coord.T),
-                  np.ones((rows, 1), dtype=float_dtype)],
-                  [np.ones((1, rows), dtype=float_dtype),
-                 np.zeros((1, 1), dtype=float_dtype)]])
-    b = np.hstack((np.sum(simplex_coord * simplex_coord, axis=1),
-                   np.ones((1), dtype=float_dtype)))
+    A = np.zeros((num_p, num_nodes_per_spx+1, num_nodes_per_spx+1), dtype=float_dtype)
+    A[:, :num_nodes_per_spx, :num_nodes_per_spx] = 2 * \
+        np.matmul(S_coord, transpose_S_coord)
+    A[:, :, -1] = 1
+    A[:, -1, :] = 1
+    A[:, -1, -1] = 0
+
+    # construct b
+    b = np.ones((num_p, num_nodes_per_spx+1), dtype=float_dtype)
+    b[:, range(num_nodes_per_spx)] = np.sum(S_coord * S_coord, axis=2)
 
     # barycentric coordinates x of the circumcenter are the solution
-    # of the linear sistem Ax = b
-    bary_coords = np.linalg.solve(A, b)
-    bary_coords = bary_coords[:-1]
+    # of the linear sistem Ax = b without the last component (i.e. x[:-1])
+    bary_coords_extended = np.linalg.solve(A, b)
+    bary_coords = bary_coords_extended[:, :-1]
 
-    # compute the coordinates of the circumcenter
-    circumcenter = np.dot(bary_coords, simplex_coord)
-
+    # the circumcenter of a p-simplex {v0,...,vp} can be written in barycentric
+    # coordinates as c = sum_j x_j v_j
+    circumcenter = np.einsum("ij,ijk -> ik", bary_coords, S_coord)
     return circumcenter, bary_coords
