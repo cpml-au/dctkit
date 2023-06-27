@@ -19,12 +19,13 @@ def test_coboundary(setup_test):
     cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
     dcP0 = C.coboundary(cP0)
     dcD0 = C.coboundary(cD0)
-
+    dc_all = [dcP0, dcD0]
     dcP0_true = np.array([1., 1., 1., 1.], dtype=dctkit.float_dtype)
     dcD0_true = np.array([1.,  1.,  1.,  1., -4.], dtype=dctkit.float_dtype)
+    dc_true_all = [dcP0_true, dcD0_true]
 
-    assert np.allclose(dcP0.coeffs, dcP0_true)
-    assert np.allclose(dcD0.coeffs, dcD0_true)
+    for i in range(2):
+        assert np.allclose(dc_all[i].coeffs, dc_true_all[i])
 
     # 2D test
     vP0 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
@@ -40,17 +41,15 @@ def test_coboundary(setup_test):
     dcP1 = C.coboundary(cP1)
     dcD0 = C.coboundary(cD0)
     dcD1 = C.coboundary(cD1)
+    dc_all = [dcP0, dcP1, dcD0, dcD1]
     dcP0_true = np.array([1, 3, 4, 1, 3, 1, 2, 1], dtype=dctkit.float_dtype)
     dcP1_true = np.array([3, -7, 6, 7], dtype=dctkit.float_dtype)
     dcD0_true = np.array([1, -2, 1, 3, -2, 4, -1, 2], dtype=dctkit.float_dtype)
     dcD1_true = np.array([6,   8,   9,  -0, -23], dtype=dctkit.float_dtype)
+    dc_true_all = [dcP0_true, dcP1_true, dcD0_true, dcD1_true]
 
-    assert dcP0.coeffs.dtype == dctkit.float_dtype
-
-    assert np.allclose(dcP0.coeffs, dcP0_true)
-    assert np.allclose(dcP1.coeffs, dcP1_true)
-    assert np.allclose(dcD0.coeffs, dcD0_true)
-    assert np.allclose(dcD1.coeffs, dcD1_true)
+    for i in range(4):
+        assert np.allclose(dc_all[i].coeffs, dc_true_all[i])
 
     # 3D test
     vP0 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
@@ -73,19 +72,17 @@ def test_coboundary(setup_test):
     dcD0 = C.coboundary(cD0)
     dcD1 = C.coboundary(cD1)
     dcD2 = C.coboundary(cD2)
+    dc_all = [dcP0, dcP1, dcP2, dcD0, dcD1, dcD2]
     dcP0_true = np.array([1, 2, 3, 1, 2, 1], dtype=dctkit.float_dtype)
     dcP1_true = np.array([3, 3, 5, 5], dtype=dctkit.float_dtype)
     dcP2_true = np.array([2], dtype=dctkit.float_dtype)
     dcD0_true = np.array([1, -1,  1, -1], dtype=dctkit.float_dtype)
     dcD1_true = np.array([3,  2, -5,  5, -2,  7], dtype=dctkit.float_dtype)
     dcD2_true = np.array([6,   8,  -0, -14], dtype=dctkit.float_dtype)
+    dc_true_all = [dcP0_true, dcP1_true, dcP2_true, dcD0_true, dcD1_true, dcD2_true]
 
-    assert np.allclose(dcP0.coeffs, dcP0_true)
-    assert np.allclose(dcP1.coeffs, dcP1_true)
-    assert np.allclose(dcP2.coeffs, dcP2_true)
-    assert np.allclose(dcD0.coeffs, dcD0_true)
-    assert np.allclose(dcD1.coeffs, dcD1_true)
-    assert np.allclose(dcD2.coeffs, dcD2_true)
+    for i in range(6):
+        assert np.allclose(dc_all[i].coeffs, dc_true_all[i])
 
     # vector-valued test
     cP0_v_coeffs = np.arange(15, dtype=dctkit.float_dtype).reshape((5, 3))
@@ -100,6 +97,7 @@ def test_coboundary(setup_test):
     dcP1_v = C.coboundary(cP1_v)
     dcD0_v = C.coboundary(cD0_v)
     dcD1_v = C.coboundary(cD1_v)
+    dc_all = [dcP0_v, dcP1_v, dcD0_v, dcD1_v]
     dcP0_v_true = np.array([[3, 3, 3],
                            [9,  9,  9],
                            [12, 12, 12],
@@ -125,11 +123,10 @@ def test_coboundary(setup_test):
                             [24,  25,  26],
                             [3,   2,   1],
                             [-57, -61, -65]], dtype=dctkit.float_dtype)
+    dc_true_all = [dcP0_v_true, dcP1_v_true, dcD0_v_true, dcD1_v_true]
 
-    assert np.allclose(dcP0_v.coeffs, dcP0_v_true)
-    assert np.allclose(dcP1_v.coeffs, dcP1_v_true)
-    assert np.allclose(dcD0_v.coeffs, dcD0_v_true)
-    assert np.allclose(dcD1_v.coeffs, dcD1_v_true)
+    for i in range(4):
+        assert np.allclose(dc_all[i].coeffs, dc_true_all[i])
 
 
 def test_hodge_star(setup_test):
@@ -149,18 +146,22 @@ def test_hodge_star(setup_test):
 
     cP0 = C.CochainP0(complex=S_1, coeffs=vP0)
     cP1 = C.CochainP1(complex=S_1, coeffs=vP1)
+    c_all = [cP0, cP1]
 
     star_cP0 = C.star(cP0)
     star_cP1 = C.star(cP1)
     star_invP0 = C.star(star_cP0)
     star_invP1 = C.star(star_cP1)
+    star_all = [star_cP0, star_cP1]
+    star_inv_all = [star_invP0, star_invP1]
     star_cP0_true = np.array([0.125, 0.5, 0.75, 1., 0.625], dtype=dctkit.float_dtype)
     star_cP1_true = np.array([4.,  8., 12., 16.], dtype=dctkit.float_dtype)
+    star_true_all = [star_cP0_true, star_cP1_true]
 
-    assert np.allclose(star_cP0.coeffs, star_cP0_true)
-    assert np.allclose(star_cP1.coeffs, star_cP1_true)
-    assert np.allclose(star_invP0.coeffs, cP0.coeffs)
-    assert np.allclose(star_invP1.coeffs, cP1.coeffs)
+    for i in range(2):
+        assert np.allclose(star_all[i].coeffs, star_true_all[i])
+        assert np.allclose(star_inv_all[i].coeffs, (-1)
+                           ** (i*(S_1.dim-i))*c_all[i].coeffs)
 
     # 2D test
     vP0 = np.arange(1, 13, dtype=dctkit.float_dtype)
@@ -170,6 +171,7 @@ def test_hodge_star(setup_test):
     cP0 = C.CochainP0(complex=S_2, coeffs=vP0)
     cP1 = C.CochainP1(complex=S_2, coeffs=vP1)
     cP2 = C.CochainP2(complex=S_2, coeffs=vP2)
+    c_all = [cP0, cP1, cP2]
 
     star_cP0 = C.star(cP0)
     star_cP1 = C.star(cP1)
@@ -177,6 +179,8 @@ def test_hodge_star(setup_test):
     star_invP0 = C.star(star_cP0)
     star_invP1 = C.star(star_cP1)
     star_invP2 = C.star(star_cP2)
+    star_all = [star_cP0, star_cP1, star_cP2]
+    star_inv_all = [star_invP0, star_invP1, star_invP2]
     star_cP0_true = np.array([0.0546875, 0.07714844, 0.15560322, 0.16492188,
                               0.36824544, 0.42319261, 0.50444237, 0.59590218,
                               1.11520924, 1.37589165, 1.50811261, 1.49166558],
@@ -192,13 +196,12 @@ def test_hodge_star(setup_test):
                               71.11111111,  85.33333333,  95.31914894, 108.93617021,
                               153.2594235, 175.34246575, 196.00928074, 204.8,
                               220.39735099, 239.46547884], dtype=dctkit.float_dtype)
+    star_true_all = [star_cP0_true, star_cP1_true, star_cP2_true]
 
-    assert np.allclose(star_cP0.coeffs, star_cP0_true)
-    assert np.allclose(star_cP1.coeffs, star_cP1_true)
-    assert np.allclose(star_cP2.coeffs, star_cP2_true)
-    assert np.allclose(star_invP0.coeffs, cP0.coeffs)
-    assert np.allclose(star_invP1.coeffs, -cP1.coeffs)
-    assert np.allclose(star_invP2.coeffs, cP2.coeffs)
+    for i in range(3):
+        assert np.allclose(star_all[i].coeffs, star_true_all[i])
+        assert np.allclose(star_inv_all[i].coeffs, (-1)
+                           ** (i*(S_2.dim-i))*c_all[i].coeffs)
 
     # 3D test
     vP0 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
@@ -210,6 +213,7 @@ def test_hodge_star(setup_test):
     cP1 = C.CochainP1(complex=S_3, coeffs=vP1)
     cP2 = C.CochainP2(complex=S_3, coeffs=vP2)
     cP3 = C.CochainP3(complex=S_3, coeffs=vP3)
+    c_all = [cP0, cP1, cP2, cP3]
 
     star_cP0 = C.star(cP0)
     star_cP1 = C.star(cP1)
@@ -219,6 +223,8 @@ def test_hodge_star(setup_test):
     star_invP1 = C.star(star_cP1)
     star_invP2 = C.star(star_cP2)
     star_invP3 = C.star(star_cP3)
+    star_all = [star_cP0, star_cP1, star_cP2, star_cP3]
+    star_inv_all = [star_invP0, star_invP1, star_invP2, star_invP3]
 
     star_cP0_true = np.array([0.0859375, 0.06510417, 0.0859375, 0.078125],
                              dtype=dctkit.float_dtype)
@@ -226,23 +232,22 @@ def test_hodge_star(setup_test):
                              dtype=dctkit.float_dtype)
     star_cP2_true = np.array([1.,  1.5,  1.5, -0.66666667], dtype=dctkit.float_dtype)
     star_cP3_true = np.array([6.], dtype=dctkit.float_dtype)
+    star_true_all = [star_cP0_true, star_cP1_true, star_cP2_true, star_cP3_true]
 
-    assert np.allclose(star_cP0.coeffs, star_cP0_true)
-    assert np.allclose(star_cP1.coeffs, star_cP1_true)
-    assert np.allclose(star_cP2.coeffs, star_cP2_true)
-    assert np.allclose(star_cP3.coeffs, star_cP3_true)
-    assert np.allclose(star_invP0.coeffs, cP0.coeffs)
-    assert np.allclose(star_invP1.coeffs, cP1.coeffs)
-    assert np.allclose(star_invP2.coeffs, cP2.coeffs)
-    assert np.allclose(star_invP3.coeffs, cP3.coeffs)
+    for i in range(4):
+        assert np.allclose(star_all[i].coeffs, star_true_all[i])
+        assert np.allclose(star_inv_all[i].coeffs, (-1)
+                           ** (i*(S_3.dim-i))*c_all[i].coeffs)
 
     # vector-valued test
     cP0_v_coeffs = np.arange(36, dtype=dctkit.float_dtype).reshape((12, 3))
     cP1_v_coeffs = np.arange(75, dtype=dctkit.float_dtype).reshape((25, 3))
     cP2_v_coeffs = np.arange(42, dtype=dctkit.float_dtype).reshape((14, 3))
+
     cP0_v = C.CochainP0(S_2, cP0_v_coeffs)
     cP1_v = C.CochainP1(S_2, cP1_v_coeffs)
     cP2_v = C.CochainP2(S_2, cP2_v_coeffs)
+    c_all = [cP0_v, cP1_v, cP2_v]
 
     star_cP0_v = C.star(cP0_v)
     star_cP1_v = C.star(cP1_v)
@@ -250,6 +255,8 @@ def test_hodge_star(setup_test):
     star_invP0_v = C.star(star_cP0_v)
     star_invP1_v = C.star(star_cP1_v)
     star_invP2_v = C.star(star_cP2_v)
+    star_all = [star_cP0_v, star_cP1_v, star_cP2_v]
+    star_inv_all = [star_invP0_v, star_invP1_v, star_invP2_v]
     star_cP0_v_true = np.array([[0., 0.0546875, 0.109375],
                                 [0.11572266, 0.15429688, 0.19287109],
                                 [0.31120643, 0.36307417, 0.41494191],
@@ -304,13 +311,12 @@ def test_hodge_star(setup_test):
                                 [610.33112583, 627.28476821, 644.2384106],
                                 [667.08240535, 684.18708241, 701.29175947]],
                                dtype=dctkit.float_dtype)
+    star_true_all = [star_cP0_v_true, star_cP1_v_true, star_cP2_v_true]
 
-    assert np.allclose(star_cP0_v.coeffs, star_cP0_v_true)
-    assert np.allclose(star_cP1_v.coeffs, star_cP1_v_true)
-    assert np.allclose(star_cP2_v.coeffs, star_cP2_v_true)
-    assert np.allclose(star_invP0_v.coeffs, cP0_v.coeffs)
-    assert np.allclose(star_invP1_v.coeffs, -cP1_v.coeffs)
-    assert np.allclose(star_invP2_v.coeffs, cP2_v.coeffs)
+    for i in range(3):
+        assert np.allclose(star_all[i].coeffs, star_true_all[i])
+        assert np.allclose(star_inv_all[i].coeffs, (-1)
+                           ** (i*(S_2.dim-i))*c_all[i].coeffs)
 
 
 def test_inner_product(setup_test):
@@ -337,11 +343,13 @@ def test_inner_product(setup_test):
 
     inner_productP0 = C.inner_product(cP0_1, cP0_2)
     inner_productP1 = C.inner_product(cP1_1, cP1_2)
+    inner_product_all = [inner_productP0, inner_productP1]
     inner_productP0_true = np.dot(vP0_1, S_1.hodge_star[0]*vP0_2)
     inner_productP1_true = np.dot(vP1_1, S_1.hodge_star[1]*vP1_2)
+    inner_product_true_all = [inner_productP0_true, inner_productP1_true]
 
-    assert np.allclose(inner_productP0, inner_productP0_true)
-    assert np.allclose(inner_productP1, inner_productP1_true)
+    for i in range(2):
+        assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
     # 2D test
     vP0_1 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
@@ -361,13 +369,15 @@ def test_inner_product(setup_test):
     inner_productP0 = C.inner_product(cP0_1, cP0_2)
     inner_productP1 = C.inner_product(cP1_1, cP1_2)
     inner_productP2 = C.inner_product(cP2_1, cP2_2)
+    inner_product_all = [inner_productP0, inner_productP1, inner_productP2]
     inner_productP0_true = np.dot(vP0_1, S_2.hodge_star[0]*vP0_2)
     inner_productP1_true = np.dot(vP1_1, S_2.hodge_star[1]*vP1_2)
     inner_productP2_true = np.dot(vP2_1, S_2.hodge_star[2]*vP2_2)
+    inner_product_true_all = [inner_productP0_true,
+                              inner_productP1_true, inner_productP2_true]
 
-    assert np.allclose(inner_productP0, inner_productP0_true)
-    assert np.allclose(inner_productP1, inner_productP1_true)
-    assert np.allclose(inner_productP2, inner_productP2_true)
+    for i in range(3):
+        assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
     # 3D test
 
@@ -393,15 +403,19 @@ def test_inner_product(setup_test):
     inner_productP1 = C.inner_product(cP1_1, cP1_2)
     inner_productP2 = C.inner_product(cP2_1, cP2_2)
     inner_productP3 = C.inner_product(cP3_1, cP3_2)
+    inner_product_all = [inner_productP0,
+                         inner_productP1, inner_productP2, inner_productP3]
     inner_productP0_true = np.dot(vP0_1, S_3.hodge_star[0]*vP0_2)
     inner_productP1_true = np.dot(vP1_1, S_3.hodge_star[1]*vP1_2)
     inner_productP2_true = np.dot(vP2_1, S_3.hodge_star[2]*vP2_2)
     inner_productP3_true = np.dot(vP3_1, S_3.hodge_star[3]*vP3_2)
+    inner_product_true_all = [inner_productP0_true,
+                              inner_productP1_true,
+                              inner_productP2_true,
+                              inner_productP3_true]
 
-    assert np.allclose(inner_productP0, inner_productP0_true)
-    assert np.allclose(inner_productP1, inner_productP1_true)
-    assert np.allclose(inner_productP2, inner_productP2_true)
-    assert np.allclose(inner_productP3, inner_productP3_true)
+    for i in range(4):
+        assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
 
 def test_codifferential(setup_test):
@@ -430,11 +444,13 @@ def test_codifferential(setup_test):
 
     innerP0P1 = C.inner_product(C.coboundary(cP0), cP1)
     innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
+    inner_all = [innerP0P1, innerD0D1]
     cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
     cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
+    cod_inner_all = [cod_innerP0P1, cod_innerD0D1]
 
-    assert np.allclose(innerP0P1, cod_innerP0P1)
-    assert np.allclose(innerD0D1, cod_innerD0D1)
+    for i in range(2):
+        assert np.allclose(inner_all[i], cod_inner_all[i])
 
     # 2D test
     n_0 = S_2.num_nodes
@@ -458,15 +474,15 @@ def test_codifferential(setup_test):
     innerP1P2 = C.inner_product(C.coboundary(cP1), cP2)
     innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
     innerD1D2 = C.inner_product(C.coboundary(cD1), cD2)
+    inner_all = [innerP0P1, innerP1P2, innerD0D1, innerD1D2]
     cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
     cod_innerP1P2 = C.inner_product(cP1, C.codifferential(cP2))
     cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
     cod_innerD1D2 = C.inner_product(cD1, C.codifferential(cD2))
+    cod_inner_all = [cod_innerP0P1, cod_innerP1P2, cod_innerD0D1, cod_innerD1D2]
 
-    assert np.allclose(innerP0P1, cod_innerP0P1)
-    assert np.allclose(innerP1P2, cod_innerP1P2)
-    assert np.allclose(innerD0D1, cod_innerD0D1)
-    assert np.allclose(innerD1D2, cod_innerD1D2)
+    for i in range(4):
+        assert np.allclose(inner_all[i], cod_inner_all[i])
 
     # 3D test
     n_0 = S_3.num_nodes
@@ -497,16 +513,15 @@ def test_codifferential(setup_test):
     innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
     innerD1D2 = C.inner_product(C.coboundary(cD1), cD2)
     innerD2D3 = C.inner_product(C.coboundary(cD2), cD3)
+    inner_all = [innerP0P1, innerP1P2, innerP2P3, innerD0D1, innerD1D2, innerD2D3]
     cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
     cod_innerP1P2 = C.inner_product(cP1, C.codifferential(cP2))
     cod_innerP2P3 = C.inner_product(cP2, C.codifferential(cP3))
     cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
     cod_innerD1D2 = C.inner_product(cD1, C.codifferential(cD2))
     cod_innerD2D3 = C.inner_product(cD2, C.codifferential(cD3))
+    cod_inner_all = [cod_innerP0P1, cod_innerP1P2,
+                     cod_innerP2P3, cod_innerD0D1, cod_innerD1D2, cod_innerD2D3]
 
-    assert np.allclose(innerP0P1, cod_innerP0P1)
-    assert np.allclose(innerP1P2, cod_innerP1P2)
-    assert np.allclose(innerP2P3, cod_innerP2P3)
-    assert np.allclose(innerD0D1, cod_innerD0D1)
-    assert np.allclose(innerD1D2, cod_innerD1D2)
-    assert np.allclose(innerD2D3, cod_innerD2D3)
+    for i in range(6):
+        assert np.allclose(inner_all[i], cod_inner_all[i])
