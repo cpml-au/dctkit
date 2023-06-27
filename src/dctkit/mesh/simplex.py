@@ -69,7 +69,8 @@ class SimplicialComplex:
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
         self.B = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
-            boundary, vals, B = compute_boundary_COO(self.S[self.dim - p])
+            boundary, vals, faces_ordered = compute_boundary_COO(self.S[self.dim - p])
+            B = compute_B(self.S[self.dim - p], faces_ordered)
 
             self.boundary[self.dim - p] = boundary
             self.B[self.dim - p] = B
@@ -363,17 +364,15 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
 
     Returns:
         a tuple containing a list with the COO representation of the boundary, the
-            matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
-            and a matrix containing the IDs of the (p-1)-simplices (cols) belonging to
-            each p-simplex (rows).
+        matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
+        and a matrix containing the IDs of the nodes (cols) belonging to
+        each p-simplex (rows) counted with repetition and ordered lexicographically.
 
     """
     # number of p-simplices
     num_simplices = S.shape[0]
     # nodes per p-simplex = p + 1
     nodes_per_simplex = S.shape[1]
-
-    dim = nodes_per_simplex - 1
 
     N = num_simplices * nodes_per_simplex
 
@@ -411,27 +410,45 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     column_index = faces_ordered[:, -1]
     faces = faces_ordered[:, :-2]
 
-    # FIXME: explain the meaming of vals and give a more descriptive name
-    # compute vals and rows_index
-    vals, rows_index = np.unique(faces, axis=0, return_inverse=True)
+    # compute unique_faces and rows_index
+    unique_faces, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
     boundary_COO = [rows_index, column_index, values]
 
+    return boundary_COO, unique_faces, faces_ordered
+
+
+def compute_B(S: npt.NDArray, faces_ordered: npt.NDArray) -> npt.NDArray:
+    """Compute the matrix containing the IDs of the (p-1)-simplices (cols) belonging
+    to each p-simplex (rows).
+
+    Args:
+        S: matrix of the IDs of the nodes (cols) belonging to each p-simplex (rows).
+
+    Returns:
+        a matrix containing the IDs of the (p-1)-simplices (cols) belonging
+        to each p-simplex (rows).
+
+    """
+
+    nodes_per_simplex = S.shape[1]
+    p = nodes_per_simplex - 1
+
     # for triangles and tets, compute B explicitly
-    if dim > 1:
+    if p > 1:
         # order faces_ordered w.r.t last column
         faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
 
         # initialize the matrix of the boundary simplex as an array
-        B = np.empty(faces.shape[0], dtype=dctkit.int_dtype)
+        B = np.empty(faces_ordered.shape[0], dtype=dctkit.int_dtype)
 
         # compute B
         _, B = np.unique(faces_ordered_last[:, :-2], axis=0, return_inverse=True)
-        B = B.reshape(faces.shape[0] // nodes_per_simplex, nodes_per_simplex)
+        B = B.reshape(faces_ordered.shape[0] // nodes_per_simplex, nodes_per_simplex)
 
     # for edges, B_1 = S_1
     else:
         B = S
     B.astype(dtype=dctkit.int_dtype)
 
-    return boundary_COO, vals, B
+    return B
