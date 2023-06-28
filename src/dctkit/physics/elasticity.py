@@ -63,12 +63,12 @@ class LinearElasticity():
 
         Args:
             forces: vector-valued primal 1-cochain containing forces acting on primal
-            edges.
+                edges.
             boundary_tractions: a dictionary of tuples. Each key represent the type
-            of coordinate to manipulate (x,y, or both), while each tuple consists of
-            two jax arrays, in which the first encordes the indices where we want to
-            impose the boundary tractions, while the last encodes the boundary traction
-            values themselves.
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we
+                want to impose the boundary tractions, while the last encodes the
+                boundary traction values themselves.
 
         Returns:
             the updated force 1-cochain.
@@ -93,10 +93,10 @@ class LinearElasticity():
             node coordinates of the current configuration.
             f: primal vector-valued 2-cochain of sources.
             boundary_tractions: a dictionary of tuples. Each key represent the type
-            of coordinate to manipulate (x,y, or both), while each tuple consists of
-            two jax arrays, in which the first encordes the indices where we want to
-            impose the boundary tractions, while the last encodes the boundary traction
-            values themselves.
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we
+                want to impose the boundary tractions, while the last encodes the
+                boundary traction values themselves.
 
         Returns:
             the residual vector-valued cochain.

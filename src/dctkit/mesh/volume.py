@@ -10,7 +10,7 @@ def unsigned_volume(S: npt.NDArray, node_coords: npt.NDArray) -> float:
     Args:
         S: matrix containing the IDs of the nodes belonging to each simplex.
         node_coords: coordinates of the points of the cell complex to which the set of
-        simplices belongs.
+            simplices belongs.
 
     Returns:
         unsigned volume of the simplex.
