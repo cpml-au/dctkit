@@ -79,4 +79,4 @@ def test_linear_elasticity(setup_test):
     sol = prb.run(x0=node_coords_flattened)
     curr_node_coords = sol.reshape(S.node_coords.shape)
 
-    assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-5
+    assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-6
