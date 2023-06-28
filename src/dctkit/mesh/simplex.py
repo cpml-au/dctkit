@@ -32,8 +32,8 @@ class SimplicialComplex:
             volumes of the primal p-simplices.
         dual_volumes (list): list where each entry p is an array containing all
             the volumes of the dual p-simplices.
-        B (list): list where each entry p is a matrix containing the IDs of the
-            (p-1)-simplices (cols) belonging to each p-simplex (rows).
+        boundary_connectivity (list): list where each entry p is a matrix containing
+            the IDs of the (p-1)-simplices (cols) belonging to each p-simplex (rows).
         hodge_star (list): list where each entry is an array containing the
             diagonal of the Hodge star matrix.
     """
@@ -67,20 +67,22 @@ class SimplicialComplex:
     def get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
-        self.B = sl.ShiftedList([None] * self.dim, -1)
+        self.boundary_connectivity = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
             boundary, vals, faces_ordered = compute_boundary_COO(self.S[self.dim - p])
-            B = compute_B(self.S[self.dim - p], faces_ordered)
+            boundary_connectivity_dim_m_p = compute_boundary_connectivity(
+                self.S[self.dim - p], faces_ordered)
 
             self.boundary[self.dim - p] = boundary
-            self.B[self.dim - p] = B
+            self.boundary_connectivity[self.dim - p] = boundary_connectivity_dim_m_p
             self.S[self.dim - p - 1] = vals
 
     def get_complex_boundary_faces_indices(self):
         """Find the IDs of the boundary faces of the complex, i.e. the row indices of
         the boundary faces in the matrix S[dim-1]."""
         # boundary faces IDs appear only once in the matrix B[dim]
-        unique_elements, counts = np.unique(self.B[self.dim], return_counts=True)
+        unique_elements, counts = np.unique(
+            self.boundary_connectivity[self.dim], return_counts=True)
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
     def get_circumcenters(self):
@@ -117,7 +119,7 @@ class SimplicialComplex:
 
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
-            num_p, _ = self.B[p].shape
+            num_p, _ = self.boundary_connectivity[p].shape
             num_pm1, _ = self.S[p - 1].shape
             dv = np.zeros(num_pm1, dtype=self.float_dtype)
             if p == 1:
@@ -129,7 +131,7 @@ class SimplicialComplex:
             # Loop over p-simplices
             for i in range(num_p):
                 # indexes of the boundary simplices of the p-simplex
-                index = self.B[p][i, :]
+                index = self.boundary_connectivity[p][i, :]
                 # Distance between circumcenters of the p-simplex and the boundary
                 # (p-1)-simplices
                 length = np.linalg.norm(self.circ[p][i, :] - circ_pm1[index, :], axis=1)
@@ -233,7 +235,7 @@ class SimplicialComplex:
             self.get_dual_edge_vectors()
 
         dim = self.dim
-        B = self.B[dim]
+        B = self.boundary_connectivity[dim]
         num_n_simplices = self.S[dim].shape[0]
         num_nm1_simplices = self.S[dim-1].shape[0]
         self.dual_edges_fractions_lengths = np.zeros(
@@ -282,7 +284,7 @@ class SimplicialComplex:
         # metric
 
         dim = self.dim
-        B = self.B[dim]
+        B = self.boundary_connectivity[dim]
         primal_edges = self.S[1]
         # construct the matrix in which the i-th row corresponds to the vector
         # of coordinates of the i-th primal edge
@@ -360,9 +362,9 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
 
     Returns:
         a tuple containing a list with the COO representation of the boundary, the
-        matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
-        and a matrix containing the IDs of the nodes (cols) belonging to
-        each p-simplex (rows) counted with repetition and ordered lexicographically.
+            matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
+            and a matrix containing the IDs of the nodes (cols) belonging to
+            each p-simplex (rows) counted with repetition and ordered lexicographically.
 
     """
     # number of p-simplices
@@ -406,7 +408,10 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     column_index = faces_ordered[:, -1]
     faces = faces_ordered[:, :-2]
 
-    # compute unique_faces and rows_index
+    # compute the matrix obtained from faces removing the duplicate rows and mantaining
+    # the lexicographically order (unique faces) and the vector of occurences for each
+    # non-duplicate row (rows_index); e.g. if faces = [[1,2];[1,3];[1,3];[1,4]],
+    # then unique_faces = [[1,2]; [1,3]; [1,4]] and rows_index = [0; 1; 1; 2]
     unique_faces, rows_index = np.unique(faces, axis=0, return_inverse=True)
     rows_index = rows_index.astype(dtype=dctkit.int_dtype)
     boundary_COO = [rows_index, column_index, values]
@@ -414,7 +419,8 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     return boundary_COO, unique_faces, faces_ordered
 
 
-def compute_B(S: npt.NDArray, faces_ordered: npt.NDArray) -> npt.NDArray:
+def compute_boundary_connectivity(S: npt.NDArray, faces_ordered:
+                                  npt.NDArray) -> npt.NDArray:
     """Compute the matrix containing the IDs of the (p-1)-simplices (cols) belonging
     to each p-simplex (rows).
 
@@ -423,28 +429,31 @@ def compute_B(S: npt.NDArray, faces_ordered: npt.NDArray) -> npt.NDArray:
 
     Returns:
         a matrix containing the IDs of the (p-1)-simplices (cols) belonging
-        to each p-simplex (rows).
+            to each p-simplex (rows).
 
     """
 
     nodes_per_simplex = S.shape[1]
     p = nodes_per_simplex - 1
 
-    # for triangles and tets, compute B explicitly
+    # for triangles and tets, compute boundary_connectivity_p explicitly
     if p > 1:
         # order faces_ordered w.r.t last column
         faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
 
         # initialize the matrix of the boundary simplex as an array
-        B = np.empty(faces_ordered.shape[0], dtype=dctkit.int_dtype)
+        boundary_connectivity_p = np.empty(
+            faces_ordered.shape[0], dtype=dctkit.int_dtype)
 
-        # compute B
-        _, B = np.unique(faces_ordered_last[:, :-2], axis=0, return_inverse=True)
-        B = B.reshape(faces_ordered.shape[0] // nodes_per_simplex, nodes_per_simplex)
+        # compute boundary_connectivity_p
+        _, boundary_connectivity_p = np.unique(
+            faces_ordered_last[:, :-2], axis=0, return_inverse=True)
+        boundary_connectivity_p = boundary_connectivity_p.reshape(
+            faces_ordered.shape[0] // nodes_per_simplex, nodes_per_simplex)
 
-    # for edges, B_1 = S_1
+    # for edges p = 1 and boundary_connectivity_1 = S_1
     else:
-        B = S
-    B.astype(dtype=dctkit.int_dtype)
+        boundary_connectivity_p = S
+    boundary_connectivity_p.astype(dtype=dctkit.int_dtype)
 
-    return B
+    return boundary_connectivity_p
