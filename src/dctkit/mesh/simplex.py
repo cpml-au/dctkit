@@ -20,7 +20,7 @@ class SimplicialComplex:
         is_well_centered: True if the mesh is well-centered.
 
     Attributes:
-        dim (int32): dimension of the complex.
+        dim (int): dimension of the complex.
         S (list): list where each entry p is a matrix containing the IDs of the
             nodes belonging to each p-simplex.
         circ (list): list where each entry p is a matrix containing the
@@ -32,7 +32,7 @@ class SimplicialComplex:
             volumes of the primal p-simplices.
         dual_volumes (list): list where each entry p is an array containing all
             the volumes of the dual p-simplices.
-        boundary_connectivity (list): list where each entry p is a matrix containing
+        simplices_faces (list): list where each entry p is a matrix containing
             the IDs of the (p-1)-simplices (cols) belonging to each p-simplex (rows).
         hodge_star (list): list where each entry is an array containing the
             diagonal of the Hodge star matrix.
@@ -67,22 +67,20 @@ class SimplicialComplex:
     def get_boundary_operators(self):
         """Compute all the COO representations of the boundary matrices."""
         self.boundary = sl.ShiftedList([None] * self.dim, -1)
-        self.boundary_connectivity = sl.ShiftedList([None] * self.dim, -1)
+        self.simplices_faces = sl.ShiftedList([None] * self.dim, -1)
         for p in range(self.dim):
             boundary, vals, faces_ordered = compute_boundary_COO(self.S[self.dim - p])
-            boundary_connectivity_dim_m_p = compute_boundary_connectivity(
-                self.S[self.dim - p], faces_ordered)
-
             self.boundary[self.dim - p] = boundary
-            self.boundary_connectivity[self.dim - p] = boundary_connectivity_dim_m_p
             self.S[self.dim - p - 1] = vals
+            self.simplices_faces[self.dim - p] = compute_simplices_faces(
+                self.S[self.dim - p], faces_ordered)
 
     def get_complex_boundary_faces_indices(self):
         """Find the IDs of the boundary faces of the complex, i.e. the row indices of
         the boundary faces in the matrix S[dim-1]."""
-        # boundary faces IDs appear only once in the matrix B[dim]
+        # boundary faces IDs appear only once in the matrix simplices_faces[dim]
         unique_elements, counts = np.unique(
-            self.boundary_connectivity[self.dim], return_counts=True)
+            self.simplices_faces[self.dim], return_counts=True)
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
     def get_circumcenters(self):
@@ -119,7 +117,7 @@ class SimplicialComplex:
 
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
-            num_p, _ = self.boundary_connectivity[p].shape
+            num_p, _ = self.simplices_faces[p].shape
             num_pm1, _ = self.S[p - 1].shape
             dv = np.zeros(num_pm1, dtype=self.float_dtype)
             if p == 1:
@@ -130,15 +128,15 @@ class SimplicialComplex:
                 circ_pm1 = self.circ[p - 1]
             # Loop over p-simplices
             for i in range(num_p):
-                # indexes of the boundary simplices of the p-simplex
-                index = self.boundary_connectivity[p][i, :]
-                # Distance between circumcenters of the p-simplex and the boundary
+                face_id = self.simplices_faces[p][i, :]
+                # Distances between circumcenter of the p-simplex and the boundary
                 # (p-1)-simplices
-                length = np.linalg.norm(self.circ[p][i, :] - circ_pm1[index, :], axis=1)
+                length = np.linalg.norm(self.circ[p][i, :] - circ_pm1[face_id, :],
+                                        axis=1)
 
                 # Find opposite vertexes to the (p-1)-simplices
                 opp_vert = np.array(
-                    [list(set(self.S[p][i]) - set(self.S[p - 1][j])) for j in index])
+                    [list(set(self.S[p][i]) - set(self.S[p - 1][j])) for j in face_id])
                 opp_vert_index = [list(self.S[p][i]).index(j) for j in opp_vert]
 
                 # Sign of the dual volume of the boundary (p-1)-simplex = sign of
@@ -146,8 +144,8 @@ class SimplicialComplex:
                 # p-simplex relative to the opposite vertex
                 sign = np.copysign(1, self.bary_circ[p][i, opp_vert_index])
                 # Update dual volume of the boundary (p-1)-simplex
-                dv[index] += sign * (length*self.dual_volumes[p][i] /
-                                     (self.dim - p + 1))
+                dv[face_id] += sign * (length*self.dual_volumes[p][i] /
+                                       (self.dim - p + 1))
 
             self.dual_volumes[p - 1] = dv
 
@@ -235,7 +233,7 @@ class SimplicialComplex:
             self.get_dual_edge_vectors()
 
         dim = self.dim
-        B = self.boundary_connectivity[dim]
+        B = self.simplices_faces[dim]
         num_n_simplices = self.S[dim].shape[0]
         num_nm1_simplices = self.S[dim-1].shape[0]
         self.dual_edges_fractions_lengths = np.zeros(
@@ -284,7 +282,7 @@ class SimplicialComplex:
         # metric
 
         dim = self.dim
-        B = self.boundary_connectivity[dim]
+        B = self.simplices_faces[dim]
         primal_edges = self.S[1]
         # construct the matrix in which the i-th row corresponds to the vector
         # of coordinates of the i-th primal edge
@@ -419,8 +417,8 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
     return boundary_COO, unique_faces, faces_ordered
 
 
-def compute_boundary_connectivity(S: npt.NDArray, faces_ordered:
-                                  npt.NDArray) -> npt.NDArray:
+def compute_simplices_faces(S: npt.NDArray, faces_ordered:
+                            npt.NDArray) -> npt.NDArray:
     """Compute the matrix containing the IDs of the (p-1)-simplices (cols) belonging
     to each p-simplex (rows).
 
@@ -436,24 +434,20 @@ def compute_boundary_connectivity(S: npt.NDArray, faces_ordered:
     nodes_per_simplex = S.shape[1]
     p = nodes_per_simplex - 1
 
-    # for triangles and tets, compute boundary_connectivity_p explicitly
+    # for triangles and tets, compute the matrix explicitly
     if p > 1:
         # order faces_ordered w.r.t last column
         faces_ordered_last = faces_ordered[faces_ordered[:, -1].argsort()]
 
-        # initialize the matrix of the boundary simplex as an array
-        boundary_connectivity_p = np.empty(
-            faces_ordered.shape[0], dtype=dctkit.int_dtype)
-
-        # compute boundary_connectivity_p
-        _, boundary_connectivity_p = np.unique(
+        # unique returns an array that must be reshaped into a matrix
+        _, simplices_faces = np.unique(
             faces_ordered_last[:, :-2], axis=0, return_inverse=True)
-        boundary_connectivity_p = boundary_connectivity_p.reshape(
+        simplices_faces = simplices_faces.reshape(
             faces_ordered.shape[0] // nodes_per_simplex, nodes_per_simplex)
 
-    # for edges p = 1 and boundary_connectivity_1 = S_1
+    # for edges, take S[1]
     else:
-        boundary_connectivity_p = S
-    boundary_connectivity_p.astype(dtype=dctkit.int_dtype)
+        simplices_faces = S
+    simplices_faces.astype(dtype=dctkit.int_dtype)
 
-    return boundary_connectivity_p
+    return simplices_faces
