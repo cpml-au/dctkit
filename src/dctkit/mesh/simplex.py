@@ -170,6 +170,12 @@ class SimplicialComplex:
             self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
                                        for i in range(n + 1)]
 
+    def get_primal_edge_vectors(self):
+        primal_edges = self.S[1]
+        node_coords = self.node_coords
+        self.primal_edges_vectors = node_coords[primal_edges[:, 1], :] - \
+            node_coords[primal_edges[:, 0], :]
+
     def get_dual_edge_vectors(self):
         """Compute the dual edge vectors."""
         dim = self.dim
@@ -223,7 +229,7 @@ class SimplicialComplex:
 
         self.dual_edges_lengths = np.linalg.norm(self.dual_edges_vectors, axis=1)
 
-    def get_flat_weights(self):
+    def get_flat_DPD_weights(self):
         """Compute the matrix where each non-negative entry (i,j) is the ratio between
            the length of the j-th dual edge contained in the i-th n-simplex and the
            total length of the j-th dual edge.
@@ -252,12 +258,30 @@ class SimplicialComplex:
             self.dual_edges_fractions_lengths[i, :][
                 dual_edges_indices] = np.linalg.norm(diff_circs, axis=1)
 
-        self.flat_weights = self.dual_edges_fractions_lengths/self.dual_edges_lengths
+        self.flat_DPD_weights = self.dual_edges_fractions_lengths / \
+            self.dual_edges_lengths
         # in the case of non-well centered mesh an entry of the flat weights matrix
         # can be NaN. In this case, the corresponding dual edge is the null vector,
         # hence we shouldn't take in account dot product with it. We then replace
         # any NaN with 0.
-        self.flat_weights = np.nan_to_num(self.flat_weights)
+        self.flat_DPD_weights = np.nan_to_num(self.flat_DPD_weights)
+
+    def get_flat_DPP_weights(self):
+        # FIXME: extend to 3D case.
+        # NOTATION:
+        # s^i: generic i-simplex of the simplicial complex self.
+        # s^j > s^i: s^i is a proper face of s^j (hence i<j)
+        if not hasattr(self, "primal_edge_vectors"):
+            self.get_primal_edge_vectors()
+
+        if self.dim == 2:
+            # in this case the entries of the flat_DPD matrix coincides
+            # with the entries of the flat_DPP matrix, since in this case
+            # n -1 = 1. Hence summing over s^n > s^1 is the same as summing
+            # over s^n > s^{n-1} and moreover |★s^{n-1} ∩ s^n| = |★s^1 ∩ s^n|
+            if not hasattr(self, "flat_DPD_weights"):
+                self.get_flat_DPD_weights()
+            self.flat_DPP_weights = self.flat_DPD_weights
 
     def get_current_metric_2D(self, node_coords: npt.NDArray | Array) -> Array:
         """Compute the current metric of a 2D simplicial complex.
