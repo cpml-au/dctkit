@@ -13,13 +13,13 @@ def circumcenter(S: npt.NDArray,
         (Reference: Bell, Hirani, PyDEC: Software and Algorithms for Discretization
         of Exterior Calculus, 2012, Section 10.1).
 
-        Args:
-            S: matrix containing the IDs of the nodes belonging to each simplex.
-            node_coords: coordinates (cols) of each node of the complex to which the
-                simplices belongs.
-        Returns:
-            a tuple consisting of the Cartesian coordinates of the circumcenter and the
-                barycentric coordinates.
+    Args:
+        S: matrix containing the IDs of the nodes belonging to each simplex.
+        node_coords: coordinates (cols) of each node of the complex to which the
+            simplices belongs.
+    Returns:
+        a tuple consisting of the Cartesian coordinates of the circumcenter and the
+        barycentric coordinates.
     """
     # get global data type
     float_dtype = dctkit.float_dtype
