@@ -130,10 +130,13 @@ class LinearElasticity():
         stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPP(stress_tensor)
+        # stress_integrated_closure = V.flat_DPP(stress_tensor, True)
         forces = C.star(stress_integrated)
-        print(forces.coeffs)
-        print(C.coboundary(forces).coeffs)
-        residual = C.add(C.coboundary(forces), f)
+        # FIXME: comment it!
+        forces_closure = C.star(V.flat_DPD(stress_tensor))
+        balance_forces_closure = C.coboundary_closure(forces_closure)
+        balance = C.add(C.coboundary(forces), balance_forces_closure)
+        residual = C.add(balance, f)
         return residual
 
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
@@ -185,5 +188,6 @@ class LinearElasticity():
             else:
                 penalty += jnp.sum((node_coords_reshaped[idx, :]
                                    [:, int(key)] - values)**2)
-        energy = 1/2*(jnp.sum(residual**2) + gamma*penalty)
+        print(residual)
+        energy = jnp.sum(residual**2) + gamma*penalty
         return energy

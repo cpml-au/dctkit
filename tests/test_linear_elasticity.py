@@ -78,6 +78,12 @@ def test_linear_elasticity_primal(setup_test):
     sol = prb.run(x0=node_coords_flattened)
     curr_node_coords = sol.reshape(S.node_coords.shape)
 
+    strain = ela.get_GreenLagrange_strain(true_curr_node_coords)
+    stress = ela.get_stress(strain)
+
+    print("strain=", strain)
+    print("stress=", stress)
+
     assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-6
 
 
@@ -141,11 +147,21 @@ def test_linear_elasticity_dual(setup_test):
 
     prb.set_obj_args(obj_args)
     node_coords_flattened = S.node_coords.flatten()
-    sol = prb.run(x0=node_coords_flattened)
+    sol = prb.run(x0=node_coords_flattened, ftol_abs=1e-30, ftol_rel=1e-30)
+    print(prb.last_opt_result)
     curr_node_coords = sol.reshape(S.node_coords.shape)
+
+    strain = ela.get_GreenLagrange_strain(true_curr_node_coords)
+    stress = ela.get_stress(strain)
+
+    print("strain=", strain)
+    print("stress=", stress)
 
     print(ela.obj_linear_elasticity(
         true_curr_node_coords.flatten(), f, gamma, boundary_values, None))
-    print(S.node_coords)
+    print(ela.obj_linear_elasticity(
+        curr_node_coords.flatten(), f, gamma, boundary_values, None))
+    print(true_curr_node_coords)
+    print(curr_node_coords)
 
     assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-6
