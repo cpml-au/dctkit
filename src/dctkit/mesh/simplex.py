@@ -26,8 +26,8 @@ class SimplicialComplex:
         circ (list): list where each entry p is a matrix containing the
             coordinates of the circumcenters (cols) of all the p-simplexes (rows).
         boundary (list): list of the boundary matrices at all dimensions (0..dim-1).
-        node_coords (float np.array): Cartesian coordinates (cols) of the
-            nodes (rows) of the simplicial complex.
+        node_coords (npt.NDArray): Cartesian coordinates (cols) of the nodes (rows) of
+            the simplicial complex.
         primal_volumes (list): list where each entry p is an array containing all the
             volumes of the primal p-simplices.
         dual_volumes (list): list where each entry p is an array containing all
@@ -77,7 +77,8 @@ class SimplicialComplex:
 
     def get_complex_boundary_faces_indices(self):
         """Find the IDs of the boundary faces of the complex, i.e. the row indices of
-        the boundary faces in the matrix S[dim-1]."""
+        the boundary faces in the matrix S[dim-1].
+        """
         # boundary faces IDs appear only once in the matrix simplices_faces[dim]
         unique_elements, counts = np.unique(
             self.simplices_faces[self.dim], return_counts=True)
@@ -118,7 +119,6 @@ class SimplicialComplex:
 
     def get_dual_volumes(self):
         """Compute all the dual volumes."""
-
         if not hasattr(self, "circ"):
             self.get_circumcenters()
 
@@ -345,8 +345,8 @@ class SimplicialComplex:
 
             Returns:
                 the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
-                    and each 2x2 matrix is the current metric of the corresponding
-                    2-simplex.
+                and each 2x2 matrix is the current metric of the corresponding
+                2-simplex.
         """
         # NOTATION:
         # a_i, reference covariant basis (pairs of edge vectors of a primal 2-simplex)
@@ -455,9 +455,9 @@ def compute_boundary_COO(S: npt.NDArray) -> Tuple[list, npt.NDArray, npt.NDArray
 
     Returns:
         a tuple containing a list with the COO representation of the boundary, the
-            matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
-            and a matrix containing the IDs of the nodes (cols) belonging to
-            each p-simplex (rows) counted with repetition and ordered lexicographically.
+        matrix of node IDs belonging to each (p-1)-face ordered lexicographically,
+        and a matrix containing the IDs of the nodes (cols) belonging to
+        each p-simplex (rows) counted with repetition and ordered lexicographically.
 
     """
     # number of p-simplices
@@ -522,7 +522,7 @@ def compute_simplices_faces(S: npt.NDArray, faces_ordered:
 
     Returns:
         a matrix containing the IDs of the (p-1)-simplices (cols) belonging
-            to each p-simplex (rows).
+        to each p-simplex (rows).
 
     """
 
