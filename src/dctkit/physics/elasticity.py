@@ -82,9 +82,9 @@ class LinearElasticity():
                 forces.coeffs = forces.coeffs.at[idx, int(key)].set(values)
         return forces
 
-    def force_balance_residual(self, node_coords: C.CochainP0, f: C.CochainP2,
-                               boundary_tractions:
-                               Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
+    def force_balance_residual_primal(self, node_coords: C.CochainP0, f: C.CochainP2,
+                                      boundary_tractions:
+                                      Dict[str, Tuple[Array, Array]]) -> C.CochainP2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -112,6 +112,30 @@ class LinearElasticity():
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
+    def force_balance_residual_dual(self, node_coords: C.CochainP0,
+                                    f: C.CochainD2) -> C.CochainD2:
+        """Compute the residual of the discrete balance equation in the case
+          of isotropic linear elastic materials in 2D using DEC framework.
+
+        Args:
+            node_coords: primal vector valued 0-cochain of
+            node coordinates of the current configuration.
+            f: dual vector-valued 2-cochain of sources.
+
+        Returns:
+            the residual vector-valued cochain.
+
+        """
+        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        stress = self.get_stress(strain=strain)
+        stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
+        stress_integrated = V.flat_DPP(stress_tensor)
+        forces = C.star(stress_integrated)
+        print(forces.coeffs)
+        print(C.coboundary(forces).coeffs)
+        residual = C.add(C.coboundary(forces), f)
+        return residual
+
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
                               f: npt.NDArray | Array, gamma: float, boundary_values:
                               Dict[str, Tuple[Array, Array]],
@@ -127,26 +151,32 @@ class LinearElasticity():
             f: 1-dimensional array obtained after flattening the
             matrix of external sources (constant term of the system).
             gamma: penalty factor.
-            boundary_values: a dictionary of tuples. Each key represent the type
-            of coordinate to manipulate (x,y, or both), while each tuple consists of
-            two np.arrays in which the first encodes the indices of boundary values,
-            while the last encodes the boundary values themselves.
+            boundary_values: a dictionary of tuples. Each key represent the type of
+                coordinate to manipulate (x,y, or both), while each tuple consists of
+                two np.arrays in which the first encodes the indices of boundary
+                values, while the last encodes the boundary values themselves.
             boundary_tractions: a dictionary of tuples. Each key represent the type
-            of coordinate to manipulate (x,y, or both), while each tuple consists of
-            two jax arrays, in which the first encordes the indices where we want to
-            impose the boundary tractions, while the last encodes the boundary traction
-            values themselves.
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we want
+                to impose the boundary tractions, while the last encodes the boundary
+                traction values themselves. It is None when we perform the force balance
+                on dual cells.
 
         Returns:
             the value of the objective function at node_coords.
 
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
-        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        residual = self.force_balance_residual(
-            node_coords_coch, f_coch, boundary_tractions).coeffs
+        if boundary_tractions is None:
+            f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
+            f_coch = C.CochainD2(complex=self.S, coeffs=f)
+            residual = self.force_balance_residual_dual(node_coords_coch, f_coch).coeffs
+        else:
+            f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
+            f_coch = C.CochainP2(complex=self.S, coeffs=f)
+            residual = self.force_balance_residual_primal(
+                node_coords_coch, f_coch, boundary_tractions).coeffs
         penalty = 0.
         for key in boundary_values:
             idx, values = boundary_values[key]
