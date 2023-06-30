@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import numpy.typing as npt
 from .cochain import CochainP1, CochainD1
 from dctkit.mesh import simplex as spx
+import dctkit as dt
 from jax import Array
 
 
@@ -74,7 +75,7 @@ def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
     return CochainD1(v.S, coch_coeffs)
 
 
-def flat_DPP(v: DiscreteTensorFieldD) -> CochainP1:
+def flat_DPP(v: DiscreteTensorFieldD, closure=False) -> CochainP1:
     """Implements the flat DPP operator for dual discrete vector fields.
 
     Args:
@@ -83,7 +84,12 @@ def flat_DPP(v: DiscreteTensorFieldD) -> CochainP1:
         the primal 1-cochain resulting from the application of the flat operator.
     """
     primal_edges = v.S.primal_edges_vectors[:, :v.coeffs.shape[0]]
-    flat_matrix = v.S.flat_DPP_weights
+    if closure:
+        flat_matrix = jnp.zeros(v.S.flat_DPP_weights.shape, dtype=dt.float_dtype)
+        flat_matrix = flat_matrix.at[v.S.tets_cont_bnd_face,
+                                     list(v.S.bnd_faces_indices)].set(1.)
+    else:
+        flat_matrix = v.S.flat_DPP_weights
     # multiply weights of each primal edge by the vectors associated to the dual nodes
     # belonging to the corresponding dual edge
     weighted_v = v.coeffs @ flat_matrix

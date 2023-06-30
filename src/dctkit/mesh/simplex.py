@@ -83,6 +83,17 @@ class SimplicialComplex:
             self.simplices_faces[self.dim], return_counts=True)
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
+    def get_tets_containing_a_boundary_face(self):
+        """Compute a list in which the i-th element is the index of the top-level 
+        simplex in which the i-th boundary face belongs."""
+        if not hasattr(self, "bnd_faces_indices"):
+            self.get_complex_boundary_faces_indices()
+        dim = self.dim
+        # the index of the top level simplex in which the i-th boundary face belongs
+        # is the (only) row index in which i appears in simplices_faces[dim].
+        self.tets_cont_bnd_face = [np.nonzero(
+            self.simplices_faces[dim] == i)[0][0] for i in self.bnd_faces_indices]
+
     def get_circumcenters(self):
         """Compute all the circumcenters."""
         self.circ = sl.ShiftedList([None] * (self.dim), -1)
@@ -272,6 +283,7 @@ class SimplicialComplex:
         # s^j > s^i: s^i is a proper face of s^j (hence i<j)
         if not hasattr(self, "primal_edge_vectors"):
             self.get_primal_edge_vectors()
+            self.get_tets_containing_a_boundary_face()
 
         if self.dim == 2:
             # in this case the entries of the flat_DPD matrix coincides
