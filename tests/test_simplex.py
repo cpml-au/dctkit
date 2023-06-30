@@ -83,7 +83,8 @@ def test_simplicial_complex_2(setup_test):
     mesh, _ = util.generate_square_mesh(1.0)
     S = util.build_complex_from_mesh(mesh, is_well_centered=False)
     S.get_hodge_star()
-    S.get_flat_weights()
+    S.get_flat_DPD_weights()
+    S.get_flat_DPP_weights()
 
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
@@ -147,15 +148,25 @@ def test_simplicial_complex_2(setup_test):
     hodge_true.append(hodge_1_true)
     hodge_true.append(hodge_2_true)
 
-    # define true dual edges
-    dedges_true = np.array([[0., 0., 0.],
-                            [0.,   0.,   0.],
-                            [-0.5,  0.5,  0.],
-                            [0.,   0.,   0.],
-                            [-0.5, -0.5,  0.],
-                            [0.,   0.,   0.],
-                            [0.5, -0.5,  0.],
-                            [0.5,  0.5,  0.]])
+    # define true primal edge vectors
+    primal_edges_vectors_true = np.array([[1.,  0.,  0.],
+                                          [0.,  1.,  0.],
+                                          [0.5,  0.5,  0.],
+                                          [0.,  1.,  0.],
+                                          [-0.5,  0.5,  0.],
+                                          [-1.,  0.,  0.],
+                                          [-0.5, -0.5,  0.],
+                                          [0.5, -0.5,  0.]], dtype=dctkit.float_dtype)
+
+    # define true dual edge vectors
+    dual_edges_vectors_true = np.array([[0., 0., 0.],
+                                        [0.,   0.,   0.],
+                                        [-0.5,  0.5,  0.],
+                                        [0.,   0.,   0.],
+                                        [-0.5, -0.5,  0.],
+                                        [0.,   0.,   0.],
+                                        [0.5, -0.5,  0.],
+                                        [0.5,  0.5,  0.]], dtype=dctkit.float_dtype)
 
     # define true dual edges lengths
     num_n_simplices = S.S[S.dim].shape[0]
@@ -167,6 +178,15 @@ def test_simplicial_complex_2(setup_test):
     dedges_lengths_true[2, [4, 6]] = np.sqrt(2)/4
     dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
 
+    # define true flat DPD and DPP matrices
+    flat_DPD_weigths_true = np.array([[0., 0., 0.5, 0., 0.5, 0., 0., 0.],
+                                      [0., 0., 0.5, 0., 0., 0., 0., 0.5],
+                                      [0., 0., 0., 0., 0.5, 0., 0.5, 0.],
+                                      [0., 0., 0., 0., 0., 0., 0.5, 0.5]],
+                                     dtype=dctkit.float_dtype)
+    flat_DPP_weigths_true = flat_DPD_weigths_true
+
+    # define true reference metric
     metric_true = np.stack([np.identity(2)]*4)
 
     for i in range(3):
@@ -180,9 +200,17 @@ def test_simplicial_complex_2(setup_test):
     for i in range(1, 3):
         assert np.allclose(S.circ[i], circ_true[i])
 
+    # test primal edge
+    assert np.allclose(S.primal_edges_vectors, primal_edges_vectors_true)
+
     # test dual edge and dual edge lengths
-    assert np.allclose(S.dual_edges_vectors, dedges_true)
+    assert np.allclose(S.dual_edges_vectors, dual_edges_vectors_true)
     assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
+
+    # test flat DPD and flat DPP
+    # FIXME: after extending flat DPP to other dimensions, test it!
+    assert np.allclose(S.flat_DPD_weights, flat_DPD_weigths_true)
+    assert np.allclose(S.flat_DPP_weights, flat_DPP_weigths_true)
 
     # test metric
     assert np.allclose(S.reference_metric, metric_true)
@@ -192,13 +220,11 @@ def test_simplicial_complex_2(setup_test):
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
 
-    # FIXME: make this part of the test more clear (remove long instructions between
-    # paretheses)
     n = S.dim
-    for p in range(3):
-        assert np.allclose(
-            S.hodge_star[p]*S.hodge_star_inverse[p],
-            (-1)**(p*(n-p))*np.ones(S.S[p].shape[0]))
+    signed_identity = [S.hodge_star[i]*S.hodge_star_inverse[i] for i in range(3)]
+    signed_identity_true = [(-1)**(i*(n-i))*np.ones(S.S[i].shape[0]) for i in range(3)]
+    for i in range(3):
+        assert np.allclose(signed_identity[i], signed_identity_true[i])
 
 
 def test_simplicial_complex_3(setup_test):
