@@ -1,10 +1,12 @@
 import numpy as np
-from jax import grad, jit, jacrev, Array
+from jax import grad, jit, jacrev, value_and_grad, Array
 from typing import Callable
 import numpy.typing as npt
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import pygmo as pg
 from typeguard import check_type
+from petsc4py import PETSc, init
+from petsc4py.PETSc import Vec
 
 
 class OptimizationProblem():
@@ -21,13 +23,25 @@ class OptimizationProblem():
     def __init__(self, dim: int, state_dim: int,
                  objfun: Callable[..., float | npt.NDArray | Array |
                                   np.float32 | np.float64],
+                 objandgrad: Callable[...,
+                                      Tuple[float | npt.NDArray | Array |
+                                            np.float32 |
+                                            np.float64,
+                                            npt.NDArray | Array]]
+                 | None = None,
                  constrfun: Callable[..., float | npt.NDArray | Array |
                                      np.float32 | np.float64] | None = None,
                  constr_args: Dict[str, float | np.float32 |
-                                   np.float64 | npt.NDArray | Array] = {}) -> None:
+                                   np.float64 | npt.NDArray | Array] = {},
+                 framework: str = 'pygmo'):
         self.dim = dim
         self.state_dim = state_dim
         self.obj = jit(objfun)
+
+        self.obj_args = {}
+
+        self.framework = framework
+
         self.constr_problem = False
         # constrained optimization problem
         if constrfun is not None:
@@ -43,11 +57,23 @@ class OptimizationProblem():
         self.grad_obj = jit(grad(objfun))
         self.last_opt_result = -1
 
+        if framework == "petsc":
+            self.objandgrad = jit(value_and_grad(objfun))
+            init()
+            self.tao = PETSc.TAO().create()
+            self.tao.setType(PETSc.TAO.Type.LMVM)  # Specify the solver type
+            self.g = PETSc.Vec().createSeq(self.dim)
+            self.tao.setObjectiveGradient(
+                self.objective_and_gradient, self.g, kargs=self.obj_args)
+
     def set_obj_args(self, args: dict) -> None:
         """Sets the additional arguments to be passed to the objective function."""
         check_type(args, Dict[str, float | np.float32 | np.float64
                               | npt.NDArray | Array])
         self.obj_args = args
+        if self.framework == "petsc":
+            self.tao.setObjectiveGradient(
+                self.objective_and_gradient, self.g, kargs=self.obj_args)
 
     def get_nec(self) -> int:
         """Returns the number of equality constraints: for a constrained problem, it
@@ -78,6 +104,13 @@ class OptimizationProblem():
         else:
             return grad
 
+    def objective_and_gradient(self, tao, x: Vec, g: Vec, *args: tuple, **kargs: dict):
+        """PETSc-compatible wrapper for the function that returns the objective value
+        and the gradient."""
+        fval, grad = self.objandgrad(x.getArray(), **kargs)
+        g.setArray(grad)
+        return fval
+
     def get_bounds(self):
         return ([-100]*self.dim, [100]*self.dim)
 
@@ -88,23 +121,37 @@ class OptimizationProblem():
         return "Optimization problem"
 
     def run(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
-            ftol_rel: float = 1e-5, maxeval: int = 500,
-            verbose: bool = False) -> npt.NDArray:
-        prb = pg.problem(self)
+            ftol_rel: float = 1e-5, gatol=None, grtol=None, gttol=None,
+            maxeval: int = 500, verbose: bool = False) -> npt.NDArray:
 
-        if self.constr_problem:
-            algo = "slsqp"
-        algo = pg.algorithm(pg.nlopt(solver=algo))
-        algo.extract(pg.nlopt).ftol_abs = ftol_abs  # type: ignore
-        algo.extract(pg.nlopt).ftol_rel = ftol_rel  # type: ignore
-        algo.extract(pg.nlopt).maxeval = maxeval  # type: ignore
-        pop = pg.population(prb)
-        pop.push_back(x0)
-        algo.set_verbosity(verbose)
-        pop = algo.evolve(pop)  # type: ignore
-        self.last_opt_result = algo.extract(  # type: ignore
-            pg.nlopt).get_last_opt_result()
-        u = pop.champion_x
+        if self.framework == "pygmo":
+            prb = pg.problem(self)
+
+            if self.constr_problem:
+                algo = "slsqp"
+            algo = pg.algorithm(pg.nlopt(solver=algo))
+            algo.extract(pg.nlopt).ftol_abs = ftol_abs  # type: ignore
+            algo.extract(pg.nlopt).ftol_rel = ftol_rel  # type: ignore
+            algo.extract(pg.nlopt).maxeval = maxeval  # type: ignore
+            pop = pg.population(prb)
+            pop.push_back(x0)
+            algo.set_verbosity(verbose)
+            pop = algo.evolve(pop)  # type: ignore
+            self.last_opt_result = algo.extract(  # type: ignore
+                pg.nlopt).get_last_opt_result()
+            u = pop.champion_x
+        elif self.framework == "petsc":
+            x = PETSc.Vec().createWithArray(x0)
+            self.tao.setSolution(x)
+            self.tao.setMaximumIterations(maxeval)
+            self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
+            self.tao.setFromOptions()  # Set options for the solver
+            self.tao.solve()
+            if verbose:
+                self.tao.view()
+            u = self.tao.getSolution().getArray()
+            objective_value = self.tao.getObjectiveValue()
+
         check_type(u, npt.NDArray)
         return u
 
