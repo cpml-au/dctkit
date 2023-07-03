@@ -84,7 +84,7 @@ class SimplicialComplex:
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
     def get_tets_containing_a_boundary_face(self):
-        """Compute a list in which the i-th element is the index of the top-level 
+        """Compute a list in which the i-th element is the index of the top-level
         simplex in which the i-th boundary face belongs."""
         if not hasattr(self, "bnd_faces_indices"):
             self.get_complex_boundary_faces_indices()

@@ -112,8 +112,9 @@ class LinearElasticity():
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
 
-    def force_balance_residual_dual(self, node_coords: C.CochainP0,
-                                    f: C.CochainD2) -> C.CochainD2:
+    def force_balance_residual_dual(self, node_coords: C.CochainP0, f: C.CochainD2,
+                                    boundary_tractions:
+                                    Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
         """Compute the residual of the discrete balance equation in the case
           of isotropic linear elastic materials in 2D using DEC framework.
 
@@ -121,6 +122,11 @@ class LinearElasticity():
             node_coords: primal vector valued 0-cochain of
             node coordinates of the current configuration.
             f: dual vector-valued 2-cochain of sources.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we
+                want to impose the boundary tractions, while the last encodes the
+                boundary traction values themselves.
 
         Returns:
             the residual vector-valued cochain.
@@ -130,11 +136,12 @@ class LinearElasticity():
         stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPP(stress_tensor)
-        # stress_integrated_closure = V.flat_DPP(stress_tensor, True)
         forces = C.star(stress_integrated)
         # FIXME: comment it!
         forces_closure = C.star(V.flat_DPD(stress_tensor))
-        balance_forces_closure = C.coboundary_closure(forces_closure)
+        forces_closure_update = self.set_boundary_tractions(
+            forces_closure, boundary_tractions)
+        balance_forces_closure = C.coboundary_closure(forces_closure_update)
         balance = C.add(C.coboundary(forces), balance_forces_closure)
         residual = C.add(balance, f)
         return residual
@@ -142,8 +149,8 @@ class LinearElasticity():
     def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
                               f: npt.NDArray | Array, gamma: float, boundary_values:
                               Dict[str, Tuple[Array, Array]],
-                              boundary_tractions: Dict[str, Tuple[Array,
-                                                                  Array]]) -> float:
+                              boundary_tractions: Dict[str, Tuple[Array, Array]],
+                              is_dual_balance=None) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
@@ -171,10 +178,11 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        if boundary_tractions is None:
+        if is_dual_balance is not None:
             f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
             f_coch = C.CochainD2(complex=self.S, coeffs=f)
-            residual = self.force_balance_residual_dual(node_coords_coch, f_coch).coeffs
+            residual = self.force_balance_residual_dual(
+                node_coords_coch, f_coch, boundary_tractions).coeffs
         else:
             f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
             f_coch = C.CochainP2(complex=self.S, coeffs=f)
@@ -188,6 +196,5 @@ class LinearElasticity():
             else:
                 penalty += jnp.sum((node_coords_reshaped[idx, :]
                                    [:, int(key)] - values)**2)
-        print(residual)
         energy = jnp.sum(residual**2) + gamma*penalty
         return energy

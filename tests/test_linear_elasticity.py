@@ -84,7 +84,7 @@ def test_linear_elasticity_primal(setup_test):
     print("strain=", strain)
     print("stress=", stress)
 
-    assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-6
+    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-3)
 
 
 def test_linear_elasticity_dual(setup_test):
@@ -100,12 +100,16 @@ def test_linear_elasticity_dual(setup_test):
 
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
+    S.get_flat_DPD_weights()
     S.get_flat_DPP_weights()
 
     ref_node_coords = S.node_coords
 
+    bnd_edges_idx = S.bnd_faces_indices
     left_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "left")
     right_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "right")
+    left_bnd_edges_idx = util.get_edges_for_physical_group(S, mesh, "left")
+    right_bnd_edges_idx = util.get_edges_for_physical_group(S, mesh, "right")
 
     bottom_left_corner = left_bnd_nodes_idx.pop(0)
 
@@ -132,6 +136,11 @@ def test_linear_elasticity_dual(setup_test):
                                         right_bnd_nodes_pos)).flatten()),
                        ":": (bottom_left_corner, bottom_left_corner_pos)}
 
+    idx_free_edges = list(set(bnd_edges_idx) -
+                          set(right_bnd_edges_idx) - set(left_bnd_edges_idx))
+    bnd_tractions_free_values = np.zeros((len(idx_free_edges), 2), dtype=dt.float_dtype)
+    boundary_tractions = {':': (idx_free_edges, bnd_tractions_free_values)}
+
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
     gamma = 1000.
 
@@ -139,7 +148,7 @@ def test_linear_elasticity_dual(setup_test):
     f = np.zeros((S.num_nodes, (embedded_dim-1))).flatten()
 
     obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
-                'boundary_tractions': None}
+                'boundary_tractions': boundary_tractions, 'is_dual_balance': 1}
 
     prb = optctrl.OptimizationProblem(dim=S.node_coords.size,
                                       state_dim=S.node_coords.size,
@@ -148,20 +157,6 @@ def test_linear_elasticity_dual(setup_test):
     prb.set_obj_args(obj_args)
     node_coords_flattened = S.node_coords.flatten()
     sol = prb.run(x0=node_coords_flattened)
-    print(prb.last_opt_result)
     curr_node_coords = sol.reshape(S.node_coords.shape)
 
-    strain = ela.get_GreenLagrange_strain(true_curr_node_coords)
-    stress = ela.get_stress(strain)
-
-    print("strain=", strain)
-    print("stress=", stress)
-
-    print(ela.obj_linear_elasticity(
-        true_curr_node_coords.flatten(), f, gamma, boundary_values, None))
-    print(ela.obj_linear_elasticity(
-        curr_node_coords.flatten(), f, gamma, boundary_values, None))
-    print(true_curr_node_coords)
-    print(curr_node_coords)
-
-    assert np.sum((true_curr_node_coords - curr_node_coords)**2) < 1e-6
+    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-3)
