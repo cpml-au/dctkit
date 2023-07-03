@@ -147,7 +147,7 @@ def test_linear_elasticity_dual(setup_test):
 
     prb.set_obj_args(obj_args)
     node_coords_flattened = S.node_coords.flatten()
-    sol = prb.run(x0=node_coords_flattened, ftol_abs=1e-30, ftol_rel=1e-30)
+    sol = prb.run(x0=node_coords_flattened)
     print(prb.last_opt_result)
     curr_node_coords = sol.reshape(S.node_coords.shape)
 

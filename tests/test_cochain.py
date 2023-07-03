@@ -525,3 +525,14 @@ def test_codifferential(setup_test):
 
     for i in range(6):
         assert np.allclose(inner_all[i], cod_inner_all[i])
+
+
+def test_coboundary_closure(setup_test):
+    mesh_2, _ = util.generate_square_mesh(1.0)
+    S_2 = util.build_complex_from_mesh(mesh_2, is_well_centered=False)
+    S_2.get_hodge_star()
+
+    c = C.CochainD1(complex=S_2, coeffs=np.arange(1, 9, dtype=dctkit.float_dtype))
+    cob_clos_c = C.coboundary_closure(c)
+    cob_clos_c_true = np.array([-0.5,  2.5,  5.,  2.,  0.], dtype=dctkit.float_dtype)
+    assert np.allclose(cob_clos_c.coeffs, cob_clos_c_true)
