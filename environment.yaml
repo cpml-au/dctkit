@@ -9,6 +9,7 @@ dependencies:
   - jaxopt
   - numpy=1.24.2
   - pygmo=2.19.5
+  - petsc4py
   - python
   - python-gmsh
   - scipy=1.10.0

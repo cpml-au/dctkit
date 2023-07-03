@@ -1,10 +1,8 @@
-import petsc4py
-from petsc4py import PETSc
 import numpy as np
-from jax import grad, jit, value_and_grad
 from dctkit.mesh import util
 import dctkit as dt
 from dctkit.dec import cochain as C
+from dctkit.math.opt import optctrl as oc
 import time
 
 dt.config()
@@ -44,57 +42,18 @@ def energy_poisson(x, f, boundary_values, gamma):
     return energy
 
 
-args = (f_vec, boundary_values, gamma)
+prb = oc.OptimizationProblem(
+    num_nodes, num_nodes, energy_poisson, framework="petsc")
 
-energy_jit = jit(energy_poisson)
-objgrad = jit(grad(energy_poisson))
-objandgrad = jit(value_and_grad(energy_poisson))
-# wrappers for the objective function and its gradient following the signature of
-# TAOObjectiveFunction
-
-
-def objective_function(tao, x, f, boundary_values, gamma):
-    return energy_jit(x.getArray(), f, boundary_values, gamma)
-
-
-def gradient_function(tao, x, g, f, boundary_values, gamma):
-    g_jax = objgrad(x.getArray(), f, boundary_values, gamma)
-    g.setArray(g_jax)
-
-
-def objective_and_gradient(tao, x, g, f, boundary_values, gamma):
-    fval, grad_jax = objandgrad(x.getArray(), f, boundary_values, gamma)
-    g.setArray(grad_jax)
-    return fval
-
-
-# Initialize petsc4py
-petsc4py.init()
-
-# Create a PETSc vector to hold the optimization variables
-x = PETSc.Vec().createWithArray(u_0)
-
-# Create a PETSc TAO object for the solver
-tao = PETSc.TAO().create()
-tao.setType(PETSc.TAO.Type.LMVM)  # Specify the solver type
-tao.setSolution(x)
-# tao.setObjective(objective_function, args=args)  # Set the objective function
-g = PETSc.Vec().createSeq(num_nodes)
-# tao.setGradient(gradient_function, g, args=args)  # Set the gradient function
-tao.setObjectiveGradient(objective_and_gradient, g, args=args)
-tao.setMaximumIterations(500)
-# tao.setTolerances(gatol=1e-3)
-tao.setFromOptions()  # Set options for the solver
+kargs = {"f": f_vec, "boundary_values": boundary_values, "gamma": gamma}
+prb.set_obj_args(kargs)
 
 tic = time.time()
-# Minimize the function using the Nonlinear CG method
-tao.solve()
-toc = time.time()
-tao.view()
-print("Elapsed time = ", toc - tic)
 
-# Get the solution and the objective value
-u = tao.getSolution()
-objective_value = tao.getObjectiveValue()
+u = prb.run(u_0)
+
+toc = time.time()
+
+print("Elapsed time = ", toc - tic)
 
 assert np.allclose(u, u_true, atol=1e-2)
