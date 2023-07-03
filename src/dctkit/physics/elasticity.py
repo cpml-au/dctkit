@@ -135,10 +135,12 @@ class LinearElasticity():
         strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
+        # compute forces on dual edges
         stress_integrated = V.flat_DPP(stress_tensor)
         forces = C.star(stress_integrated)
-        # FIXME: comment it!
+        # compute the tractions on boundary primal edges
         forces_closure = C.star(V.flat_DPD(stress_tensor))
+        # set tractions on given sub-portions of the boundary
         forces_closure_update = self.set_boundary_tractions(
             forces_closure, boundary_tractions)
         balance_forces_closure = C.coboundary_closure(forces_closure_update)
@@ -146,11 +148,11 @@ class LinearElasticity():
         residual = C.add(balance, f)
         return residual
 
-    def obj_linear_elasticity(self, node_coords: npt.NDArray | Array,
-                              f: npt.NDArray | Array, gamma: float, boundary_values:
-                              Dict[str, Tuple[Array, Array]],
-                              boundary_tractions: Dict[str, Tuple[Array, Array]],
-                              is_dual_balance=None) -> float:
+    def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,
+                                     f: npt.NDArray | Array, gamma: float,
+                                     boundary_values: Dict[str, Tuple[Array, Array]],
+                                     boundary_tractions:
+                                     Dict[str, Tuple[Array, Array]]) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
@@ -178,23 +180,81 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        if is_dual_balance is not None:
-            f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
-            f_coch = C.CochainD2(complex=self.S, coeffs=f)
-            residual = self.force_balance_residual_dual(
-                node_coords_coch, f_coch, boundary_tractions).coeffs
-        else:
-            f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
-            f_coch = C.CochainP2(complex=self.S, coeffs=f)
-            residual = self.force_balance_residual_primal(
-                node_coords_coch, f_coch, boundary_tractions).coeffs
+        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
+        f_coch = C.CochainP2(complex=self.S, coeffs=f)
+        residual = self.force_balance_residual_primal(
+            node_coords_coch, f_coch, boundary_tractions).coeffs
+        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
+                                           boundary_values=boundary_values,
+                                           gamma=gamma)
+        energy = jnp.sum(residual**2) + penalty
+        return energy
+
+    def obj_linear_elasticity_dual(self, node_coords: npt.NDArray | Array,
+                                   f: npt.NDArray | Array, gamma: float,
+                                   boundary_values: Dict[str, Tuple[Array, Array]],
+                                   boundary_tractions:
+                                   Dict[str, Tuple[Array, Array]]) -> float:
+        """Objective function of the optimization problem associated to linear
+           elasticity balance equation with Dirichlet boundary conditions on a portion
+           of the boundary.
+
+        Args:
+            node_coords: 1-dimensional array obtained after flattening
+            the matrix with node coordinates arranged row-wise.
+            f: 1-dimensional array obtained after flattening the
+            matrix of external sources (constant term of the system).
+            gamma: penalty factor.
+            boundary_values: a dictionary of tuples. Each key represent the type of
+                coordinate to manipulate (x,y, or both), while each tuple consists of
+                two np.arrays in which the first encodes the indices of boundary
+                values, while the last encodes the boundary values themselves.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we want
+                to impose the boundary tractions, while the last encodes the boundary
+                traction values themselves. It is None when we perform the force balance
+                on dual cells.
+
+        Returns:
+            the value of the objective function at node_coords.
+
+        """
+        node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
+        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
+        f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
+        f_coch = C.CochainD2(complex=self.S, coeffs=f)
+        residual = self.force_balance_residual_dual(
+            node_coords_coch, f_coch, boundary_tractions).coeffs
+        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
+                                           boundary_values=boundary_values,
+                                           gamma=gamma)
+        energy = jnp.sum(residual**2) + penalty
+        return energy
+
+    def set_displacement_bc(self, node_coords: npt.NDArray | Array, boundary_values:
+                            Dict[str, Tuple[Array, Array]],
+                            gamma: float) -> float:
+        """ Set displacement boundary conditions as a quadratic penalty term.
+
+        Args:
+            node_coords: node coordinates of the current configuration.
+            boundary_values: a dictionary of tuples. Each key represent the type of
+                coordinate to manipulate (x,y, or both), while each tuple consists of
+                two np.arrays in which the first encodes the indices of boundary
+                values, while the last encodes the boundary values themselves.
+            gamma: penalty factor.
+
+        Return:
+            the penalty term
+
+        """
         penalty = 0.
         for key in boundary_values:
             idx, values = boundary_values[key]
             if key == ":":
-                penalty += jnp.sum((node_coords_reshaped[idx, :] - values)**2)
+                penalty += jnp.sum((node_coords[idx, :] - values)**2)
             else:
-                penalty += jnp.sum((node_coords_reshaped[idx, :]
-                                   [:, int(key)] - values)**2)
-        energy = jnp.sum(residual**2) + gamma*penalty
-        return energy
+                penalty += jnp.sum((node_coords[idx, :]
+                                    [:, int(key)] - values)**2)
+        return gamma*penalty

@@ -71,7 +71,7 @@ def test_linear_elasticity_primal(setup_test):
 
     prb = optctrl.OptimizationProblem(dim=S.node_coords.size,
                                       state_dim=S.node_coords.size,
-                                      objfun=ela.obj_linear_elasticity)
+                                      objfun=ela.obj_linear_elasticity_primal)
 
     prb.set_obj_args(obj_args)
     node_coords_flattened = S.node_coords.flatten()
@@ -148,11 +148,11 @@ def test_linear_elasticity_dual(setup_test):
     f = np.zeros((S.num_nodes, (embedded_dim-1))).flatten()
 
     obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
-                'boundary_tractions': boundary_tractions, 'is_dual_balance': 1}
+                'boundary_tractions': boundary_tractions}
 
     prb = optctrl.OptimizationProblem(dim=S.node_coords.size,
                                       state_dim=S.node_coords.size,
-                                      objfun=ela.obj_linear_elasticity)
+                                      objfun=ela.obj_linear_elasticity_dual)
 
     prb.set_obj_args(obj_args)
     node_coords_flattened = S.node_coords.flatten()

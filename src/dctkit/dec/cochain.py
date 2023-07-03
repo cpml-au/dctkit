@@ -294,14 +294,15 @@ def coboundary(c: Cochain) -> Cochain:
     return dc
 
 
-def coboundary_closure(c: CochainD) -> CochainD:
+def coboundary_closure(c: CochainP) -> CochainD:
     """Implements the operator that complements the coboundary on the boundary
     of dual (n-1)-simplices, where n is the dimension of the complex.
 
     Args:
-        c: a dual (n-1)-cochain
+        c: a primal (n-1)-cochain
     Returns:
-        the coboundary closure of c.
+        the coboundary closure of c, resulting in a dual n-cochain with non-zero
+        coefficients in the "uncompleted" cells.
 
     """
     n = c.complex.dim
