@@ -106,7 +106,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
         prb = oc.OptimizationProblem(dim=dim_0, state_dim=dim_0, objfun=obj)
         prb.set_obj_args(args)
-        u = prb.run(u_0, algo="lbfgs").astype(dt.float_dtype)
+        u = prb.solve(u_0, algo="lbfgs").astype(dt.float_dtype)
 
     elif optimizer == "jaxopt":
         print("Using jaxopt optimizer...")
