@@ -169,7 +169,7 @@ class PETScSolver(OptimizationSolver):
         if verbose:
             self.tao.view()
         u = self.tao.getSolution().getArray()
-        objective_value = self.tao.getObjectiveValue()
+        # objective_value = self.tao.getObjectiveValue()
         return u
 
 
