@@ -101,7 +101,7 @@ def test_elastica_energy(setup_test):
     # initial guess for the bending stiffness
     B_in = 1*np.ones(1, dtype=dt.float_dtype)
     x0 = np.concatenate((theta_in, B_in))
-    x = prb.run(x0=x0)
+    x = prb.solve(x0=x0)
 
     # extend solution array with boundary element
     theta = x[:-1]
@@ -175,7 +175,7 @@ def test_elastica_residual(setup_test):
         dim=num_elements-1, state_dim=num_elements-1, objfun=obj)
 
     prb.set_obj_args({})
-    sol = prb.run(x0=theta_0)
+    sol = prb.solve(x0=theta_0)
     theta = jnp.insert(sol, 0, theta_true[0])
 
     x, y = reconstruct_xy(theta, h, num_nodes)
@@ -272,7 +272,7 @@ def test_elastica_residual_tuneB(setup_test):
     # initial guess for the bending stiffness
     B_in = 1*np.ones(1, dtype=dt.float_dtype)
     x0 = np.concatenate((theta_in, B_in))
-    x = prb.run(x0=x0)
+    x = prb.solve(x0=x0)
 
     print(x[-1])
     # extend solution array with boundary element

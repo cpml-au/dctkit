@@ -43,14 +43,14 @@ def energy_poisson(x, f, boundary_values, gamma):
 
 
 prb = oc.OptimizationProblem(
-    num_nodes, num_nodes, energy_poisson, framework="petsc")
+    num_nodes, num_nodes, energy_poisson, solver_lib="petsc")
 
 kargs = {"f": f_vec, "boundary_values": boundary_values, "gamma": gamma}
 prb.set_obj_args(kargs)
 
 tic = time.time()
 
-u = prb.run(u_0)
+u = prb.solve(u_0)
 
 toc = time.time()
 

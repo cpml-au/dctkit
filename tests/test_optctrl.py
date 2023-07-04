@@ -51,7 +51,7 @@ def test_optimal_control_toy(setup_test):
     prb = optctrl.OptimalControlProblem(
         objfun=objfun, statefun=statefun, state_dim=state_dim, nparams=nparams)
 
-    x = prb.run(x0=x0)
+    x = prb.solve(x0=x0)
     u = x[:state_dim]
     y = x[state_dim:]
 
@@ -119,7 +119,7 @@ def test_optimal_control_poisson(setup_test):
 
     prb = optctrl.OptimalControlProblem(
         objfun=objfun, statefun=statefun, state_dim=dim_0, nparams=dim_0 + len(f0))
-    x = prb.run(x0=x0)
+    x = prb.solve(x0=x0)
     u = x[:dim_0]
     f = x[dim_0:]
     print("u = ", u)
