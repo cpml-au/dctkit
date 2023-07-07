@@ -67,7 +67,7 @@ class OptimizationProblem():
     def solve(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
               ftol_rel: float = 1e-5, gatol=None, grtol=None, gttol=None,
               maxeval: int = 500, verbose: bool = False) -> npt.NDArray:
-        
+
         # FIXME: these parameters should be set through a separate function of the
         # solver
 
