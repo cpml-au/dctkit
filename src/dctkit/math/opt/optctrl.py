@@ -163,6 +163,7 @@ class PETScSolver(OptimizationSolver):
         x = PETSc.Vec().createWithArray(x0)
         self.tao.setSolution(x)
         self.tao.setMaximumIterations(maxeval)
+        self.tao.setMaximumFunctionEvaluations(maxeval)
         self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
         self.tao.setFromOptions()  # Set options for the solver
         self.tao.solve()
