@@ -7,6 +7,7 @@ import pygmo as pg
 from typeguard import check_type
 from petsc4py import PETSc, init
 from petsc4py.PETSc import Vec
+import jaxopt
 
 
 class OptimizationProblem():
@@ -36,6 +37,8 @@ class OptimizationProblem():
 
         if solver_lib == "petsc":
             self.solver = PETScSolver(self)
+        elif solver_lib == "jaxopt":
+            self.solver = JAXoptSolver(self)
         else:
             self.solver = PygmoSolver(self)
 
@@ -171,6 +174,24 @@ class PETScSolver(OptimizationSolver):
             self.tao.view()
         u = self.tao.getSolution().getArray()
         # objective_value = self.tao.getObjectiveValue()
+        return u
+
+
+class JAXoptSolver(OptimizationSolver):
+    def __init__(self, prb: OptimizationProblem):
+        super().__init__(prb)
+        self.prb.obj_args = {}
+
+    def set_obj_args(self, args: Dict):
+        self.prb.obj_args = args
+
+    def objective(self, x: npt.NDArray | Array) -> npt.NDArray | Array:
+        return self.prb.obj(x, **self.prb.obj_args)
+
+    def run(self, x0: npt.NDArray, **kwargs: Dict) -> npt.NDArray | Array:
+        maxiter = kwargs["maxeval"]
+        solver = jaxopt.LBFGS(self.objective, maxiter=maxiter)
+        u = solver.run(x0).params.__array__()
         return u
 
 

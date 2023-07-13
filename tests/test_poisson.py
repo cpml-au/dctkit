@@ -41,16 +41,16 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
     boundary_values = (np.array(bnodes, dtype=dt.int_dtype), b_values)
 
-    dim_0 = S.num_nodes
-    f_vec = -4.*np.ones(dim_0, dtype=dt.float_dtype)
+    num_nodes = S.num_nodes
+    f_vec = -4.*np.ones(num_nodes, dtype=dt.float_dtype)
     f = C.Cochain(0, True, S, f_vec)
     star_f = C.star(f)
 
-    mask = np.ones(dim_0, dtype=dt.float_dtype)
+    mask = np.ones(num_nodes, dtype=dt.float_dtype)
     mask[bnodes] = 0.
 
     # initial guess
-    u_0 = 0.01*np.random.rand(dim_0).astype(dt.float_dtype)
+    u_0 = 0.01*np.random.rand(num_nodes).astype(dt.float_dtype)
     u_0 = np.array(u_0, dtype=dt.float_dtype)
 
     if optimizer == "scipy":
@@ -104,7 +104,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
             args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
                     'gamma': gamma, 'mask': mask}
 
-        prb = oc.OptimizationProblem(dim=dim_0, state_dim=dim_0, objfun=obj)
+        prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj)
         prb.set_obj_args(args)
         u = prb.solve(u_0, algo="lbfgs").astype(dt.float_dtype)
 
@@ -127,7 +127,8 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 energy = norm_grad + bound_term + penalty
                 return energy
 
-            args = (f_vec, k, boundary_values, gamma)
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma}
             obj = energy_poisson
 
         else:
@@ -147,12 +148,14 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return obj
 
-            args = (f_vec, k, boundary_values, gamma, mask)
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values, 'gamma': gamma,
+                    'mask': mask}
             obj = obj_poisson
 
-        solver = jaxopt.LBFGS(obj, maxiter=5000)
-        sol = solver.run(u_0, *args)
-        u = sol.params
+        prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj,
+                                     solver_lib="jaxopt")
+        prb.set_obj_args(args)
+        u = prb.solve(x0=u_0)
 
     assert u.dtype == dt.float_dtype
     assert u_true.dtype == u.dtype
