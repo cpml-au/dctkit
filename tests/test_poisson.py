@@ -7,7 +7,6 @@ from dctkit.mesh import util
 from dctkit.physics import poisson as p
 from dctkit.dec import cochain as C
 from dctkit.math.opt import optctrl as oc
-import jaxopt
 import pytest
 from functools import partial
 
@@ -148,8 +147,8 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return obj
 
-            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values, 'gamma': gamma,
-                    'mask': mask}
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma, 'mask': mask}
             obj = obj_poisson
 
         prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj,

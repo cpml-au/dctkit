@@ -1,13 +1,14 @@
 import petsc4py
-from petsc4py.PETSc import SNES, KSP, PC, Mat, Log
-from petsc4py.PETSc import Vec, Mat
+from petsc4py.PETSc import SNES, KSP, Mat, Log
+# from petsc4py.PETSc import PC
+from petsc4py.PETSc import Vec
 import numpy as np
 from dctkit.mesh import util
 import dctkit as dt
 from dctkit.dec import cochain as C
 import time
-from jax import jit, grad, jacrev
-import jax.numpy as jnp
+from jax import jit, jacrev
+# import jax.numpy as jnp
 
 dt.config()
 
