@@ -72,7 +72,7 @@ class OptimizationProblem():
               maxeval: int = 500, verbose: bool = False) -> npt.NDArray:
 
         # FIXME: these parameters should be set through a separate function of the
-        # solver
+        # solver, only x0 should be a parameter
 
         kwargs = {"algo": algo, "ftol_abs": ftol_abs, "ftol_rel": ftol_rel,
                   "gatol": gatol, "grtol": grtol, "gttol": gttol, "maxeval": maxeval,
