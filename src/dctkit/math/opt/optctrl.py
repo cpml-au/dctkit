@@ -140,7 +140,7 @@ class PETScSolver(OptimizationSolver):
         init()
         # create default solver and settings
         self.tao = PETSc.TAO().create()
-        self.tao.setType(PETSc.TAO.Type.LMVM)  # Specify the solver type
+        self.tao.setType(PETSc.TAO.Type.BQNLS)  # Specify the solver type
         # create variable to store the gradient of the objective function
         self.g = PETSc.Vec().createSeq(self.prb.dim)
 
