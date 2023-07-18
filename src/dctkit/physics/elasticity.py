@@ -242,7 +242,8 @@ class LinearElasticity():
 
     def obj_linear_elasticity_energy(self, node_coords: npt.NDArray | Array,
                                      f: npt.NDArray | Array, gamma: float,
-                                     boundary_values: Dict[str, Tuple[Array, Array]]) -> float:
+                                     boundary_values:
+                                     Dict[str, Tuple[Array, Array]]) -> float:
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
