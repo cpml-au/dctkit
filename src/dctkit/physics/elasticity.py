@@ -153,8 +153,8 @@ class LinearElasticity():
         stress = self.get_stress(strain=strain)
         strain_cochain = C.CochainD0(self.S, strain, rank=2)
         stress_cochain = C.CochainD0(self.S, stress, rank=2)
-        stress_power = C.inner_product(strain_cochain, stress_cochain)
-        return stress_power
+        elastic_energy = C.inner_product(strain_cochain, stress_cochain)
+        return elastic_energy
 
     def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,
                                      f: npt.NDArray | Array, gamma: float,
