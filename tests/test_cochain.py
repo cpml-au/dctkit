@@ -425,12 +425,12 @@ def test_inner_product(setup_test):
     vP2_1 = np.arange(16).reshape((4, 2, 2))
     vP2_2 = np.arange(16).reshape((4, 2, 2))
 
-    cP0_1 = C.CochainP0(S_2, vP0_1, 2)
-    cP0_2 = C.CochainP0(S_2, vP0_2, 2)
-    cP1_1 = C.CochainP1(S_2, vP1_1, 2)
-    cP1_2 = C.CochainP1(S_2, vP1_2, 2)
-    cP2_1 = C.CochainP2(S_2, vP2_1, 2)
-    cP2_2 = C.CochainP2(S_2, vP2_2, 2)
+    cP0_1 = C.CochainP0(S_2, vP0_1)
+    cP0_2 = C.CochainP0(S_2, vP0_2)
+    cP1_1 = C.CochainP1(S_2, vP1_1)
+    cP1_2 = C.CochainP1(S_2, vP1_2)
+    cP2_1 = C.CochainP2(S_2, vP2_1)
+    cP2_2 = C.CochainP2(S_2, vP2_2)
 
     inner_product_P0 = C.inner_product(cP0_1, cP0_2)
     inner_product_P1 = C.inner_product(cP1_1, cP1_2)

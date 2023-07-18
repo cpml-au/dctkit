@@ -119,8 +119,8 @@ class LinearElasticity():
           of isotropic linear elastic materials in 2D using DEC framework.
 
         Args:
-            node_coords: primal vector valued 0-cochain of
-            node coordinates of the current configuration.
+            node_coords: primal vector valued 0-cochain of node coordinates
+                of the current configuration.
             f: dual vector-valued 2-cochain of sources.
             boundary_tractions: a dictionary of tuples. Each key represent the type
                 of coordinate to manipulate (x,y, or both), while each tuple consists
@@ -149,10 +149,22 @@ class LinearElasticity():
         return residual
 
     def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2) -> float:
+        """Compute the elasticity energy of isotropic linear elastic materials 
+        in 2D with no body force using DEC framework.
+
+        Args:
+            node_coords: primal vector valued 0-cochain of node coordinates
+                of the current configuration.
+            f: primal vector-valued 2-cochain of sources.
+
+        Returns:
+            the energy.
+        """
+        # FIXME: extend to the case of f != 0
         strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        strain_cochain = C.CochainD0(self.S, strain, rank=2)
-        stress_cochain = C.CochainD0(self.S, stress, rank=2)
+        strain_cochain = C.CochainD0(self.S, strain)
+        stress_cochain = C.CochainD0(self.S, stress)
         elastic_energy = C.inner_product(strain_cochain, stress_cochain)
         return elastic_energy
 
@@ -192,9 +204,9 @@ class LinearElasticity():
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual_primal(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
-                                           boundary_values=boundary_values,
-                                           gamma=gamma)
+        penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
+                                                   boundary_values=boundary_values,
+                                                   gamma=gamma)
         energy = jnp.sum(residual**2) + penalty
         return energy
 
@@ -234,9 +246,9 @@ class LinearElasticity():
         f_coch = C.CochainD2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual_dual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
-                                           boundary_values=boundary_values,
-                                           gamma=gamma)
+        penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
+                                                   boundary_values=boundary_values,
+                                                   gamma=gamma)
         energy = jnp.sum(residual**2) + penalty
         return energy
 
@@ -244,20 +256,38 @@ class LinearElasticity():
                                      f: npt.NDArray | Array, gamma: float,
                                      boundary_values:
                                      Dict[str, Tuple[Array, Array]]) -> float:
+        """Objective function of the optimization problem associated to linear
+           elasticity (energy formulation) with Dirichlet boundary conditions on a portion
+           of the boundary.
+
+        Args:
+            node_coords: 1-dimensional array obtained after flattening
+            the matrix with node coordinates arranged row-wise.
+            f: 1-dimensional array obtained after flattening the
+            matrix of external sources (constant term of the system).
+            gamma: penalty factor.
+            boundary_values: a dictionary of tuples. Each key represent the type of
+                coordinate to manipulate (x,y, or both), while each tuple consists of
+                two np.arrays in which the first encodes the indices of boundary
+                values, while the last encodes the boundary values themselves.
+
+        Returns:
+            the value of the objective function at node_coords.
+        """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        elastica_energy = self.elasticity_energy(node_coords_coch, f_coch)
-        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
-                                           boundary_values=boundary_values,
-                                           gamma=gamma)
-        energy = elastica_energy + penalty
+        elastic_energy = self.elasticity_energy(node_coords_coch, f_coch)
+        penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
+                                                   boundary_values=boundary_values,
+                                                   gamma=gamma)
+        energy = elastic_energy + penalty
         return energy
 
-    def set_displacement_bc(self, node_coords: npt.NDArray | Array, boundary_values:
-                            Dict[str, Tuple[Array, Array]],
-                            gamma: float) -> float:
+    def get_penalty_displacement_bc(self, node_coords: npt.NDArray | Array,
+                                    boundary_values: Dict[str, Tuple[Array, Array]],
+                                    gamma: float) -> float:
         """ Set displacement boundary conditions as a quadratic penalty term.
 
         Args:
@@ -270,7 +300,6 @@ class LinearElasticity():
 
         Return:
             the penalty term
-
         """
         penalty = 0.
         for key in boundary_values:
