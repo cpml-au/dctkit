@@ -19,82 +19,93 @@ class Cochain():
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
+                 coeffs: npt.NDArray | Array, rank: int = 1):
         self.dim = dim
         self.complex = complex
         self.is_primal = is_primal
         check_type(coeffs, npt.NDArray | Array)
         self.coeffs = coeffs
+        self.rank = rank
 
 
 class CochainP(Cochain):
     """Class for primal cochains."""
 
-    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(dim, True, complex, coeffs)
+    def __init__(self, dim: int, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(dim, True, complex, coeffs, rank)
 
 
 class CochainD(Cochain):
     """Class for dual cochains."""
 
-    def __init__(self, dim: int, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(dim, False, complex, coeffs)
+    def __init__(self, dim: int, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(dim, False, complex, coeffs, rank)
 
 
 class CochainP0(CochainP):
     """Class for primal 0-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(0, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(0, complex, coeffs, rank)
 
 
 class CochainP1(CochainP):
     """Class for primal 1-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(1, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(1, complex, coeffs, rank)
 
 
 class CochainP2(CochainP):
     """Class for primal 2-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(2, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(2, complex, coeffs, rank)
 
 
 class CochainP3(CochainP):
     """Class for primal 3-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(3, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(3, complex, coeffs, rank)
 
 
 class CochainD0(CochainD):
     """Class for dual 0-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(0, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(0, complex, coeffs, rank)
 
 
 class CochainD1(CochainD):
     """Class for dual 1-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(1, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(1, complex, coeffs, rank)
 
 
 class CochainD2(CochainD):
     """Class for dual 2-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(2, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(2, complex, coeffs, rank)
 
 
 class CochainD3(CochainD):
     """Class for dual 3-cochains."""
 
-    def __init__(self, complex: spx.SimplicialComplex, coeffs):
-        super().__init__(3, complex, coeffs)
+    def __init__(self, complex: spx.SimplicialComplex,
+                 coeffs: npt.NDArray | Array, rank: int = 1):
+        super().__init__(3, complex, coeffs, rank)
 
 
 def add(c1: Cochain, c2: Cochain) -> Cochain:
@@ -373,7 +384,15 @@ def inner_product(c1: Cochain, c2: Cochain) -> Array:
     # dimension of the complexes must agree
     assert (n == c2.complex.dim)
 
-    inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
+    if c1.rank == 1:
+        assert c2.rank == 1
+        inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
+    elif c1.rank == 2:
+        assert c2.rank == 2
+        c1_coeffs_T = dt.backend.transpose(c1.coeffs, axes=(0, 2, 1))
+        inner_product_per_cell = dt.backend.trace(
+            c1_coeffs_T @ star_c_2.coeffs, axis1=1, axis2=2)
+        inner_product = dt.backend.sum(inner_product_per_cell)
     # NOTE: not sure whether we should keep both Jax and numpy as backends and allow for
     # different return types
     check_type(inner_product, npt.NDArray | Array)

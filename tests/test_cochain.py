@@ -417,6 +417,29 @@ def test_inner_product(setup_test):
     for i in range(4):
         assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
+    # vector-valued test
+    vP0_1 = np.arange(20).reshape((5, 2, 2))
+    vP0_2 = np.arange(20).reshape((5, 2, 2))
+    vP1_1 = np.arange(32).reshape((8, 2, 2))
+    vP1_2 = np.arange(32).reshape((8, 2, 2))
+    vP2_1 = np.arange(16).reshape((4, 2, 2))
+    vP2_2 = np.arange(16).reshape((4, 2, 2))
+
+    cP0_1 = C.CochainP0(S_2, vP0_1, 2)
+    cP0_2 = C.CochainP0(S_2, vP0_2, 2)
+    cP1_1 = C.CochainP1(S_2, vP1_1, 2)
+    cP1_2 = C.CochainP1(S_2, vP1_2, 2)
+    cP2_1 = C.CochainP2(S_2, vP2_1, 2)
+    cP2_2 = C.CochainP2(S_2, vP2_2, 2)
+
+    inner_product_P0 = C.inner_product(cP0_1, cP0_2)
+    inner_product_P1 = C.inner_product(cP1_1, cP1_2)
+    inner_product_P2 = C.inner_product(cP2_1, cP2_2)
+    inner_product_all = [inner_product_P0, inner_product_P1, inner_product_P2]
+    inner_product_true_all = [770., 7688., 4960]
+    for i in range(3):
+        assert np.allclose(inner_product_all[i], inner_product_true_all[i])
+
 
 def test_codifferential(setup_test):
     mesh_1, _ = util.generate_line_mesh(5, 1.)
