@@ -148,6 +148,14 @@ class LinearElasticity():
         residual = C.add(balance, f)
         return residual
 
+    def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2) -> float:
+        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        stress = self.get_stress(strain=strain)
+        strain_cochain = C.CochainD0(self.S, strain, rank=2)
+        stress_cochain = C.CochainD0(self.S, stress, rank=2)
+        stress_power = C.inner_product(strain_cochain, stress_cochain)
+        return stress_power
+
     def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,
                                      f: npt.NDArray | Array, gamma: float,
                                      boundary_values: Dict[str, Tuple[Array, Array]],
@@ -230,6 +238,20 @@ class LinearElasticity():
                                            boundary_values=boundary_values,
                                            gamma=gamma)
         energy = jnp.sum(residual**2) + penalty
+        return energy
+
+    def obj_linear_elasticity_energy(self, node_coords: npt.NDArray | Array,
+                                     f: npt.NDArray | Array, gamma: float,
+                                     boundary_values: Dict[str, Tuple[Array, Array]]) -> float:
+        node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
+        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
+        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
+        f_coch = C.CochainP2(complex=self.S, coeffs=f)
+        elastica_energy = self.elasticity_energy(node_coords_coch, f_coch)
+        penalty = self.set_displacement_bc(node_coords=node_coords_reshaped,
+                                           boundary_values=boundary_values,
+                                           gamma=gamma)
+        energy = elastica_energy + penalty
         return energy
 
     def set_displacement_bc(self, node_coords: npt.NDArray | Array, boundary_values:
