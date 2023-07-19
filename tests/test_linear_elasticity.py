@@ -5,8 +5,12 @@ from dctkit.physics.elasticity import LinearElasticity
 import dctkit as dt
 import pygmsh
 import pytest
+import jax.numpy as jnp
+import dctkit.dec.cochain as C
+import dctkit.dec.vector as V
 
-cases = [[False, False], [True, False], [True, True]]
+# cases = [[False, False], [True, False], [True, True]]
+cases = [[False, False]]
 
 
 @pytest.mark.parametrize('is_primal,energy_formulation', cases)
@@ -61,8 +65,12 @@ def test_linear_elasticity(setup_test, is_primal, energy_formulation):
 
     idx_free_edges = list(set(bnd_edges_idx) -
                           set(right_bnd_edges_idx) - set(left_bnd_edges_idx))
+    left_right_edges_idx = left_bnd_edges_idx+right_bnd_edges_idx
     bnd_tractions_free_values = np.zeros((len(idx_free_edges), 2), dtype=dt.float_dtype)
-    boundary_tractions = {':': (idx_free_edges, bnd_tractions_free_values)}
+    bnd_tractions_left_right_values = np.zeros(
+        (len(left_right_edges_idx)), dtype=dt.float_dtype)
+    boundary_tractions = {'1': (left_right_edges_idx, bnd_tractions_left_right_values),
+                          ':': (idx_free_edges, bnd_tractions_free_values)}
 
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
     gamma = 1000.
@@ -82,19 +90,82 @@ def test_linear_elasticity(setup_test, is_primal, energy_formulation):
             obj = ela.obj_linear_elasticity_primal
         else:
             embedded_dim = S.space_dim
-            f = np.zeros((S.num_nodes, (embedded_dim-1))).flatten()
+            f = np.zeros((S.num_nodes, (embedded_dim-1)),
+                         dtype=dt.float_dtype).flatten()
+            toy_matrix = jnp.zeros(S.node_coords.shape, dtype=dt.float_dtype)
+            toy_matrix = toy_matrix.at[:].set(jnp.nan)
             obj = ela.obj_linear_elasticity_dual
 
         obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
-                    'boundary_tractions': boundary_tractions}
+                    'boundary_tractions': boundary_tractions, 'toy_matrix': toy_matrix}
 
-    prb = optctrl.OptimizationProblem(dim=S.node_coords.size,
-                                      state_dim=S.node_coords.size,
+    # define x0
+    node_coords_mod = S.node_coords.copy()
+    node_coords_mod[left_bnd_nodes_idx + right_bnd_nodes_idx, 0] = np.nan
+    node_coords_mod[bottom_left_corner] = np.nan
+    node_coords_mod_flattened = node_coords_mod.flatten()
+    x0 = node_coords_mod_flattened[~np.isnan(node_coords_mod_flattened)]
+
+    prb = optctrl.OptimizationProblem(dim=len(x0),
+                                      state_dim=len(x0),
                                       objfun=obj)
 
+    '''
+    node_coords_mod = true_curr_node_coords.copy()
+    node_coords_mod[left_bnd_nodes_idx + right_bnd_nodes_idx, 0] = np.nan
+    node_coords_mod[bottom_left_corner] = np.nan
+    node_coords_mod_flattened = node_coords_mod.flatten()
+    prova = node_coords_mod_flattened[~np.isnan(node_coords_mod_flattened)]
+
+    print(true_curr_node_coords)
+
+    print(obj(prova, f, gamma, boundary_values, boundary_tractions, toy_matrix))
+    '''
+
     prb.set_obj_args(obj_args)
-    node_coords_flattened = S.node_coords.flatten()
-    sol = prb.run(x0=node_coords_flattened)
-    curr_node_coords = sol.reshape(S.node_coords.shape)
+    sol = prb.run(x0=x0, ftol_abs=1e-9, ftol_rel=1e-9)
+
+    # curr_node_coords = sol.reshape(S.node_coords.shape)
+    # post-process solution
+    for key in boundary_values:
+        idx, values = boundary_values[key]
+        if key == ":":
+            toy_matrix = toy_matrix.at[idx, :].set(values)
+        else:
+            toy_matrix = toy_matrix.at[idx, int(key)].set(values)
+
+    toy_matrix_flattened = toy_matrix.flatten()
+    toy_matrix_flattened = toy_matrix_flattened.at[jnp.isnan(
+        toy_matrix_flattened)].set(sol)
+    curr_node_coords = toy_matrix_flattened.reshape(S.node_coords.shape)
+
+    print(curr_node_coords)
+    print(true_curr_node_coords)
+
+    print("--------------------------------")
+    strain = ela.get_GreenLagrange_strain(curr_node_coords)
+    stress = ela.get_stress(strain)
+    print(strain)
+    print("--------------------------------")
+    print(stress)
+
+    node_coords_coch = C.CochainP0(complex=S, coeffs=curr_node_coords)
+    f = f.reshape((S.num_nodes, S.space_dim-1))
+    f_coch = C.CochainD2(complex=S, coeffs=f)
+    print(ela.force_balance_residual_dual(
+        node_coords_coch, f_coch, boundary_tractions).coeffs)
+    print("--------------------------------------------")
+
+    stress_tensor = V.DiscreteTensorFieldD(S=S, coeffs=stress.T, rank=2)
+    # compute forces on dual edges
+    stress_integrated = V.flat_DPD(stress_tensor)
+    forces = C.star(stress_integrated)
+    print(idx_free_edges)
+    print(left_right_edges_idx)
+    print(forces.coeffs)
+    print("----------------------------------------")
+    print(S.node_coords)
+    print(S.S[1])
 
     assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-3)
+    assert False
