@@ -145,6 +145,7 @@ class LinearElasticity():
             forces_closure, boundary_tractions)
         balance_forces_closure = C.coboundary_closure(forces_closure_update)
         balance = C.add(C.coboundary(forces), balance_forces_closure)
+        # balance = C.coboundary(forces)
         residual = C.add(balance, f)
         return residual
 
@@ -214,7 +215,8 @@ class LinearElasticity():
                                    f: npt.NDArray | Array, gamma: float,
                                    boundary_values: Dict[str, Tuple[Array, Array]],
                                    boundary_tractions:
-                                   Dict[str, Tuple[Array, Array]]) -> float:
+                                   Dict[str, Tuple[Array, Array]],
+                                   toy_matrix: npt.NDArray) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
@@ -240,16 +242,35 @@ class LinearElasticity():
             the value of the objective function at node_coords.
 
         """
-        node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
-        node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
+        # node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
+        # node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
+        for key in boundary_values:
+            idx, values = boundary_values[key]
+            if key == ":":
+                toy_matrix = toy_matrix.at[idx, :].set(values)
+            else:
+                toy_matrix = toy_matrix.at[idx, int(key)].set(values)
+
+        toy_matrix_flattened = toy_matrix.flatten()
+        toy_matrix_flattened = toy_matrix_flattened.at[jnp.isnan(toy_matrix_flattened)].set(
+            node_coords)
+        curr_node_coords = toy_matrix_flattened.reshape(self.S.node_coords.shape)
+        node_coords_coch = C.CochainP0(complex=self.S, coeffs=curr_node_coords)
         f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
         f_coch = C.CochainD2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual_dual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
-                                                   boundary_values=boundary_values,
-                                                   gamma=gamma)
-        energy = jnp.sum(residual**2) + penalty
+        # penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
+        #                                           boundary_values=boundary_values,
+        #                                           gamma=gamma)
+        for key in boundary_values:
+            idx, _ = boundary_values[key]
+            if key == ":":
+                residual = residual.at[idx, :].set([0., 0.])
+            else:
+                residual = residual.at[idx, int(key)].set([0.])
+        # energy = jnp.sum(residual**2) + penalty
+        energy = jnp.sum(residual**2)
         return energy
 
     def obj_linear_elasticity_energy(self, node_coords: npt.NDArray | Array,
@@ -307,6 +328,5 @@ class LinearElasticity():
             if key == ":":
                 penalty += jnp.sum((node_coords[idx, :] - values)**2)
             else:
-                penalty += jnp.sum((node_coords[idx, :]
-                                    [:, int(key)] - values)**2)
+                penalty += jnp.sum((node_coords[idx, int(key)] - values)**2)
         return gamma*penalty
