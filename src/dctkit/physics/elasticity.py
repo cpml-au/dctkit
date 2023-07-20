@@ -150,7 +150,7 @@ class LinearElasticity():
         return residual
 
     def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2) -> float:
-        """Compute the elasticity energy of isotropic linear elastic materials 
+        """Compute the elasticity energy of isotropic linear elastic materials
         in 2D with no body force using DEC framework.
 
         Args:
@@ -181,8 +181,7 @@ class LinearElasticity():
         Args:
             node_coords: 1-dimensional array obtained after flattening
             the matrix with node coordinates arranged row-wise.
-            f: 1-dimensional array obtained after flattening the
-            matrix of external sources (constant term of the system).
+            f: matrix of external sources (constant term of the system).
             gamma: penalty factor.
             boundary_values: a dictionary of tuples. Each key represent the type of
                 coordinate to manipulate (x,y, or both), while each tuple consists of
@@ -201,7 +200,6 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual_primal(
             node_coords_coch, f_coch, boundary_tractions).coeffs
@@ -211,22 +209,21 @@ class LinearElasticity():
         energy = jnp.sum(residual**2) + penalty
         return energy
 
-    def obj_linear_elasticity_dual(self, node_coords: npt.NDArray | Array,
-                                   f: npt.NDArray | Array, gamma: float,
+    def obj_linear_elasticity_dual(self, unknown_node_coords: npt.NDArray | Array,
+                                   f: npt.NDArray | Array,
                                    boundary_values: Dict[str, Tuple[Array, Array]],
                                    boundary_tractions:
                                    Dict[str, Tuple[Array, Array]],
-                                   toy_matrix: npt.NDArray) -> float:
+                                   curr_node_coords: npt.NDArray | Array,
+                                   unknown_node_idx: npt.NDArray | Array) -> float:
         """Objective function of the optimization problem associated to linear
            elasticity balance equation with Dirichlet boundary conditions on a portion
            of the boundary.
 
         Args:
-            node_coords: 1-dimensional array obtained after flattening
-            the matrix with node coordinates arranged row-wise.
-            f: 1-dimensional array obtained after flattening the
-            matrix of external sources (constant term of the system).
-            gamma: penalty factor.
+            unknown_node_coords: 1-dimensional array obtained after flattening
+            the matrix with unknown node coordinates.
+            f: matrix of external sources (constant term of the system).
             boundary_values: a dictionary of tuples. Each key represent the type of
                 coordinate to manipulate (x,y, or both), while each tuple consists of
                 two np.arrays in which the first encodes the indices of boundary
@@ -237,39 +234,37 @@ class LinearElasticity():
                 to impose the boundary tractions, while the last encodes the boundary
                 traction values themselves. It is None when we perform the force balance
                 on dual cells.
+            curr_node_coords: nan matrix of size equal to self.S.node_coords.size.
+                It is filled with displacement boundary conditions and unknown current
+                node coordinates.
+            unknown_node_idx: indexes (in the flattened array) of the node coordinates
+                non-corresponding to boundary conditions.
 
         Returns:
             the value of the objective function at node_coords.
 
         """
-        # node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
-        # node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        for key in boundary_values:
-            idx, values = boundary_values[key]
-            if key == ":":
-                toy_matrix = toy_matrix.at[idx, :].set(values)
-            else:
-                toy_matrix = toy_matrix.at[idx, int(key)].set(values)
+        # fill curr_node_coords with displacement BC
+        curr_node_coords = self.set_displacement_bc(curr_node_coords, boundary_values)
+        # fill uknown node coords entries in curr_node_coords
+        curr_node_coords_flat = curr_node_coords.flatten()
+        curr_node_coords_flat = curr_node_coords_flat.at[unknown_node_idx].set(
+            unknown_node_coords)
+        curr_node_coords = curr_node_coords_flat.reshape(self.S.node_coords.shape)
 
-        toy_matrix_flattened = toy_matrix.flatten()
-        toy_matrix_flattened = toy_matrix_flattened.at[jnp.isnan(toy_matrix_flattened)].set(
-            node_coords)
-        curr_node_coords = toy_matrix_flattened.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=curr_node_coords)
-        f = f.reshape((self.S.num_nodes, self.S.space_dim-1))
         f_coch = C.CochainD2(complex=self.S, coeffs=f)
         residual = self.force_balance_residual_dual(
             node_coords_coch, f_coch, boundary_tractions).coeffs
-        # penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
-        #                                           boundary_values=boundary_values,
-        #                                           gamma=gamma)
+
+        # the residual on BC indices doesn't count
         for key in boundary_values:
             idx, _ = boundary_values[key]
             if key == ":":
                 residual = residual.at[idx, :].set([0., 0.])
             else:
                 residual = residual.at[idx, int(key)].set([0.])
-        # energy = jnp.sum(residual**2) + penalty
+
         energy = jnp.sum(residual**2)
         return energy
 
@@ -278,14 +273,13 @@ class LinearElasticity():
                                      boundary_values:
                                      Dict[str, Tuple[Array, Array]]) -> float:
         """Objective function of the optimization problem associated to linear
-           elasticity (energy formulation) with Dirichlet boundary conditions on a portion
-           of the boundary.
+           elasticity (energy formulation) with Dirichlet boundary conditions on a
+           portion of the boundary.
 
         Args:
             node_coords: 1-dimensional array obtained after flattening
             the matrix with node coordinates arranged row-wise.
-            f: 1-dimensional array obtained after flattening the
-            matrix of external sources (constant term of the system).
+            f: matrix of external sources (constant term of the system).
             gamma: penalty factor.
             boundary_values: a dictionary of tuples. Each key represent the type of
                 coordinate to manipulate (x,y, or both), while each tuple consists of
@@ -297,7 +291,6 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        f = f.reshape((self.S.S[2].shape[0], self.S.space_dim-1))
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
         elastic_energy = self.elasticity_energy(node_coords_coch, f_coch)
         penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
@@ -320,7 +313,7 @@ class LinearElasticity():
             gamma: penalty factor.
 
         Return:
-            the penalty term
+            the penalty term.
         """
         penalty = 0.
         for key in boundary_values:
@@ -330,3 +323,25 @@ class LinearElasticity():
             else:
                 penalty += jnp.sum((node_coords[idx, int(key)] - values)**2)
         return gamma*penalty
+
+    def set_displacement_bc(self, curr_node_coords: npt.NDArray | Array,
+                            boundary_values: Dict[str, Tuple[Array, Array]]) -> Array:
+        """ Set linear displacement boundary conditions.
+
+        Args:
+            curr_node_coords: nan matrix of size equal to self.S.node_coords.size.
+            boundary_values: a dictionary of tuples. Each key represent the type of
+                coordinate to manipulate (x,y, or both), while each tuple consists of
+                two np.arrays in which the first encodes the indices of boundary
+                values, while the last encodes the boundary values themselves.
+
+        Return:
+            updated curr_node_coords.
+        """
+        for key in boundary_values:
+            idx, values = boundary_values[key]
+            if key == ":":
+                curr_node_coords = curr_node_coords.at[idx, :].set(values)
+            else:
+                curr_node_coords = curr_node_coords.at[idx, int(key)].set(values)
+        return curr_node_coords
