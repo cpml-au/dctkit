@@ -6,11 +6,10 @@ import dctkit as dt
 import pygmsh
 import pytest
 import jax.numpy as jnp
-import dctkit.dec.cochain as C
-import dctkit.dec.vector as V
+from functools import partial
 
-# cases = [[False, False], [True, False], [True, True]]
-cases = [[False, False]]
+
+cases = [[False, False], [True, False], [True, True]]
 
 
 @pytest.mark.parametrize('is_primal,energy_formulation', cases)
@@ -78,94 +77,56 @@ def test_linear_elasticity(setup_test, is_primal, energy_formulation):
     if energy_formulation:
         num_faces = S.S[2].shape[0]
         embedded_dim = S.space_dim
-        f = np.zeros((num_faces, (embedded_dim-1))).flatten()
+        f = np.zeros((num_faces, (embedded_dim-1)))
         obj = ela.obj_linear_elasticity_energy
         obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values}
-
+        x0 = S.node_coords.flatten()
     else:
         if is_primal:
             num_faces = S.S[2].shape[0]
             embedded_dim = S.space_dim
-            f = np.zeros((num_faces, (embedded_dim-1))).flatten()
+            f = np.zeros((num_faces, (embedded_dim-1)))
             obj = ela.obj_linear_elasticity_primal
+            obj_args = {'f': f,
+                        'gamma': gamma,
+                        'boundary_values': boundary_values,
+                        'boundary_tractions': boundary_tractions}
+            x0 = S.node_coords.flatten()
         else:
             embedded_dim = S.space_dim
-            f = np.zeros((S.num_nodes, (embedded_dim-1)),
-                         dtype=dt.float_dtype).flatten()
-            toy_matrix = jnp.zeros(S.node_coords.shape, dtype=dt.float_dtype)
-            toy_matrix = toy_matrix.at[:].set(jnp.nan)
-            obj = ela.obj_linear_elasticity_dual
+            f = np.zeros((S.num_nodes, (embedded_dim-1)), dtype=dt.float_dtype)
+            curr_node_coords = jnp.full(
+                S.node_coords.shape, jnp.nan, dtype=dt.float_dtype)
 
-        obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values,
-                    'boundary_tractions': boundary_tractions, 'toy_matrix': toy_matrix}
-
-    # define x0
-    node_coords_mod = S.node_coords.copy()
-    node_coords_mod[left_bnd_nodes_idx + right_bnd_nodes_idx, 0] = np.nan
-    node_coords_mod[bottom_left_corner] = np.nan
-    node_coords_mod_flattened = node_coords_mod.flatten()
-    x0 = node_coords_mod_flattened[~np.isnan(node_coords_mod_flattened)]
+            # define x0
+            unknown_node_coords = S.node_coords.copy()
+            unknown_node_coords[left_bnd_nodes_idx + right_bnd_nodes_idx, 0] = np.nan
+            unknown_node_coords[bottom_left_corner] = np.nan
+            unknown_node_coords_flattened = unknown_node_coords.flatten()
+            unknown_node_idx = ~np.isnan(unknown_node_coords_flattened)
+            x0 = unknown_node_coords_flattened[unknown_node_idx]
+            obj = partial(ela.obj_linear_elasticity_dual,
+                          unknown_node_idx=unknown_node_idx)
+            obj_args = {'f': f,
+                        'boundary_values': boundary_values,
+                        'boundary_tractions': boundary_tractions,
+                        'curr_node_coords': curr_node_coords}
 
     prb = optctrl.OptimizationProblem(dim=len(x0),
                                       state_dim=len(x0),
                                       objfun=obj)
 
-    '''
-    node_coords_mod = true_curr_node_coords.copy()
-    node_coords_mod[left_bnd_nodes_idx + right_bnd_nodes_idx, 0] = np.nan
-    node_coords_mod[bottom_left_corner] = np.nan
-    node_coords_mod_flattened = node_coords_mod.flatten()
-    prova = node_coords_mod_flattened[~np.isnan(node_coords_mod_flattened)]
-
-    print(true_curr_node_coords)
-
-    print(obj(prova, f, gamma, boundary_values, boundary_tractions, toy_matrix))
-    '''
-
     prb.set_obj_args(obj_args)
     sol = prb.run(x0=x0, ftol_abs=1e-9, ftol_rel=1e-9)
 
-    # curr_node_coords = sol.reshape(S.node_coords.shape)
-    # post-process solution
-    for key in boundary_values:
-        idx, values = boundary_values[key]
-        if key == ":":
-            toy_matrix = toy_matrix.at[idx, :].set(values)
-        else:
-            toy_matrix = toy_matrix.at[idx, int(key)].set(values)
-
-    toy_matrix_flattened = toy_matrix.flatten()
-    toy_matrix_flattened = toy_matrix_flattened.at[jnp.isnan(
-        toy_matrix_flattened)].set(sol)
-    curr_node_coords = toy_matrix_flattened.reshape(S.node_coords.shape)
-
-    print(curr_node_coords)
-    print(true_curr_node_coords)
-
-    print("--------------------------------")
-    strain = ela.get_GreenLagrange_strain(curr_node_coords)
-    stress = ela.get_stress(strain)
-    print(strain)
-    print("--------------------------------")
-    print(stress)
-
-    node_coords_coch = C.CochainP0(complex=S, coeffs=curr_node_coords)
-    f = f.reshape((S.num_nodes, S.space_dim-1))
-    f_coch = C.CochainD2(complex=S, coeffs=f)
-    print(ela.force_balance_residual_dual(
-        node_coords_coch, f_coch, boundary_tractions).coeffs)
-    print("--------------------------------------------")
-
-    stress_tensor = V.DiscreteTensorFieldD(S=S, coeffs=stress.T, rank=2)
-    # compute forces on dual edges
-    stress_integrated = V.flat_DPD(stress_tensor)
-    forces = C.star(stress_integrated)
-    print(idx_free_edges)
-    print(left_right_edges_idx)
-    print(forces.coeffs)
-    print("----------------------------------------")
-    print(S.node_coords)
-    print(S.S[1])
+    if not (energy_formulation or is_primal):
+        # post-process solution since in this case we have no penalty
+        curr_node_coords = ela.set_displacement_bc(curr_node_coords, boundary_values)
+        curr_node_coords_flattened = curr_node_coords.flatten()
+        curr_node_coords_flattened = curr_node_coords_flattened.at[jnp.isnan(
+            curr_node_coords_flattened)].set(sol)
+        curr_node_coords = curr_node_coords_flattened.reshape(S.node_coords.shape)
+    else:
+        curr_node_coords = sol.reshape(S.node_coords.shape)
 
     assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-3)
-    assert False
