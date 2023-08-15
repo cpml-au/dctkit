@@ -129,14 +129,16 @@ class SimplicialComplex:
         # loop over simplices at all dimensions
         for p in range(self.dim, 0, -1):
             num_p, _ = self.simplices_faces[p].shape
-            num_pm1, _ = self.S[p - 1].shape
-            dv = np.zeros(num_pm1, dtype=self.float_dtype)
+
             if p == 1:
                 # circ_pm1 = circumcenters of the (p-1)-simplices and the circumcenters
                 # of the nodes (0-simplices) are the nodes itself.
                 circ_pm1 = self.node_coords
+                num_pm1 = self.num_nodes
             else:
                 circ_pm1 = self.circ[p - 1]
+                num_pm1, _ = self.S[p - 1].shape
+            dv = np.zeros(num_pm1, dtype=self.float_dtype)
             # Loop over p-simplices
             for i in range(num_p):
                 face_id = self.simplices_faces[p][i, :]
@@ -146,8 +148,12 @@ class SimplicialComplex:
                                         axis=1)
 
                 # Find opposite vertexes to the (p-1)-simplices
-                opp_vert = np.array(
-                    [list(set(self.S[p][i]) - set(self.S[p - 1][j])) for j in face_id])
+                if p == 1:
+                    opp_vert = np.array(
+                        [list(set(self.S[p][i]) - set(j.flatten())) for j in face_id])
+                else:
+                    opp_vert = np.array(
+                        [list(set(self.S[p][i]) - set(self.S[p - 1][j])) for j in face_id])
                 opp_vert_index = [list(self.S[p][i]).index(j) for j in opp_vert]
 
                 # Sign of the dual volume of the boundary (p-1)-simplex = sign of
