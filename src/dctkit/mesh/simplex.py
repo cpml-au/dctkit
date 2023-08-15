@@ -152,8 +152,8 @@ class SimplicialComplex:
                     opp_vert = np.array(
                         [list(set(self.S[p][i]) - set(j.flatten())) for j in face_id])
                 else:
-                    opp_vert = np.array(
-                        [list(set(self.S[p][i]) - set(self.S[p - 1][j])) for j in face_id])
+                    opp_vert = np.array([list(set(self.S[p][i]) -
+                                              set(self.S[p - 1][j])) for j in face_id])
                 opp_vert_index = [list(self.S[p][i]).index(j) for j in opp_vert]
 
                 # Sign of the dual volume of the boundary (p-1)-simplex = sign of
