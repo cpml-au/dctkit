@@ -300,6 +300,41 @@ class SimplicialComplex:
                 self.get_flat_DPD_weights()
             self.flat_DPP_weights = self.flat_DPD_weights
 
+    def get_current_covariant_basis(self, node_coords: npt.NDArray | Array) -> Array:
+        """Compute the current covariant basis of each face of a 2D simplicial complex.
+
+        Args:
+            node_coords: matrix of shape (n, space_dim) where the i-th row is the
+                    vector of coordinates of i-th node of the simplex in the current
+                    configuration.
+
+        Returns:
+            the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
+                    and each 2x2 matrix is the current covariant basis of the
+                    corresponding 2-simplex.
+
+
+        """
+        dim = self.dim
+        B = self.simplices_faces[dim]
+        primal_edges = self.S[1]
+        # construct the matrix in which the i-th row corresponds to the vector
+        # of coordinates of the i-th primal edge
+        primal_edge_vectors = node_coords[primal_edges[:, 1], :2] - \
+            node_coords[primal_edges[:, 0], :2]
+        # construct the multiarray of shape (n, 2, 2) where any 2x2 matrix represents
+        # the coordinates of the first two edge vectors (arranged in rows) belonging to
+        # corresponding primal 2-simplex i.e. the rows are the vectors g_i
+        current_covariant_basis = primal_edge_vectors[B][:, :2, :]
+
+        # compute the matrix (a_k)r and its transpose
+        if self.ref_covariant_basis is None:
+            self.ref_covariant_basis = current_covariant_basis
+            self.ref_covariant_basis_T = jnp.transpose(
+                self.ref_covariant_basis, axes=(0, 2, 1))
+
+        return current_covariant_basis
+
     def get_current_metric_2D(self, node_coords: npt.NDArray | Array) -> Array:
         """Compute the current metric of a 2D simplicial complex.
 
@@ -324,17 +359,7 @@ class SimplicialComplex:
         # g^(ij)_p the contravariant components of the the pull-back of the current
         # metric
 
-        dim = self.dim
-        B = self.simplices_faces[dim]
-        primal_edges = self.S[1]
-        # construct the matrix in which the i-th row corresponds to the vector
-        # of coordinates of the i-th primal edge
-        primal_edge_vectors = node_coords[primal_edges[:, 1], :2] - \
-            node_coords[primal_edges[:, 0], :2]
-        # construct the multiarray of shape (n, 2, 2) where any 2x2 matrix represents
-        # the coordinates of the first two edge vectors (arranged in rows) belonging to
-        # corresponding primal 2-simplex i.e. the rows are the vectors g_i
-        current_covariant_basis = primal_edge_vectors[B][:, :2, :]
+        current_covariant_basis = self.get_current_covariant_basis(node_coords)
 
         # compute the matrix (a_k)r and its transpose
         if self.ref_covariant_basis is None:
@@ -361,6 +386,33 @@ class SimplicialComplex:
                                      pullback_current_metric_contravariant) @
                                     self.ref_covariant_basis)
         return current_cartesian_metric
+
+    def get_deformation_gradient(self, node_coords: npt.NDArray) -> Array:
+        """Compute the deformation gradient of a 2D simplicial complex.
+
+        Args:
+                node_coords: matrix of shape (n, space_dim) where the i-th row is the
+                    vector of coordinates of i-th node of the simplex in the current
+                    configuration.
+
+            Returns:
+                the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
+                    and each 2x2 matrix is the deformation gradient of the
+                    corresponding 2-simplex.
+
+        """
+        current_covariant_basis = self.get_current_covariant_basis(node_coords)
+
+        if self.ref_metric_contravariant is None:
+            current_metric_covariant = current_covariant_basis @ jnp.transpose(
+                current_covariant_basis, axes=(0, 2, 1))
+            ref_metric_covariant = current_metric_covariant
+            self.ref_metric_contravariant = jnp.linalg.inv(ref_metric_covariant)
+
+        # compute F_(jl) = (a'_i)_j (g_R)^(ik) (a_k)_l
+        F = jnp.transpose(current_covariant_basis, axes=(0, 2, 1)
+                          ) @ self.ref_metric_contravariant @ self.ref_covariant_basis
+        return F
 
 
 def __simplex_array_parity(s: npt.NDArray) -> npt.NDArray:

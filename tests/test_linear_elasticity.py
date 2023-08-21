@@ -41,7 +41,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
 
     mu_ = 1.
     lambda_ = 10.
-    true_strain_xx = 0.02
+    true_strain_xx = 2
     true_strain_yy = -(lambda_/(2*mu_+lambda_))*true_strain_xx
     true_curr_node_coords = S.node_coords.copy()
     true_curr_node_coords[:, 0] *= 1 + true_strain_xx
@@ -72,7 +72,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
                           ':': (idx_free_edges, bnd_tractions_free_values)}
 
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
-    gamma = 1000.
+    gamma = 100000.
 
     if energy_formulation:
         num_faces = S.S[2].shape[0]
@@ -117,7 +117,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
                                       objfun=obj)
 
     prb.set_obj_args(obj_args)
-    sol = prb.run(x0=x0, ftol_abs=1e-9, ftol_rel=1e-9)
+    sol = prb.run(x0=x0, algo="lbfgs", ftol_abs=1e-9, ftol_rel=1e-9)
 
     if not (energy_formulation or is_primal):
         # post-process solution since in this case we have no penalty
