@@ -20,7 +20,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get -y install libglu1
-        python -m pip install --upgrade pip
+        conda install -n base conda-libmamba-solver
+        conda config --set solver libmamba
         python -m pip install tox-conda
         python -m pip install flake8
     - name: Linting with flake8
