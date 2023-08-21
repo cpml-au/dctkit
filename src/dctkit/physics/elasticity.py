@@ -23,18 +23,37 @@ class LinearElasticity():
 
     def get_GreenLagrange_strain(self, node_coords:
                                  npt.NDArray | Array) -> npt.NDArray | Array:
+        """Compute the discrete GL strain tensor given the current node coordinates.
+
+        Args:
+            node_coords: current node coordinates.
+
+        Returns:
+            the discrete GL strain tensor.
+
+        """
+        current_metric = self.S.get_current_metric_2D(node_coords=node_coords)
+        # define the infinitesimal strain and its trace
+        epsilon = 1/2 * (current_metric - self.S.reference_metric)
+        return epsilon
+
+    def get_infinitesimal_strain(self, node_coords:
+                                 npt.NDArray | Array) -> npt.NDArray | Array:
         """Compute the discrete strain tensor given the current node coordinates.
 
         Args:
             node_coords: current node coordinates.
 
         Returns:
-            the discrete strain tensor.
+            the discrete infinitesimal strain tensor.
 
         """
-        current_metric = self.S.get_current_metric_2D(node_coords=node_coords)
-        # define the infinitesimal strain and its trace
-        epsilon = 1/2 * (current_metric - self.S.reference_metric)
+        # compute the deformation gradient
+        num_faces = self.S.S[2].shape[0]
+        F = self.S.get_deformation_gradient(node_coords)
+        # epsilon = 1/2(F + F^T) - I
+        epsilon = 1/2 * (F + jnp.transpose(F, axes=(0, 2, 1))) - \
+            jnp.stack([jnp.identity(2)]*num_faces)
         return epsilon
 
     def get_stress(self, strain: npt.NDArray | Array) -> Array:
@@ -102,7 +121,7 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
@@ -132,7 +151,7 @@ class LinearElasticity():
             the residual vector-valued cochain.
 
         """
-        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         # compute forces on dual edges
@@ -162,7 +181,7 @@ class LinearElasticity():
             the energy.
         """
         # FIXME: extend to the case of f != 0
-        strain = self.get_GreenLagrange_strain(node_coords=node_coords.coeffs)
+        strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
         strain_cochain = C.CochainD0(self.S, strain)
         stress_cochain = C.CochainD0(self.S, stress)
