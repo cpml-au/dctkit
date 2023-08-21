@@ -522,7 +522,7 @@ def compute_simplices_faces(S: npt.NDArray, faces_ordered:
 
     Returns:
         a matrix containing the IDs of the (p-1)-simplices (cols) belonging
-        to each p-simplex (rows).
+            to each p-simplex (rows).
 
     """
 
