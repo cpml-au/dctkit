@@ -117,7 +117,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
                                       objfun=obj)
 
     prb.set_obj_args(obj_args)
-    sol = prb.run(x0=x0, algo="lbfgs", ftol_abs=1e-9, ftol_rel=1e-9)
+    sol = prb.solve(x0=x0, ftol_abs=1e-9, ftol_rel=1e-9)
 
     if not (energy_formulation or is_primal):
         # post-process solution since in this case we have no penalty
