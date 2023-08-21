@@ -16,17 +16,20 @@ Features:
 - manipulation of vector-valued and tensor-valued cochains: discrete vector and tensor
   fields, sharp operator
 - interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
+- interface to the [`PETSc`](https://petsc.org) non-linear solvers and optimizers
 - routines for solving optimal control problems
 - implementation of discrete physical models: Dirichlet energy, Poisson, Euler's
-  Elastica, linear isotropic elasticity
+  Elastica, isotropic linear elasticity
 
 ## Installation
 
-Dependencies should be installed within a `conda` environment. To create a suitable
+Dependencies should be installed within a `conda` environment. We recommend using
+[`mamba`](https://github.com/mamba-org/mamba) since it is much faster than `conda` at
+solving the environment and downloading the dependencies. To create a suitable
 environment based on the provided `.yaml` file, use the command
 
 ```bash
-$ conda env create -f environment.yaml
+$ mamba env create -f environment.yaml
 ```
 
 Otherwise, update an existing environment using the same `.yaml` file.
@@ -83,9 +86,9 @@ from dctkit.math.opt import optctrl as oc
 import jax.numpy as jnp
 from matplotlib.pyplot import plot
 
-# set backend for computations, precision and platform (CPU/GPU)
-# MUST be called before using any function of dctkit
+# configure the JAX backend: sets precision and platform (CPU/GPU)
 # defaults: float64 precision and CPU platform
+# MUST be called before using any function of dctkit
 config()
 
 # generate mesh and create SimplicialComplex object
@@ -115,10 +118,11 @@ def energy(u):
 
 # set optimization problem
 prb = oc.OptimizationProblem(dim=num_nodes-1, state_dim=num_nodes-1, objfun=energy)
-# set additional arguments (empty dictionary) of the objective function, other than the state array
+# set additional arguments (empty dictionary) of the objective function,
+# other than the state array
 prb.set_obj_args({})
 
-x = prb.run(x0=u)
+x = prb.solve(x0=u)
 
 # add boundary condition
 x = jnp.insert(x, 0, 0.)
