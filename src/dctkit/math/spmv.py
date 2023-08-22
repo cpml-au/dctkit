@@ -9,17 +9,17 @@ import numpy.typing as npt
 @partial(jit, static_argnums=(2, 3))
 def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
          v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
-    """Performs the matrix-vector product between a sparse matrix in COO format and a
-        vector.
+    """Performs the matrix-matrix product between a sparse matrix in COO format and a
+        dense matrix or vector.
 
     Args:
         A: tuple (rows,cols,values) representing the sparse matrix in COO format.
-        v: vector.
+        v: matrix or vector.
         transpose: whether to transpose A before multiplication.
-        shape
+        shape: the number of rows of the matrix A.
 
     Returns:
-        the vector resulting from the matrix-vector product.
+        the vector resulting from the matrix-matrix product.
     """
     rows, cols, vals = A
 
