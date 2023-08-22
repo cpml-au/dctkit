@@ -108,8 +108,8 @@ class LinearElasticity():
           of isotropic linear elastic materials in 2D using DEC framework.
 
         Args:
-            node_coords: primal vector valued 0-cochain of
-            node coordinates of the current configuration.
+            node_coords: primal vector valued 0-cochain of node coordinates of the
+                current configuration.
             f: primal vector-valued 2-cochain of sources.
             boundary_tractions: a dictionary of tuples. Each key represent the type
                 of coordinate to manipulate (x,y, or both), while each tuple consists
@@ -193,13 +193,14 @@ class LinearElasticity():
                                      boundary_values: Dict[str, Tuple[Array, Array]],
                                      boundary_tractions:
                                      Dict[str, Tuple[Array, Array]]) -> float:
-        """Objective function of the optimization problem associated to linear
-           elasticity balance equation with Dirichlet boundary conditions on a portion
-           of the boundary.
+        """
+        Objective function of the optimization problem associated to linear
+        elasticity balance equation with Dirichlet boundary conditions on a portion
+        of the boundary.
 
         Args:
-            node_coords: 1-dimensional array obtained after flattening
-            the matrix with node coordinates arranged row-wise.
+            node_coords: 1-dimensional array obtained after flattening the matrix with
+                node coordinates arranged row-wise.
             f: matrix of external sources (constant term of the system).
             gamma: penalty factor.
             boundary_values: a dictionary of tuples. Each key represent the type of
@@ -235,22 +236,23 @@ class LinearElasticity():
                                    Dict[str, Tuple[Array, Array]],
                                    curr_node_coords: npt.NDArray | Array,
                                    unknown_node_idx: npt.NDArray | Array) -> float:
-        """Objective function of the optimization problem associated to linear
-           elasticity balance equation with Dirichlet boundary conditions on a portion
-           of the boundary.
+        """
+        Objective function of the optimization problem associated to linear elasticity
+        balance equation with Dirichlet boundary conditions on a portion of the
+        boundary.
 
         Args:
-            unknown_node_coords: 1-dimensional array obtained after flattening
-            the matrix with unknown node coordinates.
+            unknown_node_coords: 1-dimensional array obtained after flattening the
+                matrix with unknown node coordinates.
             f: matrix of external sources (constant term of the system).
             boundary_values: a dictionary of tuples. Each key represent the type of
                 coordinate to manipulate (x,y, or both), while each tuple consists of
-                two np.arrays in which the first encodes the indices of boundary
-                values, while the last encodes the boundary values themselves.
+                two np.arrays in which the first encodes the indices of boundary values,
+                while the last encodes the boundary values themselves.
             boundary_tractions: a dictionary of tuples. Each key represent the type
-                of coordinate to manipulate (x,y, or both), while each tuple consists
-                of two jax arrays, in which the first encordes the indices where we want
-                to impose the boundary tractions, while the last encodes the boundary
+                of coordinate to manipulate (x,y, or both), while each tuple consists of
+                two jax arrays, in which the first encordes the indices where we want to
+                impose the boundary tractions, while the last encodes the boundary
                 traction values themselves. It is None when we perform the force balance
                 on dual cells.
             curr_node_coords: nan matrix of size equal to self.S.node_coords.size.
@@ -291,18 +293,19 @@ class LinearElasticity():
                                      f: npt.NDArray | Array, gamma: float,
                                      boundary_values:
                                      Dict[str, Tuple[Array, Array]]) -> float:
-        """Objective function of the optimization problem associated to linear
-           elasticity (energy formulation) with Dirichlet boundary conditions on a
-           portion of the boundary.
+        """
+        Objective function of the optimization problem associated to linear elasticity
+        (energy formulation) with Dirichlet boundary conditions on a portion of the
+        boundary.
 
         Args:
-            node_coords: 1-dimensional array obtained after flattening
-            the matrix with node coordinates arranged row-wise.
+            node_coords: 1-dimensional array obtained after flattening the matrix with
+                node coordinates arranged row-wise.
             f: matrix of external sources (constant term of the system).
             gamma: penalty factor.
-            boundary_values: a dictionary of tuples. Each key represent the type of
-                coordinate to manipulate (x,y, or both), while each tuple consists of
-                two np.arrays in which the first encodes the indices of boundary
+            boundary_values: a dictionary of tuples. Each key represent the type
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two np.arrays in which the first encodes the indices of boundary
                 values, while the last encodes the boundary values themselves.
 
         Returns:
@@ -321,7 +324,7 @@ class LinearElasticity():
     def get_penalty_displacement_bc(self, node_coords: npt.NDArray | Array,
                                     boundary_values: Dict[str, Tuple[Array, Array]],
                                     gamma: float) -> float:
-        """ Set displacement boundary conditions as a quadratic penalty term.
+        """Set displacement boundary conditions as a quadratic penalty term.
 
         Args:
             node_coords: node coordinates of the current configuration.
@@ -345,7 +348,7 @@ class LinearElasticity():
 
     def set_displacement_bc(self, curr_node_coords: npt.NDArray | Array,
                             boundary_values: Dict[str, Tuple[Array, Array]]) -> Array:
-        """ Set linear displacement boundary conditions.
+        """Set linear displacement boundary conditions.
 
         Args:
             curr_node_coords: nan matrix of size equal to self.S.node_coords.size.

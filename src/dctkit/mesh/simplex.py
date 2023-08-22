@@ -391,14 +391,13 @@ class SimplicialComplex:
         """Compute the deformation gradient of a 2D simplicial complex.
 
         Args:
-                node_coords: matrix of shape (n, space_dim) where the i-th row is the
-                    vector of coordinates of i-th node of the simplex in the current
-                    configuration.
+            node_coords: matrix of shape (n, space_dim) where the i-th row is the vector
+                of coordinates of i-th node of the simplex in the current configuration.
 
             Returns:
                 the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
-                    and each 2x2 matrix is the deformation gradient of the
-                    corresponding 2-simplex.
+                and each 2x2 matrix is the deformation gradient of the corresponding
+                2-simplex.
 
         """
         current_covariant_basis = self.get_current_covariant_basis(node_coords)
@@ -521,8 +520,8 @@ def compute_simplices_faces(S: npt.NDArray, faces_ordered:
         S: matrix of the IDs of the nodes (cols) belonging to each p-simplex (rows).
 
     Returns:
-        a matrix containing the IDs of the (p-1)-simplices (cols) belonging
-            to each p-simplex (rows).
+        a matrix containing the IDs of the (p-1)-simplices (cols) belonging to each
+        p-simplex (rows).
 
     """
 
