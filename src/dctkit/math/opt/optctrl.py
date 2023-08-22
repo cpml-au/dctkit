@@ -18,7 +18,7 @@ class OptimizationProblem():
             of the state array.
         objfun: objective function. Its arguments must be the parameters array (state +
             constrols) and some extra arguments to be set using the method
-            `set_obj_args'.
+            `set_obj_args`.
     """
 
     def __init__(self, dim: int, state_dim: int,
@@ -95,7 +95,7 @@ class OptimalControlProblem(OptimizationProblem):
     Args:
         objfun: objective function to minimize wrt controls. Its
             argument must be the parameter (state + controls) array. Additional
-            arguments must be specified via the parameters `obj_args'.
+            arguments must be specified via the parameters `obj_args`.
         statefun: function computing the residual vector of the state equations. Its
             arguments must be the parameters array and other keyword arguments specified
             via the parameter `constraint_args'.
