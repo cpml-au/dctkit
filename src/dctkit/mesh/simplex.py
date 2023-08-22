@@ -310,8 +310,8 @@ class SimplicialComplex:
 
         Returns:
             the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
-                    and each 2x2 matrix is the current covariant basis of the
-                    corresponding 2-simplex.
+            and each 2x2 matrix is the current covariant basis of the corresponding
+            2-simplex.
 
 
         """
@@ -394,10 +394,10 @@ class SimplicialComplex:
             node_coords: matrix of shape (n, space_dim) where the i-th row is the vector
                 of coordinates of i-th node of the simplex in the current configuration.
 
-            Returns:
-                the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
-                and each 2x2 matrix is the deformation gradient of the corresponding
-                2-simplex.
+        Returns:
+            the multiarray of shape (n, 2, 2), where n is the number of 2-simplices
+            and each 2x2 matrix is the deformation gradient of the corresponding
+            2-simplex.
 
         """
         current_covariant_basis = self.get_current_covariant_basis(node_coords)
