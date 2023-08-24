@@ -72,6 +72,8 @@ class SimplicialComplex:
             boundary, vals, faces_ordered = compute_boundary_COO(self.S[self.dim - p])
             self.boundary[self.dim - p] = boundary
             self.S[self.dim - p - 1] = vals
+            # NOTE: the cofaces of a simplex can be determined by the coboundary matrix
+            # maybe we do not really need to store simplices_faces...
             self.simplices_faces[self.dim - p] = compute_simplices_faces(
                 self.S[self.dim - p], faces_ordered)
 
@@ -84,16 +86,13 @@ class SimplicialComplex:
             self.simplices_faces[self.dim], return_counts=True)
         self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
 
-    def get_tets_containing_a_boundary_face(self):
-        """Compute a list in which the i-th element is the index of the top-level
-        simplex in which the i-th boundary face belongs."""
-        if not hasattr(self, "bnd_faces_indices"):
-            self.get_complex_boundary_faces_indices()
-        dim = self.dim
-        # the index of the top level simplex in which the i-th boundary face belongs
-        # is the (only) row index in which i appears in simplices_faces[dim].
-        self.tets_cont_bnd_face = [np.nonzero(
-            self.simplices_faces[dim] == i)[0][0] for i in self.bnd_faces_indices]
+    # def get_tets_containing_a_boundary_face(self):
+    #     """Compute a list in which the i-th element is the index of the top-level
+    #     simplex in which the i-th boundary face belongs."""
+    #     if not hasattr(self, "bnd_faces_indices"):
+    #         self.get_complex_boundary_faces_indices()
+    #     dim = self.dim - 1
+    #     self.tets_cont_bnd_face = get_cofaces(self.bnd_faces_indices, dim, self)
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
@@ -289,7 +288,7 @@ class SimplicialComplex:
         # s^j > s^i: s^i is a proper face of s^j (hence i<j)
         if not hasattr(self, "primal_edge_vectors"):
             self.get_primal_edge_vectors()
-            self.get_tets_containing_a_boundary_face()
+            # self.get_tets_containing_a_boundary_face()
 
         if self.dim == 2:
             # in this case the entries of the flat_DPD matrix coincides
@@ -412,6 +411,27 @@ class SimplicialComplex:
         F = jnp.transpose(current_covariant_basis, axes=(0, 2, 1)
                           ) @ self.ref_metric_contravariant @ self.ref_covariant_basis
         return F
+
+
+def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
+                S: SimplicialComplex) -> list[npt.NDArray]:
+    """Get the IDs of the cofaces of a simplex, i.e. the neighour simplices of one
+    higher dimension.
+
+    Args:
+        faces_ids: list or array containing the IDs of the faces for which the cofaces
+            should be determined.
+        faces_dim: dimension of each face in the list.
+        S: simplicial complex to which the faces belong.
+
+    Returns:
+        list of arrays, where each array contains the IDs of the cofaces of a face.
+    """
+    # the indices of the parent simplices to which the faces belong are the row indices
+    # of the matrix simplices_faces in which the IDs of the faces appear
+    cofaces_ids = [np.nonzero(S.simplices_faces[faces_dim+1] == i)[0].flatten()
+                   for i in faces_ids]
+    return cofaces_ids
 
 
 def __simplex_array_parity(s: npt.NDArray) -> npt.NDArray:
