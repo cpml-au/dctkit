@@ -6,6 +6,8 @@ import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
 from typeguard import check_type
+from typing import Dict, List
+from copy import deepcopy
 
 
 class Cochain():
@@ -27,6 +29,31 @@ class Cochain():
         self.coeffs = coeffs
 
 
+str_init = """
+def init(self, complex, coeffs):
+    # if not is_primal_:
+    self.dim = dim_
+    self.is_primal = is_primal_
+    self.complex = complex
+    self.coeffs = coeffs
+"""
+attributes = {'category': (True, False), 'dim': (
+    0, 1, 2, 3), 'rank': ("", "V", "T")}
+categories = attributes['category']
+dimensions = attributes['dim']
+ranks = attributes['rank']
+for is_primal_ in categories:
+    for dim_ in dimensions:
+        for rank_ in ranks:
+            category_name = is_primal_*'P' + (not is_primal_)*'D'
+            name = "Cochain" + category_name + str(dim_) + rank_
+
+            exec(str_init.replace("dim_", f"{dim_}").replace(
+                "is_primal_", f"{is_primal_}"))
+
+            exec(name + " =type(name, (Cochain,), {'__init__': init})")
+
+
 class CochainP(Cochain):
     """Class for primal cochains."""
 
@@ -41,70 +68,6 @@ class CochainD(Cochain):
     def __init__(self, dim: int, complex: spx.SimplicialComplex,
                  coeffs: npt.NDArray | Array):
         super().__init__(dim, False, complex, coeffs)
-
-
-class CochainP0(CochainP):
-    """Class for primal 0-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(0, complex, coeffs)
-
-
-class CochainP1(CochainP):
-    """Class for primal 1-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(1, complex, coeffs)
-
-
-class CochainP2(CochainP):
-    """Class for primal 2-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(2, complex, coeffs)
-
-
-class CochainP3(CochainP):
-    """Class for primal 3-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(3, complex, coeffs)
-
-
-class CochainD0(CochainD):
-    """Class for dual 0-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(0, complex, coeffs)
-
-
-class CochainD1(CochainD):
-    """Class for dual 1-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(1, complex, coeffs)
-
-
-class CochainD2(CochainD):
-    """Class for dual 2-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(2, complex, coeffs)
-
-
-class CochainD3(CochainD):
-    """Class for dual 3-cochains."""
-
-    def __init__(self, complex: spx.SimplicialComplex,
-                 coeffs: npt.NDArray | Array):
-        super().__init__(3, complex, coeffs)
 
 
 def add(c1: Cochain, c2: Cochain) -> Cochain:
@@ -296,6 +259,7 @@ def coboundary(c: Cochain) -> Cochain:
                               shape=c.complex.S[c.dim+1].shape[0])
     else:
         # FIXME: change sign of the boundary before applying it?
+        print(c.complex.dim - c.dim)
         bnd_coo = c.complex.boundary[c.complex.dim - c.dim]
         dc.coeffs = spmv.spmm(bnd_coo, c.coeffs,
                               transpose=False,
