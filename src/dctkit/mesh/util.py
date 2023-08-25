@@ -18,6 +18,7 @@ def build_complex_from_mesh(mesh: Mesh, is_well_centered=True) -> SimplicialComp
     node_coords = mesh.points
     cell_types = mesh.cells_dict.keys()
 
+    # identify top-level simplices
     if "tetra" in cell_types:
         tet_node_tags = mesh.cells_dict["tetra"]
     elif "triangle" in cell_types:
