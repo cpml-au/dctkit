@@ -6,8 +6,6 @@ import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
 from typeguard import check_type
-from typing import Dict, List
-from copy import deepcopy
 
 
 class Cochain():
