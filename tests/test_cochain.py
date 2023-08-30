@@ -321,10 +321,10 @@ def test_hodge_star(setup_test):
 
 def test_inner_product(setup_test):
     mesh_1, _ = util.generate_line_mesh(5, 1.)
-    mesh_2, _ = util.generate_square_mesh(1.0)
+    mesh_2, _ = util.generate_square_mesh(0.8)
     mesh_3, _ = util.generate_tet_mesh(2.0)
     S_1 = util.build_complex_from_mesh(mesh_1)
-    S_2 = util.build_complex_from_mesh(mesh_2, is_well_centered=False)
+    S_2 = util.build_complex_from_mesh(mesh_2)
     S_3 = util.build_complex_from_mesh(mesh_3)
     S_1.get_hodge_star()
     S_2.get_hodge_star()
@@ -352,12 +352,12 @@ def test_inner_product(setup_test):
         assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
     # 2D test
-    vP0_1 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
-    vP0_2 = np.array([6, 7, 8, 9, 10], dtype=dctkit.float_dtype)
-    vP1_1 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=dctkit.float_dtype)
-    vP1_2 = np.array([9, 10, 11, 12, 13, 14, 15, 16], dtype=dctkit.float_dtype)
-    vP2_1 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
-    vP2_2 = np.array([5, 6, 7, 8], dtype=dctkit.float_dtype)
+    vP0_1 = np.arange(1, 13, dtype=dctkit.float_dtype)
+    vP0_2 = np.arange(13, 25, dtype=dctkit.float_dtype)
+    vP1_1 = np.arange(1, 26, dtype=dctkit.float_dtype)
+    vP1_2 = np.arange(26, 51, dtype=dctkit.float_dtype)
+    vP2_1 = np.arange(1, 15, dtype=dctkit.float_dtype)
+    vP2_2 = np.arange(15, 29, dtype=dctkit.float_dtype)
 
     cP0_1 = C.CochainP0(complex=S_2, coeffs=vP0_1)
     cP0_2 = C.CochainP0(complex=S_2, coeffs=vP0_2)
@@ -418,12 +418,12 @@ def test_inner_product(setup_test):
         assert np.allclose(inner_product_all[i], inner_product_true_all[i])
 
     # vector-valued test
-    vP0_1 = np.arange(20).reshape((5, 2, 2))
-    vP0_2 = np.arange(20).reshape((5, 2, 2))
-    vP1_1 = np.arange(32).reshape((8, 2, 2))
-    vP1_2 = np.arange(32).reshape((8, 2, 2))
-    vP2_1 = np.arange(16).reshape((4, 2, 2))
-    vP2_2 = np.arange(16).reshape((4, 2, 2))
+    vP0_1 = np.arange(24).reshape((12, 2))
+    vP0_2 = np.arange(24).reshape((12, 2))
+    vP1_1 = np.arange(50).reshape((25, 2))
+    vP1_2 = np.arange(50).reshape((25, 2))
+    vP2_1 = np.arange(28).reshape((14, 2))
+    vP2_2 = np.arange(28).reshape((14, 2))
 
     cP0_1 = C.CochainP0(S_2, vP0_1)
     cP0_2 = C.CochainP0(S_2, vP0_2)
@@ -431,14 +431,65 @@ def test_inner_product(setup_test):
     cP1_2 = C.CochainP1(S_2, vP1_2)
     cP2_1 = C.CochainP2(S_2, vP2_1)
     cP2_2 = C.CochainP2(S_2, vP2_2)
+    cD2_1 = C.star(cP0_1)
+    cD2_2 = C.star(cP0_2)
+    cD1_1 = C.star(cP1_1)
+    cD1_2 = C.star(cP1_2)
+    cD0_1 = C.star(cP2_1)
+    cD0_2 = C.star(cP2_2)
 
     inner_product_P0 = C.inner_product(cP0_1, cP0_2)
     inner_product_P1 = C.inner_product(cP1_1, cP1_2)
     inner_product_P2 = C.inner_product(cP2_1, cP2_2)
-    inner_product_all = [inner_product_P0, inner_product_P1, inner_product_P2]
-    inner_product_true_all = [770., 7688., 4960]
+    inner_product_D2 = C.inner_product(cD2_1, cD2_2)
+    inner_product_D1 = C.inner_product(cD1_1, cD1_2)
+    inner_product_D0 = C.inner_product(cD0_1, cD0_2)
+    inner_product_P_all = np.array(
+        [inner_product_P0, inner_product_P1, inner_product_P2])
+    inner_product_D_all = np.array(
+        [inner_product_D2, inner_product_D1, inner_product_D0])
+    p = np.arange(3)
+    inner_product_D_all *= (-1)**((2-p)*p)
     for i in range(3):
-        assert np.allclose(inner_product_all[i], inner_product_true_all[i])
+        assert np.allclose(inner_product_P_all[i], inner_product_D_all[i])
+
+    # tensor-valued test
+    vP0_1 = np.arange(48).reshape((12, 2, 2))
+    vP0_2 = np.arange(48).reshape((12, 2, 2))
+    vP1_1 = np.arange(100).reshape((25, 2, 2))
+    vP1_2 = np.arange(100).reshape((25, 2, 2))
+    vP2_1 = np.arange(56).reshape((14, 2, 2))
+    vP2_2 = np.arange(56).reshape((14, 2, 2))
+
+    cP0_1 = C.CochainP0(S_2, vP0_1)
+    cP0_2 = C.CochainP0(S_2, vP0_2)
+    cP1_1 = C.CochainP1(S_2, vP1_1)
+    cP1_2 = C.CochainP1(S_2, vP1_2)
+    cP2_1 = C.CochainP2(S_2, vP2_1)
+    cP2_2 = C.CochainP2(S_2, vP2_2)
+    cD2_1 = C.star(cP0_1)
+    cD2_2 = C.star(cP0_2)
+    cD1_1 = C.star(cP1_1)
+    cD1_2 = C.star(cP1_2)
+    cD0_1 = C.star(cP2_1)
+    cD0_2 = C.star(cP2_2)
+
+    inner_product_P0 = C.inner_product(cP0_1, cP0_2)
+    inner_product_P1 = C.inner_product(cP1_1, cP1_2)
+    inner_product_P2 = C.inner_product(cP2_1, cP2_2)
+    inner_product_D2 = C.inner_product(cD2_1, cD2_2)
+    inner_product_D1 = C.inner_product(cD1_1, cD1_2)
+    inner_product_D0 = C.inner_product(cD0_1, cD0_2)
+    inner_product_P_all = np.array(
+        [inner_product_P0, inner_product_P1, inner_product_P2])
+    inner_product_D_all = np.array(
+        [inner_product_D2, inner_product_D1, inner_product_D0])
+    p = np.arange(3)
+    inner_product_D_all *= (-1)**((2-p)*p)
+    print(inner_product_P_all)
+    print(inner_product_D_all)
+    for i in range(3):
+        assert np.allclose(inner_product_P_all[i], inner_product_D_all[i])
 
 
 def test_codifferential(setup_test):
