@@ -402,7 +402,8 @@ def deformation_gradient(c: Cochain) -> Cochain:
 
 
 def transpose(c: Cochain) -> Cochain:
-    return Cochain(c.dim, c.is_primal, c.complex, jnp.transpose(c.coeffs, axes=(0, 2, 1)))
+    return Cochain(c.dim, c.is_primal, c.complex, jnp.transpose(c.coeffs,
+                                                                axes=(0, 2, 1)))
 
 
 def trace(c: Cochain) -> Cochain:
@@ -410,4 +411,5 @@ def trace(c: Cochain) -> Cochain:
 
 
 def vector_tensor_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
-    return Cochain(c_T.dim, c_T.is_primal, c_T.complex, c_v.coeffs[:, None, None]*c_T.coeffs)
+    return Cochain(c_T.dim, c_T.is_primal, c_T.complex,
+                   c_v.coeffs[:, None, None]*c_T.coeffs)
