@@ -348,6 +348,10 @@ def inner_product(c1: Cochain, c2: Cochain) -> Array:
     if c1.coeffs.ndim == 1:
         assert c2.coeffs.ndim == 1
         inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
+    elif c1.coeffs.ndim == 2:
+        assert c2.coeffs.ndim == 2
+        c1_coeffs_T = c1.coeffs.T
+        inner_product = dt.backend.trace(c1_coeffs_T @ star_c_2.coeffs)
     elif c1.coeffs.ndim == 3:
         assert c2.coeffs.ndim == 3
         c1_coeffs_T = dt.backend.transpose(c1.coeffs, axes=(0, 2, 1))
@@ -394,7 +398,7 @@ def laplacian(c: Cochain) -> Cochain:
 
 def deformation_gradient(c: Cochain) -> Cochain:
     F = c.complex.get_deformation_gradient(c.coeffs)
-    return Cochain(2, c.is_primal, c.complex, F)
+    return Cochain(0, not c.is_primal, c.complex, F)
 
 
 def transpose(c: Cochain) -> Cochain:
