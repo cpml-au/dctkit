@@ -257,7 +257,6 @@ def coboundary(c: Cochain) -> Cochain:
                               shape=c.complex.S[c.dim+1].shape[0])
     else:
         # FIXME: change sign of the boundary before applying it?
-        print(c.complex.dim - c.dim)
         bnd_coo = c.complex.boundary[c.complex.dim - c.dim]
         dc.coeffs = spmv.spmm(bnd_coo, c.coeffs,
                               transpose=False,
