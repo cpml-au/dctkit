@@ -7,6 +7,7 @@ import pygmsh
 import pytest
 import jax.numpy as jnp
 from functools import partial
+import dctkit.dec.cochain as C
 
 
 cases = [[False, False], [True, False], [True, True]]
@@ -14,7 +15,7 @@ cases = [[False, False], [True, False], [True, True]]
 
 @pytest.mark.parametrize('is_primal,energy_formulation', cases)
 def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulation):
-    lc = 0.5
+    lc = 0.2
     L = 1.
     with pygmsh.geo.Geometry() as geom:
         p = geom.add_polygon([[0., 0.], [L, 0.], [L, L], [0., L]], mesh_size=lc)
@@ -41,7 +42,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
 
     mu_ = 1.
     lambda_ = 10.
-    true_strain_xx = 2
+    true_strain_xx = 0.2
     true_strain_yy = -(lambda_/(2*mu_+lambda_))*true_strain_xx
     true_curr_node_coords = S.node_coords.copy()
     true_curr_node_coords[:, 0] *= 1 + true_strain_xx
@@ -68,8 +69,9 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
     bnd_tractions_free_values = np.zeros((len(idx_free_edges), 2), dtype=dt.float_dtype)
     bnd_tractions_left_right_values = np.zeros(
         (len(left_right_edges_idx)), dtype=dt.float_dtype)
-    boundary_tractions = {'1': (left_right_edges_idx, bnd_tractions_left_right_values),
-                          ':': (idx_free_edges, bnd_tractions_free_values)}
+
+    boundary_tractions = {':': (idx_free_edges, bnd_tractions_free_values),
+                          '1': (left_right_edges_idx, bnd_tractions_left_right_values)}
 
     ela = LinearElasticity(S=S, mu_=mu_, lambda_=lambda_)
     gamma = 100000.
@@ -117,7 +119,8 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
                                       objfun=obj)
 
     prb.set_obj_args(obj_args)
-    sol = prb.solve(x0=x0, ftol_abs=1e-9, ftol_rel=1e-9)
+    sol = prb.solve(x0=x0, ftol_abs=1e-12, ftol_rel=1e-12, maxeval=100000)
+    print(prb.last_opt_result)
 
     if not (energy_formulation or is_primal):
         # post-process solution since in this case we have no penalty

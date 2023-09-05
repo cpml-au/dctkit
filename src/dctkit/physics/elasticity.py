@@ -129,6 +129,7 @@ class LinearElasticity():
         # set tractions on given sub-portions of the boundary
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
         residual = C.add(C.coboundary(forces_bnd_update), f)
+        print(residual.coeffs)
         return residual
 
     def force_balance_residual_dual(self, node_coords: C.CochainP0, f: C.CochainD2,
