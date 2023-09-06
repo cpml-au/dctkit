@@ -126,6 +126,7 @@ class LinearElasticity():
         stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
+        # print(forces.coeffs)
         # set tractions on given sub-portions of the boundary
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
         residual = C.add(C.coboundary(forces_bnd_update), f)
