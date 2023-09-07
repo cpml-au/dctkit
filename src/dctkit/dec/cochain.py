@@ -349,8 +349,8 @@ def inner_product(c1: Cochain, c2: Cochain) -> Array:
         inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
     elif c1.coeffs.ndim == 2:
         assert c2.coeffs.ndim == 2
-        c1_coeffs_T = c1.coeffs.T
-        inner_product = dt.backend.trace(c1_coeffs_T @ star_c_2.coeffs)
+        # c1_coeffs_T = c1.coeffs.T
+        inner_product = dt.backend.sum(c1.coeffs * star_c_2.coeffs)
     elif c1.coeffs.ndim == 3:
         assert c2.coeffs.ndim == 3
         c1_coeffs_T = dt.backend.transpose(c1.coeffs, axes=(0, 2, 1))
