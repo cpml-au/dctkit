@@ -168,7 +168,7 @@ class LinearElasticity():
         residual = C.add(balance, f)
         return residual
 
-    def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2, ext_forces: npt.NDArray | Array) -> float:
+    def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2) -> float:
         """Compute the elasticity energy of isotropic linear elastic materials
         in 2D with no body force using DEC framework.
 
@@ -190,10 +190,11 @@ class LinearElasticity():
         u = C.CochainP1(self.S, u_edge)
         strain_cochain = C.CochainD0(self.S, strain)
         stress_cochain = C.CochainD0(self.S, stress)
-        ext_forces_coch = C.CochainP1(self.S, ext_forces)
-        print(ext_forces * u_edge)
-        elastic_energy = 0.5*C.inner_product(
-            strain_cochain, stress_cochain) - jnp.sum(ext_forces * u_edge)
+        # ext_forces_coch = C.CochainP1(self.S, ext_forces)
+        # print(ext_forces * u_edge)
+        # elastic_energy = 0.5*C.inner_product(
+        #    strain_cochain, stress_cochain) - jnp.sum(ext_forces * u_edge)
+        elastic_energy = 0.5*C.inner_product(strain_cochain, stress_cochain)
         return elastic_energy
 
     def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,
@@ -300,8 +301,7 @@ class LinearElasticity():
     def obj_linear_elasticity_energy(self, node_coords: npt.NDArray | Array,
                                      f: npt.NDArray | Array, gamma: float,
                                      boundary_values:
-                                     Dict[str, Tuple[Array, Array]],
-                                     ext_forces: npt.NDArray | Array) -> float:
+                                     Dict[str, Tuple[Array, Array]]) -> float:
         """
         Objective function of the optimization problem associated to linear elasticity
         (energy formulation) with Dirichlet boundary conditions on a portion of the
@@ -323,7 +323,7 @@ class LinearElasticity():
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
         f_coch = C.CochainP2(complex=self.S, coeffs=f)
-        elastic_energy = self.elasticity_energy(node_coords_coch, f_coch, ext_forces)
+        elastic_energy = self.elasticity_energy(node_coords_coch, f_coch)
         penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
                                                    boundary_values=boundary_values,
                                                    gamma=gamma)
