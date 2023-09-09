@@ -412,3 +412,7 @@ def trace(c: Cochain) -> Cochain:
 def vector_tensor_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
     return Cochain(c_T.dim, c_T.is_primal, c_T.complex,
                    c_v.coeffs[:, None, None]*c_T.coeffs)
+
+
+def sym(c: Cochain) -> Cochain:
+    return scalar_mul(add(c, transpose(c)), 0.5)
