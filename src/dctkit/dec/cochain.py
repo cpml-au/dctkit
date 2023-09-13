@@ -27,6 +27,7 @@ class Cochain():
         self.coeffs = coeffs
 
 
+# automatic generator of cochain subclasses
 str_init = """
 def init(self, complex, coeffs):
     # if not is_primal_:
@@ -349,7 +350,6 @@ def inner_product(c1: Cochain, c2: Cochain) -> Array:
         inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
     elif c1.coeffs.ndim == 2:
         assert c2.coeffs.ndim == 2
-        # c1_coeffs_T = c1.coeffs.T
         inner_product = dt.backend.sum(c1.coeffs * star_c_2.coeffs)
     elif c1.coeffs.ndim == 3:
         assert c2.coeffs.ndim == 3
@@ -396,23 +396,70 @@ def laplacian(c: Cochain) -> Cochain:
 
 
 def deformation_gradient(c: Cochain) -> Cochain:
+    """Compute the deformation gradient of a primal vector-valued 0-cochain
+    representing the node coordinates.
+
+    Args:
+        c: a primal vector-valued 0 cochain.
+
+    Returns:
+        the deformation gradient for each dual nodes, i.e. a dual tensor-valued
+            0-cochain.
+    """
     F = c.complex.get_deformation_gradient(c.coeffs)
     return Cochain(0, not c.is_primal, c.complex, F)
 
 
 def transpose(c: Cochain) -> Cochain:
+    """Compute the transpose of a tensor-valued cochain.
+
+    Args:
+        c: a tensor-valued cochain.
+
+    Returns:
+        its transpose.
+    """
     return Cochain(c.dim, c.is_primal, c.complex, jnp.transpose(c.coeffs,
                                                                 axes=(0, 2, 1)))
 
 
 def trace(c: Cochain) -> Cochain:
+    """Compute the trace of a tensor-valued cochain.
+
+    Args:
+        c: a tensor-valued cochain.
+
+    Returns:
+        its trace.
+    """
     return Cochain(c.dim, c.is_primal, c.complex, jnp.trace(c.coeffs, axis1=1, axis2=2))
 
 
 def vector_tensor_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
+    """Compute the component-wise product between a vector-valued and a tensor-valued
+    cochain (of the same dimension and type).
+
+    Args:
+        c_v: a vector-valued cochain.
+        c_T: a tensor-valued cochain.
+
+    Returns:
+        the component-wise product c_v*c_T.
+
+
+    """
     return Cochain(c_T.dim, c_T.is_primal, c_T.complex,
                    c_v.coeffs[:, None, None]*c_T.coeffs)
 
 
 def sym(c: Cochain) -> Cochain:
+    """Compute the symmetric part of a tensor-valued cochain.
+
+    Args:
+        c: a tensor-valued cochain.
+
+    Returns:
+        its symmetric part.
+
+    """
     return scalar_mul(add(c, transpose(c)), 0.5)

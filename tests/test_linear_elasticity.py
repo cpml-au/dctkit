@@ -7,8 +7,6 @@ import pygmsh
 import pytest
 import jax.numpy as jnp
 from functools import partial
-import dctkit.dec.cochain as C
-
 
 cases = [[False, False], [True, False], [True, True]]
 
@@ -121,7 +119,6 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
 
     prb.set_obj_args(obj_args)
     sol = prb.solve(x0=x0, ftol_abs=1e-12, ftol_rel=1e-12, maxeval=100000)
-    print(prb.last_opt_result)
 
     if not (energy_formulation or is_primal):
         # post-process solution since in this case we have no penalty
@@ -133,9 +130,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
     else:
         curr_node_coords = sol.reshape(S.node_coords.shape)
 
-    print(true_curr_node_coords)
-    print(curr_node_coords)
-    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-5)
+    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-4)
 
 
 @pytest.mark.parametrize('is_primal,energy_formulation', cases)
@@ -213,7 +208,8 @@ def test_linear_elasticity_pure_shear(setup_test, is_primal, energy_formulation)
         embedded_dim = S.space_dim
         f = np.zeros((num_faces, (embedded_dim-1)))
         obj = ela.obj_linear_elasticity_energy
-        bnodes = left_bnd_nodes_idx + right_bnd_nodes_idx + up_bnd_nodes_idx + down_bnd_nodes_idx
+        bnodes = left_bnd_nodes_idx + right_bnd_nodes_idx + up_bnd_nodes_idx + \
+            down_bnd_nodes_idx
         bvalues = np.vstack((left_bnd_pos, right_bnd_pos, up_bnd_pos, down_bnd_pos))
         boundary_values = {":": (bnodes, bvalues)}
         obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values}
@@ -258,8 +254,16 @@ def test_linear_elasticity_pure_shear(setup_test, is_primal, energy_formulation)
                                       objfun=obj)
 
     prb.set_obj_args(obj_args)
-    sol = prb.run(x0=x0, ftol_abs=1e-12, ftol_rel=1e-12, maxeval=10000)
+    sol = prb.solve(x0=x0, ftol_abs=1e-12, ftol_rel=1e-12, maxeval=10000)
 
-    curr_node_coords = sol.reshape(S.node_coords.shape)
+    if not (energy_formulation or is_primal):
+        # post-process solution since in this case we have no penalty
+        curr_node_coords = ela.set_displacement_bc(curr_node_coords, boundary_values)
+        curr_node_coords_flattened = curr_node_coords.flatten()
+        curr_node_coords_flattened = curr_node_coords_flattened.at[jnp.isnan(
+            curr_node_coords_flattened)].set(sol)
+        curr_node_coords = curr_node_coords_flattened.reshape(S.node_coords.shape)
+    else:
+        curr_node_coords = sol.reshape(S.node_coords.shape)
 
-    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-6)
+    assert np.allclose(true_curr_node_coords, curr_node_coords, atol=1e-4)

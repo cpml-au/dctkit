@@ -183,17 +183,8 @@ class LinearElasticity():
         # FIXME: extend to the case of f != 0
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        u_nodes = node_coords.coeffs - self.S.node_coords
-        primal_edges = self.S.S[1]
-        u_edge = 0.5*(u_nodes[primal_edges[:, 0], :] + u_nodes[primal_edges[:, 1], :])
-        # u_coch_coeffs = jnp.sum(u_edge*self.S.primal_edges_vectors, axis=1)
-        u = C.CochainP1(self.S, u_edge)
         strain_cochain = C.CochainD0(self.S, strain)
         stress_cochain = C.CochainD0(self.S, stress)
-        # ext_forces_coch = C.CochainP1(self.S, ext_forces)
-        # print(ext_forces * u_edge)
-        # elastic_energy = 0.5*C.inner_product(
-        #    strain_cochain, stress_cochain) - jnp.sum(ext_forces * u_edge)
         elastic_energy = 0.5*C.inner_product(strain_cochain, stress_cochain)
         return elastic_energy
 
