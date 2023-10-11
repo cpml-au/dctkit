@@ -30,7 +30,6 @@ class Cochain():
 # automatic generator of cochain subclasses
 str_init = """
 def init(self, complex, coeffs):
-    # if not is_primal_:
     self.dim = dim_
     self.is_primal = is_primal_
     self.complex = complex
@@ -140,7 +139,6 @@ def sin(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to sin(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sin(c.coeffs))
     return C
@@ -153,7 +151,6 @@ def arcsin(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to arcsin(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arcsin(c.coeffs))
     return C
@@ -166,7 +163,6 @@ def cos(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to cos(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.cos(c.coeffs))
     return C
@@ -179,7 +175,6 @@ def arccos(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to arccos(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.arccos(c.coeffs))
     return C
@@ -192,7 +187,6 @@ def exp(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to exp(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.exp(c.coeffs))
     return C
@@ -205,7 +199,6 @@ def log(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to log(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.log(c.coeffs))
     return C
@@ -218,7 +211,6 @@ def sqrt(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients equal to sqrt(c.coeffs).
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.sqrt(c.coeffs))
     return C
@@ -231,7 +223,6 @@ def square(c: Cochain) -> Cochain:
         c: a cochain.
     Returns:
         cochain with coefficients squared.
-
     """
     C = Cochain(c.dim, c.is_primal, c.complex, dt.backend.square(c.coeffs))
     return C
@@ -275,7 +266,6 @@ def coboundary_closure(c: CochainP) -> CochainD:
     Returns:
         the coboundary closure of c, resulting in a dual n-cochain with non-zero
         coefficients in the "uncompleted" cells.
-
     """
     n = c.complex.dim
     num_tets = c.complex.S[n].shape[0]
@@ -344,15 +334,14 @@ def inner_product(c1: Cochain, c2: Cochain) -> Array:
 
     # dimension of the complexes must agree
     assert (n == c2.complex.dim)
+    # ndim must agree
+    assert c1.coeffs.ndim == c2.coeffs.ndim
 
     if c1.coeffs.ndim == 1:
-        assert c2.coeffs.ndim == 1
         inner_product = dt.backend.dot(c1.coeffs, star_c_2.coeffs)
     elif c1.coeffs.ndim == 2:
-        assert c2.coeffs.ndim == 2
         inner_product = dt.backend.sum(c1.coeffs * star_c_2.coeffs)
     elif c1.coeffs.ndim == 3:
-        assert c2.coeffs.ndim == 3
         c1_coeffs_T = dt.backend.transpose(c1.coeffs, axes=(0, 2, 1))
         inner_product_per_cell = dt.backend.trace(
             c1_coeffs_T @ star_c_2.coeffs, axis1=1, axis2=2)
@@ -445,8 +434,6 @@ def vector_tensor_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
 
     Returns:
         the component-wise product c_v*c_T.
-
-
     """
     return Cochain(c_T.dim, c_T.is_primal, c_T.complex,
                    c_v.coeffs[:, None, None]*c_T.coeffs)
@@ -460,6 +447,5 @@ def sym(c: Cochain) -> Cochain:
 
     Returns:
         its symmetric part.
-
     """
     return scalar_mul(add(c, transpose(c)), 0.5)
