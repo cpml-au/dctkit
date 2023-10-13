@@ -85,6 +85,7 @@ def test_simplicial_complex_2(setup_test):
     S.get_hodge_star()
     S.get_flat_DPD_weights()
     S.get_flat_DPP_weights()
+    S.get_flat_PDP_weights()
 
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
@@ -179,12 +180,21 @@ def test_simplicial_complex_2(setup_test):
     dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
 
     # define true flat DPD and DPP matrices
-    flat_DPD_weigths_true = np.array([[0., 0., 0.5, 0., 0.5, 0., 0., 0.],
+    flat_DPD_weights_true = np.array([[0., 0., 0.5, 0., 0.5, 0., 0., 0.],
                                       [0., 0., 0.5, 0., 0., 0., 0., 0.5],
                                       [0., 0., 0., 0., 0.5, 0., 0.5, 0.],
                                       [0., 0., 0., 0., 0., 0., 0.5, 0.5]],
                                      dtype=dctkit.float_dtype)
-    flat_DPP_weigths_true = flat_DPD_weigths_true
+    flat_DPP_weights_true = flat_DPD_weights_true
+    flat_PDP_weights_true = np.array([[0.5, 0.5, 0., 0., 0.],
+                                      [0.5, 0., 0., 0.5, 0.],
+                                      [0.35355339, 0., 0., 0., 0.35355339],
+                                      [0., 0.5, 0.5, 0., 0.],
+                                      [0., 0.35355339, 0., 0., 0.35355339],
+                                      [0., 0., 0.5, 0.5, 0.],
+                                      [0., 0., 0.35355339, 0., 0.35355339],
+                                      [0., 0., 0., 0.35355339, 0.35355339]],
+                                     dtype=dctkit.float_dtype)
 
     # define true reference metric
     metric_true = np.stack([np.identity(2)]*4)
@@ -207,10 +217,15 @@ def test_simplicial_complex_2(setup_test):
     assert np.allclose(S.dual_edges_vectors, dual_edges_vectors_true)
     assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
 
-    # test flat DPD and flat DPP
+    # test flat DPD
+    assert np.allclose(S.flat_DPD_weights, flat_DPD_weights_true)
+
+    # test flat DPP
     # FIXME: after extending flat DPP to other dimensions, test it!
-    assert np.allclose(S.flat_DPD_weights, flat_DPD_weigths_true)
-    assert np.allclose(S.flat_DPP_weights, flat_DPP_weigths_true)
+    assert np.allclose(S.flat_DPP_weights, flat_DPP_weights_true)
+
+    # test flat PDP
+    assert np.allclose(S.flat_PDP_weights, flat_PDP_weights_true)
 
     # test metric
     assert np.allclose(S.reference_metric, metric_true)

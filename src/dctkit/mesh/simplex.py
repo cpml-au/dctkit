@@ -300,6 +300,15 @@ class SimplicialComplex:
                 self.get_flat_DPD_weights()
             self.flat_DPP_weights = self.flat_DPD_weights
 
+    def get_flat_PDP_weights(self):
+        num_edges = self.S[1].shape[0]
+        num_nodes = self.num_nodes
+        self.flat_PDP_weights = np.zeros(
+            (num_edges, num_nodes), dtype=dctkit.float_dtype)
+        # FIXME: check if it is possible or not to optimize this routine
+        for i in range(num_edges):
+            self.flat_PDP_weights[i, self.S[1][i]] = self.primal_volumes[1][i]/2
+
     def get_current_covariant_basis(self, node_coords: npt.NDArray | Array) -> Array:
         """Compute the current covariant basis of each face of a 2D simplicial complex.
 

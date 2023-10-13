@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import numpy.typing as npt
-from .cochain import CochainP1, CochainD1
+from dctkit.dec import cochain as C
 from dctkit.mesh import simplex as spx
 from jax import Array
 
@@ -46,7 +46,7 @@ class DiscreteTensorFieldD(DiscreteTensorField):
         super().__init__(S, False, coeffs, rank)
 
 
-def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
+def flat_DPD(v: DiscreteTensorFieldD) -> C.CochainD1:
     """Implements the flat DPD operator for dual discrete vector fields.
 
     Args:
@@ -71,10 +71,10 @@ def flat_DPD(v: DiscreteTensorFieldD) -> CochainD1:
         # to the edge vector of the corresponding dual edge
         weighted_v_T = jnp.transpose(weighted_v, axes=(2, 0, 1))
         coch_coeffs = jnp.einsum("ijk, ik -> ij", weighted_v_T, dedges)
-    return CochainD1(v.S, coch_coeffs)
+    return C.CochainD1(v.S, coch_coeffs)
 
 
-def flat_DPP(v: DiscreteTensorFieldD) -> CochainP1:
+def flat_DPP(v: DiscreteTensorFieldD) -> C.CochainP1:
     """Implements the flat DPP operator for dual discrete vector fields.
 
     Args:
@@ -101,4 +101,8 @@ def flat_DPP(v: DiscreteTensorFieldD) -> CochainP1:
         weighted_v_T = jnp.transpose(weighted_v, axes=(2, 0, 1))
         coch_coeffs = jnp.einsum("ijk, ik -> ij", weighted_v_T,
                                  primal_edges)
-    return CochainP1(v.S, coch_coeffs)
+    return C.CochainP1(v.S, coch_coeffs)
+
+
+def flat_PDP(c: C.CochainP0) -> C.CochainP1:
+    return C.CochainP1(c.complex, c.complex.flat_PDP_weights @ c.coeffs)
