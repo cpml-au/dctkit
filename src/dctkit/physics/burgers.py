@@ -2,7 +2,7 @@ import dctkit as dt_
 from dctkit.mesh import util
 import numpy as np
 from dctkit.dec import cochain as C
-from dctkit.dec.vector import flat_PDP as flat
+from dctkit.dec.vector import flat_PDD as flat
 import numpy.typing as npt
 from typing import Dict
 
@@ -51,13 +51,17 @@ class Burgers():
         self.u[0, :] = self.nodes_BC['left']
         self.u[-1, :] = self.nodes_BC['right']
 
-    def run(self):
+    def run(self, scheme="parabolic"):
         """Main run to solve Burgers' equation with DEC."""
         for t in range(self.num_t_points - 1):
             u_coch = C.CochainP0(self.S, self.u[:, t])
             dissipation = C.scalar_mul(C.star(C.coboundary(u_coch)), self.epsilon)
-            flux = C.scalar_mul(C.square(u_coch), -1/2)
-            mean_flux = flat(flux)
-            total_flux = C.add(C.star(mean_flux), dissipation)
+            if scheme == "upwind":
+                flat_u = flat(u_coch, scheme)
+                flux = C.scalar_mul(C.square(C.star(flat_u)), -1/2)
+            elif scheme == "parabolic":
+                u_sq = C.scalar_mul(C.square(u_coch), -1/2)
+                flux = C.star(flat(u_sq, scheme))
+            total_flux = C.add(C.star(flux), dissipation)
             balance = C.star(C.coboundary(total_flux))
             self.u[1:-1, t+1] = self.u[1:-1, t] + self.dt*balance.coeffs[1:-1]
