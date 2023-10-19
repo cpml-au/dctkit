@@ -45,7 +45,8 @@ class Burgers():
 
     def set_u_BC_IC(self):
         """Set boundary and initial conditions to u."""
-        self.u = np.zeros((self.num_x_points, self.num_t_points), dtype=dt_.float_dtype)
+        self.u = np.zeros((self.num_x_points - 1, self.num_t_points),
+                          dtype=dt_.float_dtype)
         # set initial conditions
         self.u[:, 0] = self.u_0
         self.u[0, :] = self.nodes_BC['left']
@@ -54,7 +55,7 @@ class Burgers():
     def run(self, scheme="parabolic"):
         """Main run to solve Burgers' equation with DEC."""
         for t in range(self.num_t_points - 1):
-            u_coch = C.CochainP0(self.S, self.u[:, t])
+            u_coch = C.CochainD0(self.S, self.u[:, t])
             dissipation = C.scalar_mul(C.star(C.coboundary(u_coch)), self.epsilon)
             if scheme == "upwind":
                 flat_u = flat(u_coch, scheme)
@@ -62,6 +63,6 @@ class Burgers():
             elif scheme == "parabolic":
                 u_sq = C.scalar_mul(C.square(u_coch), -1/2)
                 flux = C.star(flat(u_sq, scheme))
-            total_flux = C.add(C.star(flux), dissipation)
+            total_flux = C.add(flux, dissipation)
             balance = C.star(C.coboundary(total_flux))
             self.u[1:-1, t+1] = self.u[1:-1, t] + self.dt*balance.coeffs[1:-1]
