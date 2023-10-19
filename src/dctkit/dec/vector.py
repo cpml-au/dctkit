@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import numpy.typing as npt
+import dctkit as dt
 from dctkit.dec import cochain as C
 from dctkit.mesh import simplex as spx
 from jax import Array
@@ -106,3 +107,23 @@ def flat_DPP(v: DiscreteTensorFieldD) -> C.CochainP1:
 
 def flat_PDP(c: C.CochainP0) -> C.CochainP1:
     return C.CochainP1(c.complex, c.complex.flat_PDP_weights @ c.coeffs)
+
+
+def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
+    # NOTE: we use periodic boundary conditions
+    # NOTE: only implemented for dim = 1, where dim is the dimension
+    # of the complex
+    dual_volumes = c.complex.dual_volumes[c.complex.dim]
+    flat_c_coeffs = jnp.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
+    if scheme == "upwind":
+        # periodic bc
+        flat_c_coeffs[0] = dual_volumes[0]*c.coeffs[-1]
+        # upwind implementation
+        flat_c_coeffs[1:] = dual_volumes[1:]*c.coeffs
+    elif scheme == "parabolic":
+        # periodic bc
+        flat_c_coeffs[0] = dual_volumes[0]*c.coeffs[-1]
+        flat_c_coeffs[-1] = dual_volumes[-1]*c.coeffs[0]
+        flat_c_coeffs[1:-1] = 0.5 * (dual_volumes[:-1]*c.coeffs[:-1] +
+                                     dual_volumes[1:]*c.coeffs[1:])
+    return C.CochainD1(c.complex, flat_c_coeffs)

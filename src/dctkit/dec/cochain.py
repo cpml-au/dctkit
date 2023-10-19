@@ -6,6 +6,10 @@ import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
 from typeguard import check_type
+import warnings
+
+# suppress all warnings
+warnings.filterwarnings("ignore")
 
 
 class Cochain():
