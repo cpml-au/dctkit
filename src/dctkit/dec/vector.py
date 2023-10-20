@@ -7,6 +7,12 @@ from jax import Array
 import numpy as np
 
 
+class ScalarField():
+    def __init__(self, S: spx.SimplicialComplex, field: callable):
+        self.S = S
+        self.field = field
+
+
 class DiscreteTensorField():
     """Discrete tensor fields class.
 
@@ -127,3 +133,30 @@ def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
         flat_c_coeffs[-1] = dual_volumes[-1]*c.coeffs[0]
         flat_c_coeffs[1:-1] = 0.5 * dual_volumes[1:-1]*(c.coeffs[:-1] + c.coeffs[1:])
     return C.CochainD1(c.complex, flat_c_coeffs)
+
+
+def upwind_interpolation(c: C.CochainD0) -> ScalarField:
+    circ = c.complex.circ[1][:, 0]
+
+    def field(x):
+        # find the index such that circ[i] <= x <= circ[i+1]
+        i = np.searchsorted(circ, x)
+        if i <= 0:
+            # in this case, the value depends on boundary condtions
+            # we pre-set the value to c.coeffs[-1] (periodic BC)
+            return c.coeffs[-1]
+        return c.coeffs[i-1]
+
+    return ScalarField(c.complex, field)
+
+
+def upwind_integration(s: ScalarField) -> C.CochainD1:
+    circ = s.S.node_coords[:, 0]
+    dual_volumes = s.S.dual_volumes[0]
+    field_values = list(map(s.field, circ))
+    coeffs = np.array(field_values)*dual_volumes
+    return C.CochainD1(s.S, coeffs)
+
+
+def flat_PDD_2(c: C.CochainD0) -> C.CochainD1:
+    return upwind_integration(upwind_interpolation(c))
