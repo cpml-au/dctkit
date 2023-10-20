@@ -52,8 +52,12 @@ class Burgers():
         self.u[0, :] = self.nodes_BC['left']
         self.u[-1, :] = self.nodes_BC['right']
 
-    def run(self, scheme="parabolic"):
-        """Main run to solve Burgers' equation with DEC."""
+    def run(self, scheme: str = "parabolic"):
+        """Main run to solve Burgers' equation with DEC.
+
+        Args:
+            scheme: discretization scheme used.
+        """
         for t in range(self.num_t_points - 1):
             u_coch = C.CochainD0(self.S, self.u[:, t])
             dissipation = C.scalar_mul(C.star(C.coboundary(u_coch)), self.epsilon)
