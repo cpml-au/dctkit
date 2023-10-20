@@ -5,6 +5,7 @@ from dctkit.dec import cochain as C
 from dctkit.mesh import simplex as spx
 from jax import Array
 import numpy as np
+from scipy import interpolate
 
 
 class ScalarField():
@@ -136,16 +137,13 @@ def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
 
 
 def upwind_interpolation(c: C.CochainD0) -> ScalarField:
-    circ = c.complex.circ[1][:, 0]
+    S = c.complex
+    circ = S.circ[1][:, 0]
 
     def field(x):
-        # find the index such that circ[i] <= x <= circ[i+1]
-        i = np.searchsorted(circ, x)
-        if i <= 0:
-            # in this case, the value depends on boundary condtions
-            # we pre-set the value to c.coeffs[-1] (periodic BC)
-            return c.coeffs[-1]
-        return c.coeffs[i-1]
+        # find the indices such that circ[idx] <= x <= circ[idx+1] pointwise
+        idx = np.searchsorted(circ, x)
+        return c.coeffs[idx-1]
 
     return ScalarField(c.complex, field)
 
@@ -153,8 +151,7 @@ def upwind_interpolation(c: C.CochainD0) -> ScalarField:
 def upwind_integration(s: ScalarField) -> C.CochainD1:
     circ = s.S.node_coords[:, 0]
     dual_volumes = s.S.dual_volumes[0]
-    field_values = list(map(s.field, circ))
-    coeffs = np.array(field_values)*dual_volumes
+    coeffs = s.field(circ)*dual_volumes
     return C.CochainD1(s.S, coeffs)
 
 
