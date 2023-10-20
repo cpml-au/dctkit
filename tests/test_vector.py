@@ -2,6 +2,7 @@ import numpy as np
 import dctkit as dt
 from dctkit.mesh import util
 import dctkit.dec.vector as V
+from dctkit.dec import cochain as C
 
 
 def test_vector(setup_test):
@@ -34,3 +35,17 @@ def test_vector(setup_test):
     assert np.allclose(c_T_DPD.coeffs, c_T_DPD_true_coeffs)
     assert np.allclose(c_v_DPP.coeffs, c_v_DPP_true_coeffs)
     assert np.allclose(c_T_DPP.coeffs, c_T_DPP_true_coeffs)
+
+
+def test_flat_PDD(setup_test):
+    num_x_points = 11
+    x_max = 1
+    mesh, _ = util.generate_line_mesh(num_x_points, x_max)
+    S = util.build_complex_from_mesh(mesh)
+    S.get_hodge_star()
+
+    c = C.CochainD0(S, np.arange(10))
+    flat_PDD_explicit = V.flat_PDD(c, "upwind")
+    flat_PDD_implicit = V.flat_PDD_2(c)
+
+    assert np.allclose(flat_PDD_explicit.coeffs, flat_PDD_implicit.coeffs)
