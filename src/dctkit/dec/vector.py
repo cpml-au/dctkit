@@ -5,7 +5,6 @@ from dctkit.dec import cochain as C
 from dctkit.mesh import simplex as spx
 from jax import Array
 import numpy as np
-from scipy import interpolate
 
 
 class ScalarField():
