@@ -121,17 +121,18 @@ def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
     # NOTE: only implemented for dim = 1, where dim is the dimension
     # of the complex
     dual_volumes = c.complex.dual_volumes[0]
-    flat_c_coeffs = np.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
+    flat_c_coeffs = jnp.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
     if scheme == "upwind":
         # periodic bc
-        flat_c_coeffs[0] = dual_volumes[0]*c.coeffs[-1]
+        flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
         # upwind implementation
-        flat_c_coeffs[1:] = dual_volumes[1:]*c.coeffs
+        flat_c_coeffs = flat_c_coeffs.at[1:].set(dual_volumes[1:]*c.coeffs)
     elif scheme == "parabolic":
         # periodic bc
-        flat_c_coeffs[0] = dual_volumes[0]*c.coeffs[-1]
-        flat_c_coeffs[-1] = dual_volumes[-1]*c.coeffs[0]
-        flat_c_coeffs[1:-1] = 0.5 * dual_volumes[1:-1]*(c.coeffs[:-1] + c.coeffs[1:])
+        flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
+        flat_c_coeffs = flat_c_coeffs.at[-1].set(dual_volumes[-1]*c.coeffs[0])
+        flat_c_coeffs = flat_c_coeffs.at[1:-1].set(0.5 * dual_volumes[1:-1] *
+                                                   (c.coeffs[:-1] + c.coeffs[1:]))
     return C.CochainD1(c.complex, flat_c_coeffs)
 
 
