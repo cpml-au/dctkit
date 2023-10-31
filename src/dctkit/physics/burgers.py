@@ -41,7 +41,6 @@ class Burgers():
         mesh, _ = util.generate_line_mesh(self.num_x_points, self.x_max)
         self.S = util.build_complex_from_mesh(mesh)
         self.S.get_hodge_star()
-        self.S.get_flat_PDP_weights()
 
     def set_u_BC_IC(self):
         """Set boundary and initial conditions to u."""

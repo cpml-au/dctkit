@@ -11,14 +11,15 @@ def test_burgers(setup_test):
     dx = 0.05
     dx_norm = dx/L
     #  Number of spatial grid points
-    num_x_points_norm = int(L_norm / dx_norm)
+    num_x_points = int(L / dx)
+    num_x_points_norm = num_x_points
 
     # vector containing spatial points
-    x_norm = np.linspace(0, L_norm, num_x_points_norm)
-    x_norm_circ = (x_norm[:-1] + x_norm[1:])/2
+    x = np.linspace(0, L, num_x_points)
+    x_circ = (x[:-1] + x[1:])/2
 
     # initial velocity
-    u_0 = 2 * np.exp(-2 * (x_norm_circ - 0.5 * L)**2)
+    u_0 = 2 * np.exp(-2 * (x_circ - 0.5 * L)**2)
     umax = np.max(u_0)
 
     # TIME PARAMS
@@ -31,7 +32,7 @@ def test_burgers(setup_test):
     num_t_points_norm = int(T_norm / dt_norm)
 
     # Viscosity
-    epsilon = 0.06
+    epsilon = 0.05
     epsilon_norm = epsilon/(L*umax)
 
     nodes_BC = {'left': np.zeros(num_t_points_norm),
@@ -66,5 +67,5 @@ def test_burgers(setup_test):
     total_err_par = np.mean(np.linalg.norm(u_FDM_par - prb_par.u, axis=0)**2)
     total_err_up = np.mean(np.linalg.norm(u_FDM_up - prb_up.u, axis=0)**2)
 
-    assert total_err_par < 5e-2
-    assert total_err_up < 5e-2
+    assert total_err_par < 1e-2
+    assert total_err_up < 1e-2
