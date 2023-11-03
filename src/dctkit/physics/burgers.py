@@ -5,6 +5,7 @@ from dctkit.dec import cochain as C
 from dctkit.dec.vector import flat_PDD as flat
 import numpy.typing as npt
 from typing import Dict
+import math
 
 
 class Burgers():
@@ -30,7 +31,8 @@ class Burgers():
         self.nodes_BC = nodes_BC
         self.epsilon = epsilon
         self.num_x_points = int(self.x_max/self.dx)
-        self.num_t_points = int(self.t_max/self.dt)
+        # simple trick to round up
+        self.num_t_points = int(math.ceil(self.t_max/self.dt))
         # define complex
         self.__get_burgers_mesh()
         # initialize u with boundary and initial conditions
