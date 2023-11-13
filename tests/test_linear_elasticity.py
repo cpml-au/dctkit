@@ -78,7 +78,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
     if energy_formulation:
         num_faces = S.S[2].shape[0]
         embedded_dim = S.space_dim
-        f = np.zeros((num_faces, (embedded_dim-1)))
+        f = np.zeros((S.num_nodes, embedded_dim))
         obj = ela.obj_linear_elasticity_energy
         obj_args = {'f': f, 'gamma': gamma, 'boundary_values': boundary_values}
         x0 = S.node_coords.flatten()
@@ -206,7 +206,7 @@ def test_linear_elasticity_pure_shear(setup_test, is_primal, energy_formulation)
     if energy_formulation:
         num_faces = S.S[2].shape[0]
         embedded_dim = S.space_dim
-        f = np.zeros((num_faces, (embedded_dim-1)))
+        f = np.zeros((S.num_nodes, embedded_dim))
         obj = ela.obj_linear_elasticity_energy
         bnodes = left_bnd_nodes_idx + right_bnd_nodes_idx + up_bnd_nodes_idx + \
             down_bnd_nodes_idx
