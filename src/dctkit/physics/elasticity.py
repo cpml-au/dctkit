@@ -168,7 +168,7 @@ class LinearElasticity():
         residual = C.add(balance, f)
         return residual
 
-    def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP2) -> float:
+    def elasticity_energy(self, node_coords: C.CochainP0, f: C.CochainP0) -> float:
         """Compute the elasticity energy of isotropic linear elastic materials
         in 2D with no body force using DEC framework.
 
@@ -185,7 +185,11 @@ class LinearElasticity():
         stress = self.get_stress(strain=strain)
         strain_cochain = C.CochainD0(self.S, strain)
         stress_cochain = C.CochainD0(self.S, stress)
-        elastic_energy = 0.5*C.inner_product(strain_cochain, stress_cochain)
+        ref_node_coords = C.CochainP0(self.S, self.S.node_coords)
+        displacement = C.sub(node_coords, ref_node_coords)
+        elastic_energy = 0.5 * \
+            C.inner_product(strain_cochain, stress_cochain) - \
+            C.inner_product(displacement, f)
         return elastic_energy
 
     def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,
@@ -313,7 +317,7 @@ class LinearElasticity():
         """
         node_coords_reshaped = node_coords.reshape(self.S.node_coords.shape)
         node_coords_coch = C.CochainP0(complex=self.S, coeffs=node_coords_reshaped)
-        f_coch = C.CochainP2(complex=self.S, coeffs=f)
+        f_coch = C.CochainP0(complex=self.S, coeffs=f)
         elastic_energy = self.elasticity_energy(node_coords_coch, f_coch)
         penalty = self.get_penalty_displacement_bc(node_coords=node_coords_reshaped,
                                                    boundary_values=boundary_values,
