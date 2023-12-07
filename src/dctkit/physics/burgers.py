@@ -6,6 +6,7 @@ from dctkit.dec.vector import flat_PDD as flat
 import numpy.typing as npt
 from typing import Dict
 import math
+import gmsh
 
 
 class Burgers():
@@ -21,32 +22,31 @@ class Burgers():
         epsilon: viscosity.
     """
 
-    def __init__(self, x_max: float, t_max: float, dx: float, dt: float,
-                 u_0: npt.NDArray, nodes_BC: Dict, epsilon: float):
-        self.x_max = x_max
+    def __init__(self, S, t_max: float, dt: float, u_0: npt.NDArray, nodes_BC: Dict, epsilon: float):
+        self.S = S
         self.t_max = t_max
-        self.dx = dx
         self.dt = dt
         self.u_0 = u_0
         self.nodes_BC = nodes_BC
         self.epsilon = epsilon
-        self.num_x_points = int(self.x_max/self.dx)
+        # self.num_x_points = int(self.x_max/self.dx)
         # simple trick to round up
         self.num_t_points = int(math.ceil(self.t_max/self.dt))
         # define complex
-        self.__get_burgers_mesh()
+        # self.__get_burgers_mesh()
         # initialize u with boundary and initial conditions
         self.set_u_BC_IC()
 
-    def __get_burgers_mesh(self):
-        """Define simplicial complex."""
-        mesh, _ = util.generate_line_mesh(self.num_x_points, self.x_max)
-        self.S = util.build_complex_from_mesh(mesh)
-        self.S.get_hodge_star()
+    # def __get_burgers_mesh(self):
+    #    """Define simplicial complex."""
+    #    gmsh.option.setNumber("General.ExpertMode", 1)
+    #    mesh, _ = util.generate_line_mesh(self.num_x_points, self.x_max)
+    #    self.S = util.build_complex_from_mesh(mesh)
+    #    self.S.get_hodge_star()
 
     def set_u_BC_IC(self):
         """Set boundary and initial conditions to u."""
-        self.u = np.zeros((self.num_x_points - 1, self.num_t_points),
+        self.u = np.zeros((self.S.num_nodes - 1, self.num_t_points),
                           dtype=dt_.float_dtype)
         # set initial conditions
         self.u[:, 0] = self.u_0

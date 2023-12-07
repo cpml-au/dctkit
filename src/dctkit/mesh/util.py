@@ -113,7 +113,7 @@ def generate_cube_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
     return mesh, geom
 
 
-def generate_line_mesh(num_nodes: int, L: float = 1.) -> Tuple[Mesh, Geometry]:
+def generate_line_mesh(num_nodes: int, L: float = 1., x_min=0.) -> Tuple[Mesh, Geometry]:
     """Generate a uniform mesh in an interval of given length.
 
     Args:
@@ -126,12 +126,12 @@ def generate_line_mesh(num_nodes: int, L: float = 1.) -> Tuple[Mesh, Geometry]:
     lc = L/(num_nodes-1)
     points = [None]*num_nodes
     with Geometry() as g:
-        points[0] = g.add_point([0., 0.], lc)
+        points[0] = g.add_point([x_min, 0.], lc)
         # we have to add one line for each element of the mesh, otherwise if we mesh one
         # line for the whole interval [0, L] the end nodes are going to be the first two
         # items in the mesh.points matrix.
         for i in range(1, num_nodes):
-            points[i] = g.add_point([i*lc, 0.], lc)
+            points[i] = g.add_point([x_min + i*lc, 0.], lc)
             # see also test_hex in pygmsh library's tests
             new_line_points = [points[i-1], points[i]]
             g.add_line(*new_line_points)
