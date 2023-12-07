@@ -130,12 +130,12 @@ class LinearElasticity():
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
-
-    def force_balance_residual_dual(self, node_coords: C.CochainP0, f: C.CochainD2,
-                                    boundary_tractions:
-                                    Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
+    
+    def get_dual_balance(self, node_coords: C.CochainP0,
+                        boundary_tractions:
+                        Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
         """Compute the residual of the discrete balance equation in the case
-          of isotropic linear elastic materials in 2D using DEC framework.
+            of isotropic linear elastic materials in 2D using DEC framework.
 
         Args:
             node_coords: primal vector valued 0-cochain of node coordinates
@@ -165,6 +165,29 @@ class LinearElasticity():
         balance_forces_closure = C.coboundary_closure(forces_closure_update)
         balance = C.add(C.coboundary(forces), balance_forces_closure)
         # balance = C.coboundary(forces)
+        return balance
+
+    def force_balance_residual_dual(self, node_coords: C.CochainP0, f: C.CochainD2,
+                                    boundary_tractions:
+                                    Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
+        """Compute the residual of the discrete balance equation in the case
+          of isotropic linear elastic materials in 2D using DEC framework.
+
+        Args:
+            node_coords: primal vector valued 0-cochain of node coordinates
+                of the current configuration.
+            f: dual vector-valued 2-cochain of sources.
+            boundary_tractions: a dictionary of tuples. Each key represent the type
+                of coordinate to manipulate (x,y, or both), while each tuple consists
+                of two jax arrays, in which the first encordes the indices where we
+                want to impose the boundary tractions, while the last encodes the
+                boundary traction values themselves.
+
+        Returns:
+            the residual vector-valued cochain.
+
+        """
+        balance = self.get_dual_balance(node_coords, boundary_tractions)
         residual = C.add(balance, f)
         return residual
 
