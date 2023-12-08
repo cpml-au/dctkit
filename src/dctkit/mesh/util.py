@@ -113,7 +113,8 @@ def generate_cube_mesh(lc: float, L: float = 1.) -> Tuple[Mesh, Geometry]:
     return mesh, geom
 
 
-def generate_line_mesh(num_nodes: int, L: float = 1., x_min=0.) -> Tuple[Mesh, Geometry]:
+def generate_line_mesh(num_nodes: int, L: float = 1.,
+                       x_min: float = 0.) -> Tuple[Mesh, Geometry]:
     """Generate a uniform mesh in an interval of given length.
 
     Args:

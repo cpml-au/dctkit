@@ -130,11 +130,11 @@ class LinearElasticity():
         forces_bnd_update = self.set_boundary_tractions(forces, boundary_tractions)
         residual = C.add(C.coboundary(forces_bnd_update), f)
         return residual
-    
+
     def get_dual_balance(self, node_coords: C.CochainP0,
-                        boundary_tractions:
-                        Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
-        """Compute the residual of the discrete balance equation in the case
+                         boundary_tractions:
+                         Dict[str, Tuple[Array, Array]]) -> C.CochainD2:
+        """Compute the balance of the discrete balance equation in the case
             of isotropic linear elastic materials in 2D using DEC framework.
 
         Args:
@@ -148,7 +148,7 @@ class LinearElasticity():
                 boundary traction values themselves.
 
         Returns:
-            the residual vector-valued cochain.
+            the balance vector-valued cochain.
 
         """
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
