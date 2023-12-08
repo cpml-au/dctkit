@@ -1,6 +1,7 @@
 import numpy as np
 import dctkit as dt_
 from dctkit.physics import burgers as b
+from dctkit.mesh import util
 
 
 def test_burgers(setup_test):
@@ -58,9 +59,12 @@ def test_burgers(setup_test):
     u_FDM_par = FDM_run(u_FDM_par, epsilon_norm, "parabolic")
     u_FDM_up = FDM_run(u_FDM_up, 0, "upwind")
 
-    prb_par = b.Burgers(L_norm, T_norm, dx_norm, dt_norm,
-                        u_0/umax, nodes_BC, epsilon_norm)
-    prb_up = b.Burgers(L_norm, T_norm, dx_norm, dt_norm, u_0/umax, nodes_BC, 0)
+    mesh, _ = util.generate_line_mesh(num_x_points_norm, L_norm)
+    S = util.build_complex_from_mesh(mesh)
+    S.get_hodge_star()
+
+    prb_par = b.Burgers(S, T_norm, dt_norm, u_0/umax, nodes_BC, epsilon_norm)
+    prb_up = b.Burgers(S, T_norm, dt_norm, u_0/umax, nodes_BC, 0)
     prb_par.run(scheme="parabolic")
     prb_up.run(scheme="upwind")
 

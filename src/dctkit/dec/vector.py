@@ -121,7 +121,12 @@ def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
     # NOTE: only implemented for dim = 1, where dim is the dimension
     # of the complex
     dual_volumes = c.complex.dual_volumes[0]
-    flat_c_coeffs = jnp.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
+    # FIXME: rewrite this!
+    if c.coeffs.ndim == 1:
+        flat_c_coeffs = jnp.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
+    elif c.coeffs.ndim == 2:
+        flat_c_coeffs = jnp.zeros(
+            (c.complex.num_nodes, c.coeffs.shape[1]), dtype=dt.float_dtype)
     if scheme == "upwind":
         # periodic bc
         flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
@@ -131,8 +136,8 @@ def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
         # periodic bc
         flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
         flat_c_coeffs = flat_c_coeffs.at[-1].set(dual_volumes[-1]*c.coeffs[0])
-        flat_c_coeffs = flat_c_coeffs.at[1:-1].set(0.5 * dual_volumes[1:-1] *
-                                                   (c.coeffs[:-1] + c.coeffs[1:]))
+        flat_c_coeffs = flat_c_coeffs.at[1:-1].set(0.5 * (dual_volumes[1:-1] *
+                                                   (c.coeffs[:-1] + c.coeffs[1:]).T).T)
     return C.CochainD1(c.complex, flat_c_coeffs)
 
 

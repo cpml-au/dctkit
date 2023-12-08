@@ -429,7 +429,7 @@ def trace(c: Cochain) -> Cochain:
 
 
 def tensor_coch_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
-    """Compute the component-wise product between a scalar- or vector-valued and a 
+    """Compute the component-wise product between a scalar- or vector-valued and a
     tensor-valued cochain (of the same dimension and type).
 
     Args:
