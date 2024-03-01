@@ -2,6 +2,7 @@ import numpy as np
 import dctkit
 from dctkit.mesh import util
 from dctkit.dec import cochain as C
+from dctkit.experimental.coboundary_closure import coboundary_closure
 
 
 def test_coboundary(setup_test):
@@ -607,6 +608,6 @@ def test_coboundary_closure(setup_test):
     S_2.get_hodge_star()
 
     c = C.CochainP1(complex=S_2, coeffs=np.arange(1, 9, dtype=dctkit.float_dtype))
-    cob_clos_c = C.coboundary_closure(c)
+    cob_clos_c = coboundary_closure(c)
     cob_clos_c_true = np.array([-0.5,  2.5,  5.,  2.,  0.], dtype=dctkit.float_dtype)
     assert np.allclose(cob_clos_c.coeffs, cob_clos_c_true)
