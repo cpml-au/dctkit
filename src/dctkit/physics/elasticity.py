@@ -1,5 +1,6 @@
 import numpy.typing as npt
 from dctkit.mesh.simplex import SimplicialComplex
+from dctkit.experimental.coboundary_closure import coboundary_closure
 import dctkit.dec.cochain as C
 import dctkit.dec.flat as V
 from jax import Array
@@ -163,7 +164,7 @@ class LinearElasticity():
         # set tractions on given sub-portions of the boundary
         forces_closure_update = self.set_boundary_tractions(
             forces_closure, boundary_tractions)
-        balance_forces_closure = C.coboundary_closure(forces_closure_update)
+        balance_forces_closure = coboundary_closure(forces_closure_update)
         balance = C.add(C.coboundary(forces), balance_forces_closure)
         # balance = C.coboundary(forces)
         return balance

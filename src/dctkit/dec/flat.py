@@ -1,5 +1,4 @@
 import jax.numpy as jnp
-import dctkit as dt
 from dctkit.dec import cochain as C
 
 
@@ -63,28 +62,3 @@ def flat_DPP(c: C.CochainD0V | C.CochainD0T) -> C.CochainP1:
 
 def flat_PDP(c: C.CochainP0) -> C.CochainP1:
     return C.CochainP1(c.complex, c.complex.flat_PDP_weights @ c.coeffs)
-
-
-def flat_PDD(c: C.CochainD0, scheme: str) -> C.CochainD1:
-    # NOTE: we use periodic boundary conditions
-    # NOTE: only implemented for dim = 1, where dim is the dimension
-    # of the complex
-    dual_volumes = c.complex.dual_volumes[0]
-    # FIXME: rewrite this!
-    if c.coeffs.ndim == 1:
-        flat_c_coeffs = jnp.zeros(c.complex.num_nodes, dtype=dt.float_dtype)
-    elif c.coeffs.ndim == 2:
-        flat_c_coeffs = jnp.zeros(
-            (c.complex.num_nodes, c.coeffs.shape[1]), dtype=dt.float_dtype)
-    if scheme == "upwind":
-        # periodic bc
-        flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
-        # upwind implementation
-        flat_c_coeffs = flat_c_coeffs.at[1:].set(dual_volumes[1:]*c.coeffs)
-    elif scheme == "parabolic":
-        # periodic bc
-        flat_c_coeffs = flat_c_coeffs.at[0].set(dual_volumes[0]*c.coeffs[-1])
-        flat_c_coeffs = flat_c_coeffs.at[-1].set(dual_volumes[-1]*c.coeffs[0])
-        flat_c_coeffs = flat_c_coeffs.at[1:-1].set(0.5 * (dual_volumes[1:-1] *
-                                                   (c.coeffs[:-1] + c.coeffs[1:]).T).T)
-    return C.CochainD1(c.complex, flat_c_coeffs)
