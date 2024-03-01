@@ -19,10 +19,15 @@ def test_flat(setup_test):
     v = C.CochainD0V(S, v_coeffs)
     T = C.CochainD0T(S, T_coeffs)
 
-    c_v_DPD = V.flat_DPD(v)
-    c_T_DPD = V.flat_DPD(T)
-    c_v_DPP = V.flat_DPP(v)
-    c_T_DPP = V.flat_DPP(T)
+    dedges = S.dual_edges_vectors[:, :v.coeffs.shape[0]]
+    pedges = S.primal_edges_vectors[:, :v.coeffs.shape[0]]
+    dual_edges_coch = C.CochainD1V(complex=S, coeffs=dedges)
+    primal_edges_coch = C.CochainP1V(complex=S, coeffs=pedges)
+
+    c_v_DPD = V.flat(v, S.flat_DPD_weights, dual_edges_coch)
+    c_T_DPD = V.flat(T, S.flat_DPD_weights, dual_edges_coch)
+    c_v_DPP = V.flat(v, S.flat_DPP_weights, primal_edges_coch)
+    c_T_DPP = V.flat(T, S.flat_DPP_weights, primal_edges_coch)
 
     c_v_DPD_true_coeffs = S.dual_edges_vectors.sum(axis=1)
     c_T_DPD_true_coeffs = np.ones((12, 3), dtype=dt.float_dtype)
