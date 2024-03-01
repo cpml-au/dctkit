@@ -97,8 +97,8 @@ def test_optimal_control_poisson(setup_test):
         f_coch = C.CochainP0(S, f*np.ones(dim_0, dtype=dt.float_dtype))
         u_coch = C.CochainP0(S, u)
         du = C.coboundary(u_coch)
-        norm_grad = k/2.*C.inner_product(du, du)
-        bound_term = -C.inner_product(u_coch, f_coch)
+        norm_grad = k/2.*C.inner(du, du)
+        bound_term = -C.inner(u_coch, f_coch)
         penalty = 0.5*gamma*dt.backend.sum((u[pos] - value)**2)
         energy = norm_grad + bound_term + penalty
         return energy
