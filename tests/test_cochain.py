@@ -341,8 +341,8 @@ def test_inner_product(setup_test):
     cP1_1 = C.CochainP1(complex=S_1, coeffs=vP1_1)
     cP1_2 = C.CochainP1(complex=S_1, coeffs=vP1_2)
 
-    inner_productP0 = C.inner_product(cP0_1, cP0_2)
-    inner_productP1 = C.inner_product(cP1_1, cP1_2)
+    inner_productP0 = C.inner(cP0_1, cP0_2)
+    inner_productP1 = C.inner(cP1_1, cP1_2)
     inner_product_all = [inner_productP0, inner_productP1]
     inner_productP0_true = np.dot(vP0_1, S_1.hodge_star[0]*vP0_2)
     inner_productP1_true = np.dot(vP1_1, S_1.hodge_star[1]*vP1_2)
@@ -366,9 +366,9 @@ def test_inner_product(setup_test):
     cP2_1 = C.CochainP2(complex=S_2, coeffs=vP2_1)
     cP2_2 = C.CochainP2(complex=S_2, coeffs=vP2_2)
 
-    inner_productP0 = C.inner_product(cP0_1, cP0_2)
-    inner_productP1 = C.inner_product(cP1_1, cP1_2)
-    inner_productP2 = C.inner_product(cP2_1, cP2_2)
+    inner_productP0 = C.inner(cP0_1, cP0_2)
+    inner_productP1 = C.inner(cP1_1, cP1_2)
+    inner_productP2 = C.inner(cP2_1, cP2_2)
     inner_product_all = [inner_productP0, inner_productP1, inner_productP2]
     inner_productP0_true = np.dot(vP0_1, S_2.hodge_star[0]*vP0_2)
     inner_productP1_true = np.dot(vP1_1, S_2.hodge_star[1]*vP1_2)
@@ -399,10 +399,10 @@ def test_inner_product(setup_test):
     cP3_1 = C.CochainP3(complex=S_3, coeffs=vP3_1)
     cP3_2 = C.CochainP3(complex=S_3, coeffs=vP3_2)
 
-    inner_productP0 = C.inner_product(cP0_1, cP0_2)
-    inner_productP1 = C.inner_product(cP1_1, cP1_2)
-    inner_productP2 = C.inner_product(cP2_1, cP2_2)
-    inner_productP3 = C.inner_product(cP3_1, cP3_2)
+    inner_productP0 = C.inner(cP0_1, cP0_2)
+    inner_productP1 = C.inner(cP1_1, cP1_2)
+    inner_productP2 = C.inner(cP2_1, cP2_2)
+    inner_productP3 = C.inner(cP3_1, cP3_2)
     inner_product_all = [inner_productP0,
                          inner_productP1, inner_productP2, inner_productP3]
     inner_productP0_true = np.dot(vP0_1, S_3.hodge_star[0]*vP0_2)
@@ -438,12 +438,12 @@ def test_inner_product(setup_test):
     cD0_1 = C.star(cP2_1)
     cD0_2 = C.star(cP2_2)
 
-    inner_product_P0 = C.inner_product(cP0_1, cP0_2)
-    inner_product_P1 = C.inner_product(cP1_1, cP1_2)
-    inner_product_P2 = C.inner_product(cP2_1, cP2_2)
-    inner_product_D2 = C.inner_product(cD2_1, cD2_2)
-    inner_product_D1 = C.inner_product(cD1_1, cD1_2)
-    inner_product_D0 = C.inner_product(cD0_1, cD0_2)
+    inner_product_P0 = C.inner(cP0_1, cP0_2)
+    inner_product_P1 = C.inner(cP1_1, cP1_2)
+    inner_product_P2 = C.inner(cP2_1, cP2_2)
+    inner_product_D2 = C.inner(cD2_1, cD2_2)
+    inner_product_D1 = C.inner(cD1_1, cD1_2)
+    inner_product_D0 = C.inner(cD0_1, cD0_2)
     inner_product_P_all = np.array(
         [inner_product_P0, inner_product_P1, inner_product_P2])
     inner_product_D_all = np.array(
@@ -474,12 +474,12 @@ def test_inner_product(setup_test):
     cD0_1 = C.star(cP2_1)
     cD0_2 = C.star(cP2_2)
 
-    inner_product_P0 = C.inner_product(cP0_1, cP0_2)
-    inner_product_P1 = C.inner_product(cP1_1, cP1_2)
-    inner_product_P2 = C.inner_product(cP2_1, cP2_2)
-    inner_product_D2 = C.inner_product(cD2_1, cD2_2)
-    inner_product_D1 = C.inner_product(cD1_1, cD1_2)
-    inner_product_D0 = C.inner_product(cD0_1, cD0_2)
+    inner_product_P0 = C.inner(cP0_1, cP0_2)
+    inner_product_P1 = C.inner(cP1_1, cP1_2)
+    inner_product_P2 = C.inner(cP2_1, cP2_2)
+    inner_product_D2 = C.inner(cD2_1, cD2_2)
+    inner_product_D1 = C.inner(cD1_1, cD1_2)
+    inner_product_D0 = C.inner(cD0_1, cD0_2)
     inner_product_P_all = np.array(
         [inner_product_P0, inner_product_P1, inner_product_P2])
     inner_product_D_all = np.array(
@@ -516,11 +516,11 @@ def test_codifferential(setup_test):
     cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
     cD1 = C.CochainD1(complex=S_1, coeffs=vD1)
 
-    innerP0P1 = C.inner_product(C.coboundary(cP0), cP1)
-    innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
+    innerP0P1 = C.inner(C.coboundary(cP0), cP1)
+    innerD0D1 = C.inner(C.coboundary(cD0), cD1)
     inner_all = [innerP0P1, innerD0D1]
-    cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
-    cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
+    cod_innerP0P1 = C.inner(cP0, C.codifferential(cP1))
+    cod_innerD0D1 = C.inner(cD0, C.codifferential(cD1))
     cod_inner_all = [cod_innerP0P1, cod_innerD0D1]
 
     for i in range(2):
@@ -544,15 +544,15 @@ def test_codifferential(setup_test):
     cD1 = C.CochainD1(complex=S_2, coeffs=vD1)
     cD2 = C.CochainD2(complex=S_2, coeffs=vD2)
 
-    innerP0P1 = C.inner_product(C.coboundary(cP0), cP1)
-    innerP1P2 = C.inner_product(C.coboundary(cP1), cP2)
-    innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
-    innerD1D2 = C.inner_product(C.coboundary(cD1), cD2)
+    innerP0P1 = C.inner(C.coboundary(cP0), cP1)
+    innerP1P2 = C.inner(C.coboundary(cP1), cP2)
+    innerD0D1 = C.inner(C.coboundary(cD0), cD1)
+    innerD1D2 = C.inner(C.coboundary(cD1), cD2)
     inner_all = [innerP0P1, innerP1P2, innerD0D1, innerD1D2]
-    cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
-    cod_innerP1P2 = C.inner_product(cP1, C.codifferential(cP2))
-    cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
-    cod_innerD1D2 = C.inner_product(cD1, C.codifferential(cD2))
+    cod_innerP0P1 = C.inner(cP0, C.codifferential(cP1))
+    cod_innerP1P2 = C.inner(cP1, C.codifferential(cP2))
+    cod_innerD0D1 = C.inner(cD0, C.codifferential(cD1))
+    cod_innerD1D2 = C.inner(cD1, C.codifferential(cD2))
     cod_inner_all = [cod_innerP0P1, cod_innerP1P2, cod_innerD0D1, cod_innerD1D2]
 
     for i in range(4):
@@ -581,19 +581,19 @@ def test_codifferential(setup_test):
     cD2 = C.CochainD2(complex=S_3, coeffs=vD2)
     cD3 = C.CochainD3(complex=S_3, coeffs=vD3)
 
-    innerP0P1 = C.inner_product(C.coboundary(cP0), cP1)
-    innerP1P2 = C.inner_product(C.coboundary(cP1), cP2)
-    innerP2P3 = C.inner_product(C.coboundary(cP2), cP3)
-    innerD0D1 = C.inner_product(C.coboundary(cD0), cD1)
-    innerD1D2 = C.inner_product(C.coboundary(cD1), cD2)
-    innerD2D3 = C.inner_product(C.coboundary(cD2), cD3)
+    innerP0P1 = C.inner(C.coboundary(cP0), cP1)
+    innerP1P2 = C.inner(C.coboundary(cP1), cP2)
+    innerP2P3 = C.inner(C.coboundary(cP2), cP3)
+    innerD0D1 = C.inner(C.coboundary(cD0), cD1)
+    innerD1D2 = C.inner(C.coboundary(cD1), cD2)
+    innerD2D3 = C.inner(C.coboundary(cD2), cD3)
     inner_all = [innerP0P1, innerP1P2, innerP2P3, innerD0D1, innerD1D2, innerD2D3]
-    cod_innerP0P1 = C.inner_product(cP0, C.codifferential(cP1))
-    cod_innerP1P2 = C.inner_product(cP1, C.codifferential(cP2))
-    cod_innerP2P3 = C.inner_product(cP2, C.codifferential(cP3))
-    cod_innerD0D1 = C.inner_product(cD0, C.codifferential(cD1))
-    cod_innerD1D2 = C.inner_product(cD1, C.codifferential(cD2))
-    cod_innerD2D3 = C.inner_product(cD2, C.codifferential(cD3))
+    cod_innerP0P1 = C.inner(cP0, C.codifferential(cP1))
+    cod_innerP1P2 = C.inner(cP1, C.codifferential(cP2))
+    cod_innerP2P3 = C.inner(cP2, C.codifferential(cP3))
+    cod_innerD0D1 = C.inner(cD0, C.codifferential(cD1))
+    cod_innerD1D2 = C.inner(cD1, C.codifferential(cD2))
+    cod_innerD2D3 = C.inner(cD2, C.codifferential(cD3))
     cod_inner_all = [cod_innerP0P1, cod_innerP1P2,
                      cod_innerP2P3, cod_innerD0D1, cod_innerD1D2, cod_innerD2D3]
 

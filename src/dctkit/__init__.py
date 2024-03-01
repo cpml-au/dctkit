@@ -1,7 +1,7 @@
 import sys
 import enum
 import jax.numpy as jnp
-from jax.config import config as cfg
+from jax import config as cfg
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`

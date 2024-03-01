@@ -1,7 +1,7 @@
 import numpy.typing as npt
 from dctkit.mesh.simplex import SimplicialComplex
 import dctkit.dec.cochain as C
-import dctkit.dec.vector as V
+import dctkit.dec.flat as V
 from jax import Array
 import jax.numpy as jnp
 from typing import Tuple, Dict
@@ -123,7 +123,7 @@ class LinearElasticity():
         """
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
+        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress.T)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
         # set tractions on given sub-portions of the boundary
@@ -153,7 +153,8 @@ class LinearElasticity():
         """
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        stress_tensor = V.DiscreteTensorFieldD(S=self.S, coeffs=stress.T, rank=2)
+        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress.T)
+        print(stress.ndim)
         # compute forces on dual edges
         stress_integrated = V.flat_DPP(stress_tensor)
         forces = C.star(stress_integrated)
@@ -211,8 +212,8 @@ class LinearElasticity():
         ref_node_coords = C.CochainP0(self.S, self.S.node_coords)
         displacement = C.sub(node_coords, ref_node_coords)
         elastic_energy = 0.5 * \
-            C.inner_product(strain_cochain, stress_cochain) - \
-            C.inner_product(displacement, f)
+            C.inner(strain_cochain, stress_cochain) - \
+            C.inner(displacement, f)
         return elastic_energy
 
     def obj_linear_elasticity_primal(self, node_coords: npt.NDArray | Array,

@@ -120,8 +120,8 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 f = C.Cochain(0, True, S, f)
                 u = C.Cochain(0, True, S, x)
                 du = C.coboundary(u)
-                norm_grad = k/2.*C.inner_product(du, du)
-                bound_term = -C.inner_product(u, f)
+                norm_grad = k/2.*C.inner(du, du)
+                bound_term = -C.inner(u, f)
                 penalty = 0.5*gamma*dt.backend.sum((x[pos] - value)**2)
                 energy = norm_grad + bound_term + penalty
                 return energy

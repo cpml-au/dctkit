@@ -1,11 +1,11 @@
 import numpy as np
 import dctkit as dt
 from dctkit.mesh import util
-import dctkit.dec.vector as V
+import dctkit.dec.flat as V
 from dctkit.dec import cochain as C
 
 
-def test_vector(setup_test):
+def test_flat(setup_test):
     mesh, _ = util.generate_hexagon_mesh(1., 1.)
     S = util.build_complex_from_mesh(mesh)
     S.get_hodge_star()
@@ -16,8 +16,8 @@ def test_vector(setup_test):
     v_coeffs = np.ones((S.space_dim, S.S[2].shape[0]), dtype=dt.float_dtype)
     T_coeffs = np.ones((S.space_dim, S.space_dim,
                        S.S[2].shape[0]), dtype=dt.float_dtype)
-    v = V.DiscreteVectorFieldD(S, v_coeffs)
-    T = V.DiscreteTensorFieldD(S, T_coeffs, 2)
+    v = C.CochainD0V(S, v_coeffs)
+    T = C.CochainD0T(S, T_coeffs)
 
     c_v_DPD = V.flat_DPD(v)
     c_T_DPD = V.flat_DPD(T)
@@ -35,17 +35,3 @@ def test_vector(setup_test):
     assert np.allclose(c_T_DPD.coeffs, c_T_DPD_true_coeffs)
     assert np.allclose(c_v_DPP.coeffs, c_v_DPP_true_coeffs)
     assert np.allclose(c_T_DPP.coeffs, c_T_DPP_true_coeffs)
-
-
-def test_flat_PDD(setup_test):
-    num_x_points = 11
-    x_max = 1
-    mesh, _ = util.generate_line_mesh(num_x_points, x_max)
-    S = util.build_complex_from_mesh(mesh)
-    S.get_hodge_star()
-
-    c = C.CochainD0(S, np.arange(10))
-    flat_PDD_explicit = V.flat_PDD(c, "upwind")
-    flat_PDD_implicit = V.flat_PDD_2(c)
-
-    assert np.allclose(flat_PDD_explicit.coeffs, flat_PDD_implicit.coeffs)

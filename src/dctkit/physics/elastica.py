@@ -66,9 +66,9 @@ class Elastica():
 
         # potential of the applied load
         A_coch = C.scalar_mul(self.ones_coch, A)
-        load = C.inner_product(C.sin(theta_coch), A_coch)
+        load = C.inner(C.sin(theta_coch), A_coch)
 
-        energy = 0.5*C.inner_product(moment, curvature) - load
+        energy = 0.5*C.inner(moment, curvature) - load
 
         return energy
 

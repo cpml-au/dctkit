@@ -121,8 +121,8 @@ def energy_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
     f_coch = C.CochainP0(S, f)
     u = C.CochainP0(S, x)
     du = C.coboundary(u)
-    norm_grad = k/2*C.inner_product(du, du)
-    bound_term = -C.inner_product(u, f_coch)
+    norm_grad = k/2*C.inner(du, du)
+    bound_term = -C.inner(u, f_coch)
     penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
     energy = norm_grad + bound_term + penalty
     return energy
