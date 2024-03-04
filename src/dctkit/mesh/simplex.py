@@ -2,7 +2,7 @@ import numpy as np
 import dctkit
 from dctkit.mesh import circumcenter as circ, volume
 from dctkit.math import shifted_list as sl
-from dctkit.math import spmv
+from dctkit.math import spmm
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
@@ -202,7 +202,7 @@ class SimplicialComplex:
 
         # apply the dual coboundary to the dual vector-valued 0-cochain
         # of the coordinates of the dual nodes
-        self.dual_edges_vectors = spmv.spmm(self.boundary[0],
+        self.dual_edges_vectors = spmm.spmm(self.boundary[0],
                                             dual_nodes_coords,
                                             shape=num_dual_edges)
         self.dual_edges_vectors *= (-1)**dim

@@ -1,7 +1,7 @@
 import dctkit as dt
 
 from dctkit.mesh import simplex as spx
-from dctkit.math import spmv
+from dctkit.math import spmm
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
@@ -249,12 +249,12 @@ def coboundary(c: Cochain) -> Cochain:
     if c.is_primal:
         # get the appropriate (primal) boundary matrix
         cbnd_coo = c.complex.boundary[c.dim + 1]
-        dc.coeffs = spmv.spmm(cbnd_coo, c.coeffs, transpose=True,
+        dc.coeffs = spmm.spmm(cbnd_coo, c.coeffs, transpose=True,
                               shape=c.complex.S[c.dim+1].shape[0])
     else:
         # FIXME: change sign of the boundary before applying it?
         bnd_coo = c.complex.boundary[c.complex.dim - c.dim]
-        dc.coeffs = spmv.spmm(bnd_coo, c.coeffs,
+        dc.coeffs = spmm.spmm(bnd_coo, c.coeffs,
                               transpose=False,
                               shape=c.complex.S[c.complex.dim-c.dim-1].shape[0])
         dc.coeffs *= (-1)**(c.complex.dim - c.dim)

@@ -1,5 +1,5 @@
 import dctkit.dec.cochain as C
-from dctkit.math import spmv
+from dctkit.math import spmm
 import jax.numpy as jnp
 
 
@@ -32,11 +32,11 @@ def coboundary_closure(c: C.CochainP) -> C.CochainD:
     # same of doing abs(dual_coboundary_faces)
     abs_dual_coboundary_faces[2] = abs_dual_coboundary_faces[2]**2
     # with this product, we extract with the right orientation the boundary pieces
-    diagonal_times_c = spmv.spmm(diagonal_matrix_COO, c.coeffs,
+    diagonal_times_c = spmm.spmm(diagonal_matrix_COO, c.coeffs,
                                  transpose=False,
                                  shape=c.complex.S[n-1].shape[0])
     # here we sum their contribution taking into account the orientation
-    d_closure_coeffs = spmv.spmm(abs_dual_coboundary_faces, diagonal_times_c,
+    d_closure_coeffs = spmm.spmm(abs_dual_coboundary_faces, diagonal_times_c,
                                  transpose=False,
                                  shape=c.complex.num_nodes)
     d_closure = C.CochainD(dim=n, complex=c.complex, coeffs=0.5*d_closure_coeffs)
