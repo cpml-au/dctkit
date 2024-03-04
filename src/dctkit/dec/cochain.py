@@ -19,7 +19,8 @@ class Cochain():
         dim: dimension of the complex where the cochain is defined.
         is_primal: True if the cochain is primal, False otherwise.
         complex: the simplicial complex where the cochain is defined.
-        coeffs: array of the coefficients of the cochain.
+        coeffs: array of the coefficients of the cochain. For scalar-valued cochains, it
+            must be a COLUMN array.
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
@@ -28,6 +29,7 @@ class Cochain():
         self.complex = complex
         self.is_primal = is_primal
         check_type(coeffs, npt.NDArray | Array)
+        assert coeffs.ndim > 1
         self.coeffs = coeffs
 
 
