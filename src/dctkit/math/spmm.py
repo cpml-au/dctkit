@@ -10,17 +10,18 @@ import numpy.typing as npt
 def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
          v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
     """Performs the matrix-matrix product between a sparse matrix in COO format and a
-        dense matrix or vector.
+        dense matrix or column vector.
 
     Args:
         A: tuple (rows,cols,values) representing the sparse matrix in COO format.
-        v: matrix or vector.
+        v: matrix or column vector.
         transpose: whether to transpose A before multiplication.
         shape: the number of rows of the matrix A.
 
     Returns:
-        the vector resulting from the matrix-matrix product.
+        the result of the matrix-matrix product.
     """
+    assert v.ndim > 1
     rows, cols, vals = A
 
     if transpose:
@@ -28,7 +29,8 @@ def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray]
     else:
         vv = v.take(cols, axis=0)
 
-    prod = (vals * vv.T).T
+    # NOTE: make vals a column vector
+    prod = vals[:, None] * vv
 
     if transpose:
         result = ops.segment_sum(prod, cols, shape)
