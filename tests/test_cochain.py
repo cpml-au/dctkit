@@ -16,8 +16,8 @@ def test_coboundary(setup_test):
     # 1D test
     vP0 = np.array([1, 2, 3, 4, 5], dtype=dctkit.float_dtype)
     vD0 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
-    cP0 = C.CochainP0(complex=S_1, coeffs=vP0[:, None])
-    cD0 = C.CochainD0(complex=S_1, coeffs=vD0[:, None])
+    cP0 = C.CochainP0(complex=S_1, coeffs=vP0)
+    cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
     dcP0 = C.coboundary(cP0)
     dcD0 = C.coboundary(cD0)
     dc_all = [dcP0, dcD0]
@@ -33,10 +33,10 @@ def test_coboundary(setup_test):
     vP1 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=dctkit.float_dtype)
     vD0 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
     vD1 = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=dctkit.float_dtype)
-    cP0 = C.CochainP0(complex=S_2, coeffs=vP0[:, None])
-    cP1 = C.CochainP1(complex=S_2, coeffs=vP1[:, None])
-    cD0 = C.CochainD0(complex=S_2, coeffs=vD0[:, None])
-    cD1 = C.CochainD1(complex=S_2, coeffs=vD1[:, None])
+    cP0 = C.CochainP0(complex=S_2, coeffs=vP0)
+    cP1 = C.CochainP1(complex=S_2, coeffs=vP1)
+    cD0 = C.CochainD0(complex=S_2, coeffs=vD0)
+    cD1 = C.CochainD1(complex=S_2, coeffs=vD1)
 
     dcP0 = C.coboundary(cP0)
     dcP1 = C.coboundary(cP1)
@@ -60,12 +60,12 @@ def test_coboundary(setup_test):
     vD1 = np.array([1, 2, 3, 4], dtype=dctkit.float_dtype)
     vD2 = np.array([1, 2, 3, 4, 5, 6], dtype=dctkit.float_dtype)
 
-    cP0 = C.CochainP0(complex=S_3, coeffs=vP0[:, None])
-    cP1 = C.CochainP1(complex=S_3, coeffs=vP1[:, None])
-    cP2 = C.CochainP2(complex=S_3, coeffs=vP2[:, None])
-    cD0 = C.CochainD0(complex=S_3, coeffs=vD0[:, None])
-    cD1 = C.CochainD1(complex=S_3, coeffs=vD1[:, None])
-    cD2 = C.CochainD2(complex=S_3, coeffs=vD2[:, None])
+    cP0 = C.CochainP0(complex=S_3, coeffs=vP0)
+    cP1 = C.CochainP1(complex=S_3, coeffs=vP1)
+    cP2 = C.CochainP2(complex=S_3, coeffs=vP2)
+    cD0 = C.CochainD0(complex=S_3, coeffs=vD0)
+    cD1 = C.CochainD1(complex=S_3, coeffs=vD1)
+    cD2 = C.CochainD2(complex=S_3, coeffs=vD2)
 
     dcP0 = C.coboundary(cP0)
     dcP1 = C.coboundary(cP1)
@@ -155,8 +155,9 @@ def test_hodge_star(setup_test):
     star_invP1 = C.star(star_cP1)
     star_all = [star_cP0, star_cP1]
     star_inv_all = [star_invP0, star_invP1]
-    star_cP0_true = np.array([0.125, 0.5, 0.75, 1., 0.625], dtype=dctkit.float_dtype)
-    star_cP1_true = np.array([4.,  8., 12., 16.], dtype=dctkit.float_dtype)
+    star_cP0_true = np.array([0.125, 0.5, 0.75, 1., 0.625],
+                             dtype=dctkit.float_dtype)[:, None]
+    star_cP1_true = np.array([4.,  8., 12., 16.], dtype=dctkit.float_dtype)[:, None]
     star_true_all = [star_cP0_true, star_cP1_true]
 
     for i in range(2):
@@ -185,18 +186,18 @@ def test_hodge_star(setup_test):
     star_cP0_true = np.array([0.0546875, 0.07714844, 0.15560322, 0.16492188,
                               0.36824544, 0.42319261, 0.50444237, 0.59590218,
                               1.11520924, 1.37589165, 1.50811261, 1.49166558],
-                             dtype=dctkit.float_dtype)
+                             dtype=dctkit.float_dtype)[:, None]
     star_cP1_true = np.array([0.25,  0.5,  1.,  0.25,  0.3125,
                               4.66666667,  1.44642505,  1.68050682,  3.70569916,
                               0.875, 0.9625,  8.42553191,  9.20833333, 11.66666667,
                               11.38033168, 13.24818921, 13.92687454, 13.10409096,
                               15.48630137, 13.89726027, 15.23812097, 13.52634108,
                               10.75613978, 15.94348786, 14.46332164],
-                             dtype=dctkit.float_dtype)
+                             dtype=dctkit.float_dtype)[:, None]
     star_cP2_true = np.array([11.36094675,  21.33333333,  32.,  44.9122807,
                               71.11111111,  85.33333333,  95.31914894, 108.93617021,
                               153.2594235, 175.34246575, 196.00928074, 204.8,
-                              220.39735099, 239.46547884], dtype=dctkit.float_dtype)
+                              220.39735099, 239.46547884], dtype=dctkit.float_dtype)[:, None]
     star_true_all = [star_cP0_true, star_cP1_true, star_cP2_true]
 
     for i in range(3):
@@ -228,11 +229,12 @@ def test_hodge_star(setup_test):
     star_inv_all = [star_invP0, star_invP1, star_invP2, star_invP3]
 
     star_cP0_true = np.array([0.0859375, 0.06510417, 0.0859375, 0.078125],
-                             dtype=dctkit.float_dtype)
+                             dtype=dctkit.float_dtype)[:, None]
     star_cP1_true = np.array([0.1875,  0.25,  0.515625,  0.125, -0.078125, -0.0625],
-                             dtype=dctkit.float_dtype)
-    star_cP2_true = np.array([1.,  1.5,  1.5, -0.66666667], dtype=dctkit.float_dtype)
-    star_cP3_true = np.array([6.], dtype=dctkit.float_dtype)
+                             dtype=dctkit.float_dtype)[:, None]
+    star_cP2_true = np.array([1.,  1.5,  1.5, -0.66666667],
+                             dtype=dctkit.float_dtype)[:, None]
+    star_cP3_true = np.array([6.], dtype=dctkit.float_dtype)[:, None]
     star_true_all = [star_cP0_true, star_cP1_true, star_cP2_true, star_cP3_true]
 
     for i in range(4):
@@ -512,10 +514,10 @@ def test_codifferential(setup_test):
     vD0 = np.arange(n_1, dtype=dctkit.float_dtype)
     vD1 = np.arange(n_0, dtype=dctkit.float_dtype)
 
-    cP0 = C.CochainP0(complex=S_1, coeffs=vP0[:, None])
-    cP1 = C.CochainP1(complex=S_1, coeffs=vP1[:, None])
-    cD0 = C.CochainD0(complex=S_1, coeffs=vD0[:, None])
-    cD1 = C.CochainD1(complex=S_1, coeffs=vD1[:, None])
+    cP0 = C.CochainP0(complex=S_1, coeffs=vP0)
+    cP1 = C.CochainP1(complex=S_1, coeffs=vP1)
+    cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
+    cD1 = C.CochainD1(complex=S_1, coeffs=vD1)
 
     innerP0P1 = C.inner(C.coboundary(cP0), cP1)
     innerD0D1 = C.inner(C.coboundary(cD0), cD1)
@@ -538,12 +540,12 @@ def test_codifferential(setup_test):
     vD1 = np.arange(n_1, dtype=dctkit.float_dtype)
     vD2 = np.arange(n_0, dtype=dctkit.float_dtype)
 
-    cP0 = C.CochainP0(complex=S_2, coeffs=vP0[:, None])
-    cP1 = C.CochainP1(complex=S_2, coeffs=vP1[:, None])
-    cP2 = C.CochainP2(complex=S_2, coeffs=vP2[:, None])
-    cD0 = C.CochainD0(complex=S_2, coeffs=vD0[:, None])
-    cD1 = C.CochainD1(complex=S_2, coeffs=vD1[:, None])
-    cD2 = C.CochainD2(complex=S_2, coeffs=vD2[:, None])
+    cP0 = C.CochainP0(complex=S_2, coeffs=vP0)
+    cP1 = C.CochainP1(complex=S_2, coeffs=vP1)
+    cP2 = C.CochainP2(complex=S_2, coeffs=vP2)
+    cD0 = C.CochainD0(complex=S_2, coeffs=vD0)
+    cD1 = C.CochainD1(complex=S_2, coeffs=vD1)
+    cD2 = C.CochainD2(complex=S_2, coeffs=vD2)
 
     innerP0P1 = C.inner(C.coboundary(cP0), cP1)
     innerP1P2 = C.inner(C.coboundary(cP1), cP2)
@@ -573,14 +575,14 @@ def test_codifferential(setup_test):
     vD2 = np.arange(n_1, dtype=dctkit.float_dtype)
     vD3 = np.arange(n_0, dtype=dctkit.float_dtype)
 
-    cP0 = C.CochainP0(complex=S_3, coeffs=vP0[:, None])
-    cP1 = C.CochainP1(complex=S_3, coeffs=vP1[:, None])
-    cP2 = C.CochainP2(complex=S_3, coeffs=vP2[:, None])
-    cP3 = C.CochainP3(complex=S_3, coeffs=vP3[:, None])
-    cD0 = C.CochainD0(complex=S_3, coeffs=vD0[:, None])
-    cD1 = C.CochainD1(complex=S_3, coeffs=vD1[:, None])
-    cD2 = C.CochainD2(complex=S_3, coeffs=vD2[:, None])
-    cD3 = C.CochainD3(complex=S_3, coeffs=vD3[:, None])
+    cP0 = C.CochainP0(complex=S_3, coeffs=vP0)
+    cP1 = C.CochainP1(complex=S_3, coeffs=vP1)
+    cP2 = C.CochainP2(complex=S_3, coeffs=vP2)
+    cP3 = C.CochainP3(complex=S_3, coeffs=vP3)
+    cD0 = C.CochainD0(complex=S_3, coeffs=vD0)
+    cD1 = C.CochainD1(complex=S_3, coeffs=vD1)
+    cD2 = C.CochainD2(complex=S_3, coeffs=vD2)
+    cD3 = C.CochainD3(complex=S_3, coeffs=vD3)
 
     innerP0P1 = C.inner(C.coboundary(cP0), cP1)
     innerP1P2 = C.inner(C.coboundary(cP1), cP2)
@@ -608,7 +610,7 @@ def test_coboundary_closure(setup_test):
     S_2.get_hodge_star()
 
     c = C.CochainP1(complex=S_2, coeffs=np.arange(
-        1, 9, dtype=dctkit.float_dtype)[:, None])
+        1, 9, dtype=dctkit.float_dtype))
     cob_clos_c = coboundary_closure(c)
     cob_clos_c_true = np.array([-0.5,  2.5,  5.,  2.,  0.],
                                dtype=dctkit.float_dtype)[:, None]

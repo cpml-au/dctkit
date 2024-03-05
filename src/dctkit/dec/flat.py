@@ -1,24 +1,36 @@
 import jax.numpy as jnp
 from dctkit.dec import cochain as C
-from jax import Array
+from jax import Array, vmap
+from functools import partial
 
 
 def flat(c: C.CochainP0 | C.CochainD0, weights: Array,
          edges: C.CochainP1V | C.CochainD1V) -> C.CochainP1 | C.CochainD1:
+    """Applies the flat to a vector/tensor-valued cochain representing a discrete
+    vector/tensor field to obtain a scalar-valued cochain over primal/dual edges.
 
-    weighted_v = c.coeffs @ weights
-    if c.coeffs.ndim == 2:
-        # vector field case
-        # perform dot product row-wise with the edge vectors
-        # of the dual edges (see definition of DPD in Hirani, pag. 54).
-        weighted_v_T = weighted_v.T
-        coch_coeffs = jnp.einsum("ij, ij -> i", weighted_v_T, edges.coeffs)
-    elif c.coeffs.ndim == 3:
-        # tensor field case
-        # apply each matrix (rows of the multiarray weighted_v_T fixing the first axis)
-        # to the edge vector of the corresponding dual edge
-        weighted_v_T = jnp.transpose(weighted_v, axes=(2, 0, 1))
-        coch_coeffs = jnp.einsum("ijk, ik -> ij", weighted_v_T, edges.coeffs)
+    Args:
+        c: input vector/tensor-valued 0-cochain representing a primal/dual discrete
+            vector/tensor field.
+        weights: array of weights that represent the contribution of each component of
+            the input cochain to the primal/dual edges where the output cochain is
+            defined (i.e. where integration is performed). The number of columns must
+            be equal to the number of primal/dual target edges. Weights depend on the
+            interpolation scheme chosen for the input discrete vector/tensor field.
+        edges: vector-valued cochain collecting the primal/dual edges over which the
+            discrete vector/tensor field should be integrated.
+    Returns:
+        a primal/dual scalar/vector-valued cochain defined over primal/dual edges.
+    """
+    # contract over the simplices of the input cochain (last axis of weights, first axis
+    # of input cochain coeffs)
+    weighted_v = jnp.tensordot(weights.T, c.coeffs, axes=1)
+    # contract input vector/tensors with edge vectors (last indices of both
+    # coefficient matrices), for each target primal/dual edge
+    contract = partial(jnp.tensordot, axes=([-1,], [-1,]))
+    # map over target primal/dual edges
+    batch_contract = vmap(contract)
+    coch_coeffs = batch_contract(weighted_v, edges.coeffs)
 
     if edges.is_primal:
         return C.CochainP1(c.complex, coch_coeffs)
