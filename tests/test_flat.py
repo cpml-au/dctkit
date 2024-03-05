@@ -19,8 +19,8 @@ def test_flat(setup_test):
     v = C.CochainD0V(S, v_coeffs)
     T = C.CochainD0T(S, T_coeffs)
 
-    dedges = S.dual_edges_vectors[:, :v.coeffs.shape[0]]
-    pedges = S.primal_edges_vectors[:, :v.coeffs.shape[0]]
+    dedges = S.dual_edges_vectors[:, :v.coeffs.shape[1]]
+    pedges = S.primal_edges_vectors[:, :v.coeffs.shape[1]]
     dual_edges_coch = C.CochainD1V(complex=S, coeffs=dedges)
     primal_edges_coch = C.CochainP1V(complex=S, coeffs=pedges)
 
@@ -31,12 +31,12 @@ def test_flat(setup_test):
 
     c_v_DPD_true_coeffs = S.dual_edges_vectors.sum(axis=1)[:, None]
     c_T_DPD_true_coeffs = np.ones((12, 3), dtype=dt.float_dtype)
-    c_T_DPD_true_coeffs = c_v_DPD_true_coeffs[:, None]*c_T_DPD_true_coeffs
+    c_T_DPD_true_coeffs = c_v_DPD_true_coeffs*c_T_DPD_true_coeffs
     c_v_DPP_true_coeffs = S.primal_edges_vectors.sum(axis=1)[:, None]
     c_T_DPP_true_coeffs = np.ones((12, 3), dtype=dt.float_dtype)
-    c_T_DPP_true_coeffs = c_v_DPP_true_coeffs[:, None]*c_T_DPP_true_coeffs
+    c_T_DPP_true_coeffs = c_v_DPP_true_coeffs*c_T_DPP_true_coeffs
 
     assert np.allclose(c_v_DPD.coeffs, c_v_DPD_true_coeffs)
-    # assert np.allclose(c_T_DPD.coeffs, c_T_DPD_true_coeffs)
+    assert np.allclose(c_T_DPD.coeffs, c_T_DPD_true_coeffs)
     assert np.allclose(c_v_DPP.coeffs, c_v_DPP_true_coeffs)
-    # assert np.allclose(c_T_DPP.coeffs, c_T_DPP_true_coeffs)
+    assert np.allclose(c_T_DPP.coeffs, c_T_DPP_true_coeffs)

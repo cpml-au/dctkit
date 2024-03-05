@@ -384,21 +384,6 @@ def trace(c: Cochain) -> Cochain:
     return Cochain(c.dim, c.is_primal, c.complex, jnp.trace(c.coeffs, axis1=1, axis2=2))
 
 
-def tensor_coch_mul(c_v: Cochain, c_T: Cochain) -> Cochain:
-    """Compute the component-wise product between a scalar- or vector-valued and a
-    tensor-valued cochain (of the same dimension and type).
-
-    Args:
-        c_v: a scalar- or vector-valued cochain.
-        c_T: a tensor-valued cochain.
-
-    Returns:
-        the component-wise product c_v*c_T.
-    """
-    return Cochain(c_T.dim, c_T.is_primal, c_T.complex,
-                   c_v.coeffs[:, None, None]*c_T.coeffs)
-
-
 def sym(c: Cochain) -> Cochain:
     """Compute the symmetric part of a tensor-valued cochain.
 
