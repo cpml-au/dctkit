@@ -22,7 +22,7 @@ def coboundary_closure(c: C.CochainP) -> C.CochainD:
     # In this way the obtain a cochain such that an entry is 0 if it's in
     # the interior of the complex and ±1 if it's in the boundary
     ones = C.CochainD(dim=n-2, complex=c.complex, coeffs=jnp.ones(num_tets))
-    diagonal_elems = C.coboundary(ones).coeffs
+    diagonal_elems = C.coboundary(ones).coeffs.flatten()
     diagonal_matrix_rows = jnp.arange(num_dual_faces)
     diagonal_matrix_cols = diagonal_matrix_rows
     diagonal_matrix_COO = [diagonal_matrix_rows, diagonal_matrix_cols, diagonal_elems]
