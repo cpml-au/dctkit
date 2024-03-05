@@ -10,7 +10,7 @@ import numpy.typing as npt
 def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
          v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
     """Performs the matrix-matrix product between a sparse matrix in COO format and a
-        dense matrix or column vector.
+    dense matrix or column vector.
 
     Args:
         A: tuple (rows,cols,values) representing the sparse matrix in COO format.

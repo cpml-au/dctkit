@@ -124,7 +124,7 @@ class LinearElasticity():
         """
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress.T)
+        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress)
         stress_integrated = V.flat_DPD(stress_tensor)
         forces = C.star(stress_integrated)
         # set tractions on given sub-portions of the boundary
@@ -154,8 +154,7 @@ class LinearElasticity():
         """
         strain = self.get_infinitesimal_strain(node_coords=node_coords.coeffs)
         stress = self.get_stress(strain=strain)
-        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress.T)
-        print(stress.ndim)
+        stress_tensor = C.CochainD0T(complex=self.S, coeffs=stress)
         # compute forces on dual edges
         stress_integrated = V.flat_DPP(stress_tensor)
         forces = C.star(stress_integrated)

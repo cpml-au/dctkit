@@ -46,7 +46,7 @@ def flat_DPD(c: C.CochainD0V | C.CochainD0T) -> C.CochainD1:
     Returns:
         the dual 1-cochain resulting from the application of the flat operator.
     """
-    dual_edges = c.complex.dual_edges_vectors[:, :c.coeffs.shape[0]]
+    dual_edges = c.complex.dual_edges_vectors[:, :c.coeffs.shape[1]]
     flat_matrix = c.complex.flat_DPD_weights
 
     return flat(c, flat_matrix, C.CochainD1(c.complex, dual_edges))
@@ -60,7 +60,7 @@ def flat_DPP(c: C.CochainD0V | C.CochainD0T) -> C.CochainP1:
     Returns:
         the primal 1-cochain resulting from the application of the flat operator.
     """
-    primal_edges = c.complex.primal_edges_vectors[:, :c.coeffs.shape[0]]
+    primal_edges = c.complex.primal_edges_vectors[:, :c.coeffs.shape[1]]
     flat_matrix = c.complex.flat_DPP_weights
 
     return flat(c, flat_matrix, C.CochainP1(c.complex, primal_edges))
