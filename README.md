@@ -61,14 +61,14 @@ $ sh ./bench/run_bench
 ```
 The Markdown file `bench_results.md` will be generated containing the results.
 
-*Reference performance (HP Z2 Workstation G9 - 12th Gen Intel i9-12900K (24) @ 5.200GHz - NVIDIA RTX A4000 - 64GB RAM - ArchLinux kernel v6.2.9)*
+*Reference performance (HP Z2 Workstation G9 - 12th Gen Intel i9-12900K (24) @ 5.200GHz - NVIDIA RTX A4000 - 64GB RAM - ArchLinux kernel v6.7.8)*
 
-| Command                              |      Mean [s] | Min [s] | Max [s] |    Relative |
-| :----------------------------------- | ------------: | ------: | ------: | ----------: |
-| `python bench_poisson.py scipy cpu`  | 1.553 ± 0.007 |   1.546 |   1.564 | 2.16 ± 0.01 |
-| `python bench_poisson.py pygmo cpu`  | 0.719 ± 0.003 |   0.716 |   0.723 |        1.00 |
-| `python bench_poisson.py jaxopt cpu` | 2.376 ± 0.055 |   2.309 |   2.451 | 3.30 ± 0.08 |
-| `python bench_poisson.py jaxopt gpu` | 5.638 ± 0.040 |   5.590 |   5.699 | 7.84 ± 0.07 |
+| Command | Mean [s] | Min [s] | Max [s] | Relative |
+|:---|---:|---:|---:|---:|
+| `python bench_poisson.py scipy cpu` | 1.739 ± 0.014 | 1.724 | 1.754 | 2.04 ± 0.04 |
+| `python bench_poisson.py pygmo cpu` | 0.852 ± 0.017 | 0.835 | 0.876 | 1.00 |
+| `python bench_poisson.py jaxopt cpu` | 2.872 ± 0.018 | 2.851 | 2.898 | 3.37 ± 0.07 |
+| `python bench_poisson.py jaxopt gpu` | 3.297 ± 0.056 | 3.210 | 3.367 | 3.87 ± 0.10 |
 
 ## Usage
 
