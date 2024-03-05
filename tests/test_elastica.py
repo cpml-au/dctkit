@@ -242,7 +242,7 @@ def test_elastica_residual_tuneB(setup_test):
 
         residual = C.sub(C.codifferential(C.star(moment)), load)
 
-        return residual.coeffs[1:]
+        return residual.coeffs.flatten()[1:]
 
     energy_grad = energy
 
