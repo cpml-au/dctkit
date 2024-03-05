@@ -7,20 +7,20 @@ from jax import Array
 import jax.numpy as jnp
 from typeguard import check_type
 import warnings
+from enum import Enum
 
 # suppress all warnings
 warnings.filterwarnings("ignore")
 
 
 class Cochain():
-    """Cochain class.
+    """Parent cochain class.
 
     Args:
         dim: dimension of the complex where the cochain is defined.
         is_primal: True if the cochain is primal, False otherwise.
         complex: the simplicial complex where the cochain is defined.
-        coeffs: array of the coefficients of the cochain. For scalar-valued cochains, it
-            must be a COLUMN array.
+        coeffs: array of the coefficients of the cochain.
     """
 
     def __init__(self, dim: int, is_primal: bool, complex: spx.SimplicialComplex,
@@ -29,30 +29,39 @@ class Cochain():
         self.complex = complex
         self.is_primal = is_primal
         check_type(coeffs, npt.NDArray | Array)
-        assert coeffs.ndim > 1
-        self.coeffs = coeffs
+        # in case we pass the coefficients of a scalar-valued cochain
+        # as a row vector, transform it into column (needed for matrix-vector
+        # ops, such as coboundary)
+        if coeffs.ndim > 1:
+            self.coeffs = coeffs
+        else:
+            self.coeffs = coeffs[:, None]
 
 
-# automatic generator of cochain subclasses
-str_init = """
+# automatic generator of cochain subclasses aliases
+class rank(Enum):
+    SCALAR = ""
+    VECTOR = "V"
+    TENSOR = "T"
+
+
+# template for the constructor of derived classes
+init_template = """
 def init(self, complex, coeffs):
-    self.dim = dim_
-    self.is_primal = is_primal_
-    self.complex = complex
-    self.coeffs = coeffs
+    Cochain.__init__(self, dim_, is_primal_, complex, coeffs)
 """
-attributes = {'category': (True, False), 'dim': (
-    0, 1, 2, 3), 'rank': ("", "V", "T")}
-categories = attributes['category']
+attributes = {'is_primal': (True, False), 'dim': (
+    0, 1, 2, 3), 'rank': (rank.SCALAR.value, rank.VECTOR.value, rank.TENSOR.value)}
+categories = attributes['is_primal']
 dimensions = attributes['dim']
 ranks = attributes['rank']
 for is_primal_ in categories:
     for dim_ in dimensions:
         for rank_ in ranks:
-            category_name = is_primal_*'P' + (not is_primal_)*'D'
-            name = "Cochain" + category_name + str(dim_) + rank_
+            primal_flag = is_primal_*'P' + (not is_primal_)*'D'
+            name = "Cochain" + primal_flag + str(dim_) + rank_
 
-            exec(str_init.replace("dim_", f"{dim_}").replace(
+            exec(init_template.replace("dim_", f"{dim_}").replace(
                 "is_primal_", f"{is_primal_}"))
 
             exec(name + " =type(name, (Cochain,), {'__init__': init})")
