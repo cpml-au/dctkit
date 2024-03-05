@@ -56,13 +56,12 @@ def obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComplex, k:
         the value of the objective function at x.
     """
     pos, value = boundary_values
-    x_col = x[:, None]
-    u = C.CochainP0(S, x_col)
+    u = C.CochainP0(S, x)
     f_coch = C.CochainD2(S, f)
 
     r = poisson_residual(u, f_coch, k).coeffs
 
-    penalty = np.sum((x_col[pos, :] - value)**2)
+    penalty = np.sum((x[pos] - value)**2)
 
     # use mask to zero residual on dual cells at the boundary where nodal values are
     # imposed
@@ -90,18 +89,17 @@ def grad_obj_poisson(x: npt.NDArray, f: npt.NDArray, S: simplex.SimplicialComple
         the value of the gradient of the objective function at x.
     """
     pos, value = boundary_values
-    x_col = x[:, None]
-    u = C.CochainP0(S, x_col)
+    u = C.CochainP0(S, x)
     f_coch = C.CochainD2(S, f)
     r = poisson_residual(u, f_coch, k).coeffs
     # zero residual on dual cells at the boundary where nodal values are imposed
     r_proj = C.CochainP0(S, r*mask)
     # gradient of the projected residual = A^T r_proj = A r_proj, since A is symmetric
     grad_r = (C.sub(poisson_residual(r_proj, f_coch, k), f_coch)).coeffs
-    grad_penalty = np.zeros((len(grad_r), 1))
-    grad_penalty[pos, :] = x_col[pos, :] - value
-    grad_energy = grad_r + gamma*grad_penalty
-    return grad_energy.flatten()
+    grad_penalty = np.zeros(len(grad_r))
+    grad_penalty[pos] = x[pos] - value
+    grad_energy = grad_r.flatten() + gamma*grad_penalty
+    return grad_energy
 
 
 def energy_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
@@ -120,14 +118,12 @@ def energy_poisson(x: npt.NDArray, f: npt.NDArray, S, k: float, boundary_values:
         value of the energy.
     """
     pos, value = boundary_values
-    # transform x into column (needed for wrapping it into a scalar-valued cochain)
-    x_col = x[:, None]
     f_coch = C.CochainP0(S, f)
-    u = C.CochainP0(S, x_col)
+    u = C.CochainP0(S, x)
     du = C.coboundary(u)
     norm_grad = k/2*C.inner(du, du)
     bound_term = -C.inner(u, f_coch)
-    penalty = 0.5*gamma*np.sum((x_col[pos, :] - value)**2)
+    penalty = 0.5*gamma*np.sum((x[pos] - value)**2)
     energy = norm_grad + bound_term + penalty
     return energy
 
@@ -149,14 +145,13 @@ def grad_energy_poisson(x, f, S, k, boundary_values, gamma):
         the value of the gradient of the objective function at x.
     """
     pos, value = boundary_values
-    x_col = x[:, None]
-    u = C.CochainP0(S, x_col)
+    u = C.CochainP0(S, x)
     f_coch = C.CochainP0(S, f)
     star_f = C.star(f_coch)
 
     grad_r = -poisson_residual(u, star_f, k).coeffs
 
-    grad_penalty = np.zeros((len(grad_r), 1))
-    grad_penalty[pos, :] = x_col[pos, :] - value
-    grad_energy = grad_r + gamma*grad_penalty
-    return grad_energy.flatten()
+    grad_penalty = np.zeros(len(grad_r))
+    grad_penalty[pos] = x[pos] - value
+    grad_energy = grad_r.flatten() + gamma*grad_penalty
+    return grad_energy

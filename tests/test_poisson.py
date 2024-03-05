@@ -38,7 +38,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                       ** 2, dtype=dt.float_dtype)
     b_values = u_true[bnodes]
 
-    boundary_values = (np.array(bnodes, dtype=dt.int_dtype), b_values[:, None])
+    boundary_values = (np.array(bnodes, dtype=dt.int_dtype), b_values)
 
     num_nodes = S.num_nodes
     f_vec = -4.*np.ones((num_nodes, 1), dtype=dt.float_dtype)
@@ -88,8 +88,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
             def obj_poisson(x, f, k, boundary_values, gamma, mask):
                 pos, value = boundary_values
-                x_col = x[:, None]
-                c = C.Cochain(0, True, S, x_col)
+                c = C.Cochain(0, True, S, x)
                 # compute Laplace-de Rham of c
                 laplacian = C.laplacian(c)
                 # the Laplacian on forms is the negative of the Laplacian on scalar
@@ -97,7 +96,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 laplacian.coeffs *= -k
                 # compute the residual of the Poisson equation k*Delta u + f = 0
                 r = laplacian.coeffs + f
-                penalty = jnp.sum((x_col[pos, :] - value)**2)
+                penalty = jnp.sum((x[pos] - value)**2)
                 obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return obj
             obj = obj_poisson
@@ -118,13 +117,12 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
             def energy_poisson(x, f, k, boundary_values, gamma):
                 pos, value = boundary_values
-                x_col = x[:, None]
                 f = C.Cochain(0, True, S, f)
-                u = C.Cochain(0, True, S, x_col)
+                u = C.Cochain(0, True, S, x)
                 du = C.coboundary(u)
                 norm_grad = k/2.*C.inner(du, du)
                 bound_term = -C.inner(u, f)
-                penalty = 0.5*gamma*jnp.sum((x_col[pos, :] - value)**2)
+                penalty = 0.5*gamma*jnp.sum((x[pos] - value)**2)
                 energy = norm_grad + bound_term + penalty
                 return energy
 
@@ -137,8 +135,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
 
             def obj_poisson(x, f, k, boundary_values, gamma, mask):
                 pos, value = boundary_values
-                x_col = x[:, None]
-                c = C.Cochain(0, True, S, x_col)
+                c = C.Cochain(0, True, S, x)
                 # compute Laplace-de Rham of c
                 laplacian = C.laplacian(c)
                 # the Laplacian on forms is the negative of the Laplacian on scalar
@@ -146,7 +143,7 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                 laplacian.coeffs *= -k
                 # compute the residual of the Poisson equation k*Delta u + f = 0
                 r = laplacian.coeffs + f
-                penalty = jnp.sum((x_col[pos, :] - value)**2)
+                penalty = jnp.sum((x[pos] - value)**2)
                 obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
                 return obj
 
