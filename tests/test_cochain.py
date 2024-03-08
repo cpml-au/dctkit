@@ -197,7 +197,8 @@ def test_hodge_star(setup_test):
     star_cP2_true = np.array([11.36094675,  21.33333333,  32.,  44.9122807,
                               71.11111111,  85.33333333,  95.31914894, 108.93617021,
                               153.2594235, 175.34246575, 196.00928074, 204.8,
-                              220.39735099, 239.46547884], dtype=dctkit.float_dtype)[:, None]
+                              220.39735099, 239.46547884],
+                              dtype=dctkit.float_dtype)[:, None]
     star_true_all = [star_cP0_true, star_cP1_true, star_cP2_true]
 
     for i in range(3):
