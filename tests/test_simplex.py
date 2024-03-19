@@ -26,9 +26,15 @@ def test_boundary_COO(setup_test):
 
 def test_simplicial_complex_1(setup_test):
     num_nodes = 5
+    space_dim = 1
     mesh, _ = util.generate_line_mesh(num_nodes)
-    S = util.build_complex_from_mesh(mesh)
+    S = util.build_complex_from_mesh(mesh, space_dim=space_dim)
     S.get_hodge_star()
+    S.get_primal_edge_vectors()
+    S.get_tets_containing_a_boundary_face()
+    # print(S.bnd_faces_indices)
+    # print(S.tets_cont_bnd_face)
+    S.get_dual_edge_vectors()
 
     # define true boundary values
     boundary_true = sl.ShiftedList([], -1)
@@ -37,9 +43,11 @@ def test_simplicial_complex_1(setup_test):
     vals_true = np.array([-1,  1, -1,  1, -1,  1, -1,  1], dtype=dctkit.int_dtype)
     boundary_true.append((rows_true, cols_true, vals_true))
 
+    # define true
+
     # define true circumcenters
     circ_true = sl.ShiftedList([], -1)
-    circ_true_1 = np.zeros((num_nodes - 1, 3))
+    circ_true_1 = np.zeros((num_nodes - 1, space_dim))
     circ_true_1[:, 0] = np.array([1/8, 3/8, 5/8, 7/8], dtype=dctkit.float_dtype)
     circ_true.append(circ_true_1)
 
@@ -68,6 +76,12 @@ def test_simplicial_complex_1(setup_test):
     hodge_inv_true.append(hodge_inv_true_0)
     hodge_inv_true.append(hodge_inv_true_1)
 
+    # define true primal edge vectors
+    primal_edges_true = np.zeros((num_nodes-1, space_dim))
+    primal_edges_true[:, 0] = 1/4*np.ones(S.S[1].shape[0])
+
+    # FIXME: continue from here defining dual edge vector tests
+
     for i in range(3):
         assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
 
@@ -77,6 +91,8 @@ def test_simplicial_complex_1(setup_test):
         assert np.allclose(S.dual_volumes[i], dv_true[i])
         assert np.allclose(S.hodge_star[i], hodge_true[i])
         assert np.allclose(S.hodge_star_inverse[i], hodge_inv_true[i])
+
+    assert np.allclose(S.primal_edges_vectors, primal_edges_true)
 
 
 def test_simplicial_complex_2(setup_test):

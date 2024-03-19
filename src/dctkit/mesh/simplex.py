@@ -38,13 +38,13 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray,
+    def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray, space_dim: int = 3,
                  is_well_centered: bool = False):
 
-        self.node_coords = node_coords.astype(dctkit.float_dtype)
+        self.node_coords = node_coords.astype(dctkit.float_dtype)[:, :space_dim]
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
         self.num_nodes = node_coords.shape[0]
-        self.space_dim = node_coords.shape[1]
+        self.space_dim = space_dim
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
         self.is_well_centered = is_well_centered
@@ -92,7 +92,8 @@ class SimplicialComplex:
         if not hasattr(self, "bnd_faces_indices"):
             self.get_complex_boundary_faces_indices()
         dim = self.dim - 1
-        self.tets_cont_bnd_face = get_cofaces(self.bnd_faces_indices, dim, self)
+        self.tets_cont_bnd_face = get_cofaces(
+            self.bnd_faces_indices, dim, self).flatten()
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
@@ -214,7 +215,11 @@ class SimplicialComplex:
         # boundary faces arranged by rows, padded with zeros for the non-boundary edges
         if not hasattr(self, "bnd_faces_indices"):
             self.get_complex_boundary_faces_indices()
-        circ_faces = self.circ[dim-1]
+        if dim == 1:
+            # in this case faces = nodes
+            circ_faces = self.node_coords
+        else:
+            circ_faces = self.circ[dim-1]
         circ_bnd_faces = np.zeros(circ_faces.shape, dtype=dctkit.float_dtype)
         circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
 
@@ -424,7 +429,7 @@ class SimplicialComplex:
 
 
 def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
-                S: SimplicialComplex) -> list[npt.NDArray]:
+                S: SimplicialComplex) -> npt.NDArray:
     """Get the IDs of the cofaces of a simplex, i.e. the neighour simplices of one
     higher dimension.
 
@@ -439,8 +444,8 @@ def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
     """
     # the indices of the parent simplices to which the faces belong are the row indices
     # of the matrix simplices_faces in which the IDs of the faces appear
-    cofaces_ids = [np.nonzero(S.simplices_faces[faces_dim+1] == i)[0].flatten()
-                   for i in faces_ids]
+    cofaces_ids = np.array([np.nonzero(S.simplices_faces[faces_dim+1] == i)[0].flatten()
+                            for i in faces_ids])
     return cofaces_ids
 
 
