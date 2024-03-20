@@ -38,8 +38,8 @@ class SimplicialComplex:
             diagonal of the Hodge star matrix.
     """
 
-    def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray, space_dim: int = 3,
-                 is_well_centered: bool = False):
+    def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray,
+                 space_dim: int = 3, is_well_centered: bool = False):
 
         self.node_coords = node_coords.astype(dctkit.float_dtype)[:, :space_dim]
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
@@ -93,7 +93,7 @@ class SimplicialComplex:
             self.get_complex_boundary_faces_indices()
         dim = self.dim - 1
         self.tets_cont_bnd_face = get_cofaces(
-            self.bnd_faces_indices, dim, self).flatten()
+            self.bnd_faces_indices, dim, self)
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
