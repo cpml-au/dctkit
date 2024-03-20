@@ -6,7 +6,7 @@ from dctkit.math import spmm
 import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
-from typing import Tuple, Any
+from typing import Tuple, Any, List
 
 
 class SimplicialComplex:
@@ -429,7 +429,7 @@ class SimplicialComplex:
 
 
 def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
-                S: SimplicialComplex) -> npt.NDArray:
+                S: SimplicialComplex) -> List[npt.NDArray]:
     """Get the IDs of the cofaces of a simplex, i.e. the neighour simplices of one
     higher dimension.
 
