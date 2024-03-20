@@ -5,7 +5,8 @@ from pygmsh.geo import Geometry
 from meshio import Mesh
 
 
-def build_complex_from_mesh(mesh: Mesh, space_dim=3, is_well_centered=True) -> SimplicialComplex:
+def build_complex_from_mesh(mesh: Mesh, space_dim=3,
+                            is_well_centered=True) -> SimplicialComplex:
     """Build a SimplicialComplex object from a meshio.Mesh object.
 
     Args:
