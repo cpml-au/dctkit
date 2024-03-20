@@ -444,8 +444,8 @@ def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
     """
     # the indices of the parent simplices to which the faces belong are the row indices
     # of the matrix simplices_faces in which the IDs of the faces appear
-    cofaces_ids = np.array([np.nonzero(S.simplices_faces[faces_dim+1] == i)[0].flatten()
-                            for i in faces_ids])
+    cofaces_ids = [np.nonzero(S.simplices_faces[faces_dim+1] == i)[0].flatten()
+                   for i in faces_ids]
     return cofaces_ids
 
 
