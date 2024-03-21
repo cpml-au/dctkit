@@ -2,10 +2,12 @@ import jax.numpy as jnp
 from dctkit.dec import cochain as C
 from jax import Array, vmap
 from functools import partial
+from typing import Callable, Dict
 
 
-def flat(c: C.CochainP0 | C.CochainD0, weights: Array,
-         edges: C.CochainP1V | C.CochainD1V) -> C.CochainP1 | C.CochainD1:
+def flat(c: C.CochainP0 | C.CochainD0, weights: Array, edges: C.CochainP1V |
+         C.CochainD1V, I: Callable = None,
+         I_args: Dict = {}) -> C.CochainP1 | C.CochainD1:
     """Applies the flat to a vector/tensor-valued cochain representing a discrete
     vector/tensor field to obtain a scalar-valued cochain over primal/dual edges.
 
@@ -22,9 +24,12 @@ def flat(c: C.CochainP0 | C.CochainD0, weights: Array,
     Returns:
         a primal/dual scalar/vector-valued cochain defined over primal/dual edges.
     """
-    # contract over the simplices of the input cochain (last axis of weights, first axis
-    # of input cochain coeffs)
-    weighted_v = jnp.tensordot(weights.T, c.coeffs, axes=1)
+    if I is None:
+        # contract over the simplices of the input cochain (last axis of weights, first axis
+        # of input cochain coeffs)
+        def I(x): return jnp.tensordot(weights.T, x.coeffs, axes=1)
+        I_args = {}
+    weighted_v = I(c, **I_args)
     # contract input vector/tensors with edge vectors (last indices of both
     # coefficient matrices), for each target primal/dual edge
     contract = partial(jnp.tensordot, axes=([-1,], [-1,]))
