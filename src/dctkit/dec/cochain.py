@@ -408,39 +408,35 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float) -> Cochain:
         the convolution rho*kernel.
     """
     # we build a kernel matrix K by rolling the kernel vector k + 1 times, where
-    # k is the kernel window. In this way we can express the
+    # k is the kernel window.
+    # For example if kernel = [1,2,0,0] and kernel_window = 2, then
+    # K = [[1,2,0,0],
+    #      [0,1,2,0],
+    #      [0,0,1,2]].
+    # In this way we can express the
     # convolution between c and k as SK @c_coeffs where S is the hodge star
     n = len(c.coeffs)
     K = jnp.zeros((n, n), dtype=dt.float_dtype)
-    buffer = jnp.empty((n, n*2 - 1))
 
-    # generate a wider array that we want a slice into
+    # for simplicity, we roll the kernel coeffs n=len(kernel) times and
+    # this is a trick to do so
+    buffer = jnp.empty((n, n*2 - 1))
     buffer = buffer.at[:, :n].set(kernel.coeffs[:n].T)
     buffer = buffer.at[:, n:].set(kernel.coeffs[:n-1].T)
 
     rolled = buffer.reshape(-1)[n-1:-1].reshape(n, -1)
+
     K_full_roll = jnp.roll(rolled[:, :n], shift=1, axis=0)
+    # since we want to roll only k+1 times, we extract the correct portion
+    # of the matrix
     K_non_zero = K_full_roll[:n - kernel_window + 1]
     K = K.at[:n - kernel_window + 1, :].set(K_non_zero)
-    kernel_coch = Cochain(c.dim, c.is_primal, c.complex, K)
+    K_coch = Cochain(c.dim, c.is_primal, c.complex, K)
 
-    # apply hodge star
-    star_kernel = star(kernel_coch)
+    # apply hodge star to compute SK
+    star_kernel = star(K_coch)
     conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
     return conv
-
-
-def constant_sub(k: float, c: Cochain) -> Cochain:
-    """Compute the cochain subtraction between a constant cochain and another cochain.
-
-    Args:
-        k: a constant.
-        c: a cochain.
-
-    Returns:
-        the resulting subtraction
-    """
-    return Cochain(c.dim, c.is_primal, c.complex, k - c.coeffs)
 
 
 def abs(c: Cochain) -> Cochain:
