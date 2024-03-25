@@ -396,20 +396,22 @@ def sym(c: Cochain) -> Cochain:
     return scalar_mul(add(c, transpose(c)), 0.5)
 
 
-def convolution(c: Cochain, kernel: Cochain, kernel_window: float):
-    # FIXME: fix the docs
-    # only implemented for scalar valued cochains
-    # NOTE: both c and kernel must be 0-cochains
-    n = len(c.coeffs)
+def convolution(c: Cochain, kernel: Cochain, kernel_window: float) -> Cochain:
+    """ Compute the convolution between two scalar 0-cochains.
 
+    Args:
+        c: a scalar 0-cochain.
+        kernel: the scalar 0-cochain kernel.
+        kernel_window: the kernel window.
+
+    Returns:
+        the convolution rho*kernel.
+    """
     # we build a kernel matrix K by rolling the kernel vector k + 1 times, where
-    # k is the number of the kernel final zeros. In this way we can express the
-    # convolution between c and k as (SK^T)^T@c_coeffs where S is the hodge star
+    # k is the kernel window. In this way we can express the
+    # convolution between c and k as SK @c_coeffs where S is the hodge star
+    n = len(c.coeffs)
     K = jnp.zeros((n, n), dtype=dt.float_dtype)
-    # define first row of kernel matrix
-    # FIXME: add docs on this
-    # FIXME: continue from here
-    # kernel_row = kernel.coeffs
     buffer = jnp.empty((n, n*2 - 1))
 
     # generate a wider array that we want a slice into
@@ -420,25 +422,48 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float):
     K_full_roll = jnp.roll(rolled[:, :n], shift=1, axis=0)
     K_non_zero = K_full_roll[:n - kernel_window + 1]
     K = K.at[:n - kernel_window + 1, :].set(K_non_zero)
-
     kernel_coch = Cochain(c.dim, c.is_primal, c.complex, K)
+
+    # apply hodge star
     star_kernel = star(kernel_coch)
     conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
     return conv
 
 
 def constant_sub(k: float, c: Cochain) -> Cochain:
+    """Compute the cochain subtraction between a constant cochain and another cochain.
+
+    Args:
+        k: a constant.
+        c: a cochain.
+
+    Returns:
+        the resulting subtraction
+    """
     return Cochain(c.dim, c.is_primal, c.complex, k - c.coeffs)
 
 
-def abs(c: Cochain):
+def abs(c: Cochain) -> Cochain:
+    """ Compute the absolute value of a cochain.
+
+    Args:
+        c: a cochain.
+
+    Returns:
+        its absolute value.
+    """
     return Cochain(c.dim, c.is_primal, c.complex, jnp.abs(c.coeffs))
 
 
-def maximum(c_1: Cochain, c_2: Cochain):
+def maximum(c_1: Cochain, c_2: Cochain) -> Cochain:
+    """ Compute the component-wise maximum between two cochains.
+
+    Args:
+        c_1: a cochain.
+        c_2: a cochain.
+
+    Returns:
+        the component-wise maximum
+    """
     return Cochain(c_1.dim, c_1.is_primal, c_1.complex,
                    jnp.maximum(c_1.coeffs, c_2.coeffs))
-
-
-def inv(c: Cochain):
-    return Cochain(c.dim, c.is_primal, c.complex, 1/c.coeffs)
