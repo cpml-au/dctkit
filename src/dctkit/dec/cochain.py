@@ -413,8 +413,8 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float):
     buffer = jnp.empty((n, n*2 - 1))
 
     # generate a wider array that we want a slice into
-    buffer = buffer.at[:, :n].set(kernel.coeffs[:n])
-    buffer = buffer.at[:, n:].set(kernel.coeffs[:n-1])
+    buffer = buffer.at[:, :n].set(kernel.coeffs[:n].T)
+    buffer = buffer.at[:, n:].set(kernel.coeffs[:n-1].T)
 
     rolled = buffer.reshape(-1)[n-1:-1].reshape(n, -1)
     K_full_roll = jnp.roll(rolled[:, :n], shift=1, axis=0)
@@ -422,7 +422,7 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float):
     K = K.at[:n - kernel_window + 1, :].set(K_non_zero)
 
     kernel_coch = Cochain(c.dim, c.is_primal, c.complex, K)
-    star_kernel = transpose(star(transpose(kernel_coch)))
+    star_kernel = star(kernel_coch)
     conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
     return conv
 
