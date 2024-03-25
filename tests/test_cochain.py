@@ -605,6 +605,23 @@ def test_codifferential(setup_test):
         assert np.allclose(inner_all[i], cod_inner_all[i])
 
 
+def test_convolution(setup_test):
+    mesh_1, _ = util.generate_line_mesh(11, 1.)
+    S_1 = util.build_complex_from_mesh(mesh_1)
+    S_1.get_hodge_star()
+    n_1 = S_1.S[1].shape[0]
+    vD0 = np.arange(n_1, dtype=dctkit.float_dtype)
+    cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
+    kernel = 4*np.arange(1, 4)
+    kernel_coeffs = np.zeros_like(vD0)
+    kernel_coeffs[:len(kernel)] = kernel
+    kernel_coch = C.CochainD0(complex=S_1, coeffs=kernel_coeffs)
+    conv = C.convolution(cD0, kernel_coch, len(kernel))
+    conv_true = np.array([3.2, 5.6, 8., 10.4, 12.8, 15.2,
+                         17.6, 20., 0., 0.]).reshape(-1, 1)
+    assert np.allclose(conv.coeffs, conv_true)
+
+
 def test_coboundary_closure(setup_test):
     mesh_2, _ = util.generate_square_mesh(1.0)
     S_2 = util.build_complex_from_mesh(mesh_2, is_well_centered=False)
