@@ -437,11 +437,12 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float) -> Cochain:
     # star_kernel = star(K_coch)
     # conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
     n = len(c.coeffs)
-    star_kernel_non_zero = star(kernel).coeffs[:kernel_window].flatten()
+    c_coeffs_flatten = c.coeffs.flatten()
+    star_kernel_non_zero = star(kernel).coeffs[:kernel_window]
 
     conv_non_zero_coeffs = jnp.convolve(
-        c.coeffs.flatten(), star_kernel_non_zero[::-1], mode="valid")
-    conv_coeffs = jnp.zeros_like(c.coeffs.flatten())
+        c_coeffs_flatten, star_kernel_non_zero.flatten()[::-1], mode="valid")
+    conv_coeffs = jnp.zeros_like(c_coeffs_flatten)
     conv_coeffs = conv_coeffs.at[:n - kernel_window + 1].set(conv_non_zero_coeffs)
     conv = Cochain(c.dim, c.is_primal, c.complex, conv_coeffs)
     return conv

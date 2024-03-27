@@ -609,17 +609,27 @@ def test_convolution(setup_test):
     mesh_1, _ = util.generate_line_mesh(11, 1.)
     S_1 = util.build_complex_from_mesh(mesh_1)
     S_1.get_hodge_star()
+    n_0 = S_1.num_nodes
     n_1 = S_1.S[1].shape[0]
+    vP0 = np.arange(n_0, dtype=dctkit.float_dtype)
     vD0 = np.arange(n_1, dtype=dctkit.float_dtype)
+    cP0 = C.CochainP0(complex=S_1, coeffs=vP0)
     cD0 = C.CochainD0(complex=S_1, coeffs=vD0)
     kernel = 4*np.arange(1, 4)
-    kernel_coeffs = np.zeros_like(vD0)
-    kernel_coeffs[:len(kernel)] = kernel
-    kernel_coch = C.CochainD0(complex=S_1, coeffs=kernel_coeffs)
-    conv = C.convolution(cD0, kernel_coch, len(kernel))
-    conv_true = np.array([3.2, 5.6, 8., 10.4, 12.8, 15.2,
-                         17.6, 20., 0., 0.]).reshape(-1, 1)
-    assert np.allclose(conv.coeffs, conv_true)
+    kernel_coeffs_P0 = np.zeros_like(vP0)
+    kernel_coeffs_D0 = np.zeros_like(vD0)
+    kernel_coeffs_P0[:len(kernel)] = kernel
+    kernel_coeffs_D0[:len(kernel)] = kernel
+    kernel_P0 = C.CochainP0(complex=S_1, coeffs=kernel_coeffs_P0)
+    kernel_D0 = C.CochainD0(complex=S_1, coeffs=kernel_coeffs_D0)
+    convP0 = C.convolution(cP0, kernel_P0, len(kernel))
+    convD0 = C.convolution(cD0, kernel_D0, len(kernel))
+    convP0_true = np.array([3.2,  5.4,  7.6,  9.8, 12., 14.2,
+                           16.4, 18.6, 20.8,  0.,  0.]).reshape(-1, 1)
+    convD0_true = np.array([3.2, 5.6, 8., 10.4, 12.8, 15.2,
+                            17.6, 20., 0., 0.]).reshape(-1, 1)
+    assert np.allclose(convP0.coeffs, convP0_true)
+    assert np.allclose(convD0.coeffs, convD0_true)
 
 
 def test_coboundary_closure(setup_test):
