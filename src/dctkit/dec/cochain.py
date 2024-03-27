@@ -415,27 +415,35 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float) -> Cochain:
     #      [0,0,1,2]].
     # In this way we can express the
     # convolution between c and k as SK @c_coeffs where S is the hodge star
-    n = len(c.coeffs)
-    K = jnp.zeros((n, n), dtype=dt.float_dtype)
+    # n = len(c.coeffs)
+    # K = jnp.zeros((n, n), dtype=dt.float_dtype)
 
     # for simplicity, we roll the kernel coeffs n=len(kernel) times and
     # this is a trick to do so
-    buffer = jnp.empty((n, n*2 - 1))
-    buffer = buffer.at[:, :n].set(kernel.coeffs[:n].T)
-    buffer = buffer.at[:, n:].set(kernel.coeffs[:n-1].T)
+    # buffer = jnp.empty((n, n*2 - 1))
+    # buffer = buffer.at[:, :n].set(kernel.coeffs[:n].T)
+    # buffer = buffer.at[:, n:].set(kernel.coeffs[:n-1].T)
 
-    rolled = buffer.reshape(-1)[n-1:-1].reshape(n, -1)
+    # rolled = buffer.reshape(-1)[n-1:-1].reshape(n, -1)
 
-    K_full_roll = jnp.roll(rolled[:, :n], shift=1, axis=0)
+    # K_full_roll = jnp.roll(rolled[:, :n], shift=1, axis=0)
     # since we want to roll only k+1 times, we extract the correct portion
     # of the matrix
-    K_non_zero = K_full_roll[:n - kernel_window + 1]
-    K = K.at[:n - kernel_window + 1, :].set(K_non_zero)
-    K_coch = Cochain(c.dim, c.is_primal, c.complex, K)
+    # K_non_zero = K_full_roll[:n - kernel_window + 1]
+    # K = K.at[:n - kernel_window + 1, :].set(K_non_zero)
+    # K_coch = Cochain(c.dim, c.is_primal, c.complex, K)
 
     # apply hodge star to compute SK
-    star_kernel = star(K_coch)
-    conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
+    # star_kernel = star(K_coch)
+    # conv = Cochain(c.dim, c.is_primal, c.complex, star_kernel.coeffs@c.coeffs)
+    n = len(c.coeffs)
+    star_kernel_non_zero = star(kernel).coeffs[:kernel_window].flatten()
+
+    conv_non_zero_coeffs = jnp.convolve(
+        c.coeffs.flatten(), star_kernel_non_zero[::-1], mode="valid")
+    conv_coeffs = jnp.zeros_like(c.coeffs.flatten())
+    conv_coeffs = conv_coeffs.at[:n - kernel_window + 1].set(conv_non_zero_coeffs)
+    conv = Cochain(c.dim, c.is_primal, c.complex, conv_coeffs)
     return conv
 
 
