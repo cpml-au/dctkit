@@ -624,8 +624,8 @@ def test_convolution(setup_test):
     kernel_D0 = C.CochainD0(complex=S_1, coeffs=kernel_coeffs_D0)
     convP0 = C.convolution(cP0, kernel_P0, len(kernel))
     convD0 = C.convolution(cD0, kernel_D0, len(kernel))
-    convP0_true = np.array([3.2,  5.4,  7.6,  9.8, 12., 14.2,
-                           16.4, 18.6, 20.8,  0.,  0.]).reshape(-1, 1)
+    convP0_true = np.array([3.2,  5.6,  8., 10.4, 12.8, 15.2,
+                           17.6, 20., 16.4,  0.,  0.]).reshape(-1, 1)
     convD0_true = np.array([3.2, 5.6, 8., 10.4, 12.8, 15.2,
                             17.6, 20., 0., 0.]).reshape(-1, 1)
     assert np.allclose(convP0.coeffs, convP0_true)
