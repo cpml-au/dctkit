@@ -8,6 +8,7 @@ Discrete Calculus Toolkit
 :maxdepth: 2
 
 Overview <readme>
+Theory <theory>
 License <license>
 Module Reference <api/modules>
 ```
