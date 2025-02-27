@@ -22,9 +22,9 @@ def test_boundary_COO(setup_test):
 
     assert boundary_tuple[0].dtype == dctkit.int_dtype
     boundary_true = (rows_index_true, column_index_true, values_true)
-    assert np.alltrue(boundary_tuple[0] == boundary_true[0])
-    assert np.alltrue(boundary_tuple[1] == boundary_true[1])
-    assert np.alltrue(boundary_tuple[2] == boundary_true[2])
+    assert np.all(boundary_tuple[0] == boundary_true[0])
+    assert np.all(boundary_tuple[1] == boundary_true[1])
+    assert np.all(boundary_tuple[2] == boundary_true[2])
 
 
 @pytest.mark.parametrize('space_dim', space_dim)
@@ -94,7 +94,7 @@ def test_simplicial_complex_1(setup_test, space_dim: int):
     dual_edges_true[-1, 0] = 0.125
 
     for i in range(3):
-        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
+        assert np.all(S.boundary[1][i] == boundary_true[1][i])
 
     for i in range(2):
         assert np.allclose(S.circ[i], circ_true[i])
@@ -248,8 +248,8 @@ def test_simplicial_complex_2(setup_test, space_dim):
 
     # test boundary
     for i in range(3):
-        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
-        assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
+        assert np.all(S.boundary[1][i] == boundary_true[1][i])
+        assert np.all(S.boundary[2][i] == boundary_true[2][i])
         assert np.allclose(S.primal_volumes[i], pv_true[i])
         assert np.allclose(S.dual_volumes[i], dv_true[i])
         assert np.allclose(S.hodge_star[i], hodge_true[i])
@@ -396,9 +396,9 @@ def test_simplicial_complex_3(setup_test, space_dim):
     # test boundary
     assert S.boundary[1][0].dtype == dctkit.int_dtype
     for i in range(3):
-        assert np.alltrue(S.boundary[1][i] == boundary_true[1][i])
-        assert np.alltrue(S.boundary[2][i] == boundary_true[2][i])
-        assert np.alltrue(S.boundary[3][i] == boundary_true[3][i])
+        assert np.all(S.boundary[1][i] == boundary_true[1][i])
+        assert np.all(S.boundary[2][i] == boundary_true[2][i])
+        assert np.all(S.boundary[3][i] == boundary_true[3][i])
 
     # test bnd faces indices
     assert np.allclose(S.bnd_faces_indices, bnd_faces_indices_true)

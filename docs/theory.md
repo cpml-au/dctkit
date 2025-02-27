@@ -20,7 +20,7 @@ Let us fix some notations used in the following sections:
 ## Exterior algebra
 
 ::: refbox
-**References:** [@grady2010discrete], Section 2.2.1.1.
+**References:** {cite}`grady2010discrete`, Section 2.2.1.1.
 [@epstein2010geometrical], Chapter 3. [@crane2018discrete], Section 4.1
 :::
 
@@ -47,6 +47,7 @@ of $\mathcal{V}$ and linear in each of its argument.
 :::
 
 In components,
+
 $$
 \boldsymbol{v}_1 \wedge \boldsymbol{v}_2 = \sum_{i < j}(v_1^i v_2^j - v_1^j
 v_2^i)\boldsymbol{e}_i \wedge \boldsymbol{e}_j.
@@ -115,7 +116,10 @@ $x$.
 
 We can define the **tangent bundle** $T M^n$ of a submanifold $M^n$ as
 the set of *all* tangent vectors of $M^n$, i.e.
-$$T M^n = \bigcup_{x \in M^n} T_x M^n.$$
+
+$$
+T M^n = \bigcup_{x \in M^n} T_x M^n.
+$$
 
 :::: defbox
 ::: Def
@@ -130,13 +134,19 @@ space $T_x M$ at each point $x \in M$.
 **Definition 5**. Given $\boldsymbol{v}\in T_x M^n$ and
 $f: M^n \rightarrow \mathbb{R}$ differentiable in $x$ we can define the
 **directional derivative** of $f$ at point $x$ as
-$$(D_{\boldsymbol{v}} f)(x) := \frac{d}{dt}[f(x+t\boldsymbol{v})]_{t = 0}$$
+
+$$
+(D_{\boldsymbol{v}} f)(x) := \frac{d}{dt}[f(x+t\boldsymbol{v})]_{t = 0}
+$$
 :::
 ::::
 
 If $x$ is any local Cartesian coordinate system specified by
 $(x^1, \dots, x^n)$ then the directional derivative can be expressed as
-$$(D_v f)(q) = \sum_{j = 1}^n \frac{\partial f}{\partial x^j}(q) v^j,$$
+
+$$
+(D_v f)(q) = \sum_{j = 1}^n \frac{\partial f}{\partial x^j}(q) v^j,
+$$
 
 from which we discover a one-to-one correspondence between tangent
 vectors and differential operators on differentiable functions near $q$.
@@ -160,7 +170,10 @@ i.e. $$T^* M^n = \bigcup_{x \in M^n} T^*_x M^n.$$
 differentiable function, we define the **differential** of $f$ at a
 point $x \in M^n$ as the linear function
 $df|_x: T_x M^n \rightarrow \mathbb{R}$ defined as
-$$df(\boldsymbol{v})|_x := D_{\boldsymbol{v}}(f)(x).$$
+
+$$
+df(\boldsymbol{v})|_x := D_{\boldsymbol{v}}(f)(x).
+$$
 :::
 ::::
 
@@ -180,9 +193,17 @@ $\bigwedge^p T^*_q M^n$ in $T^*_q M^n$.
 It is well-known that given $\boldsymbol{v},\boldsymbol{w}\in \mathcal{V}$ and
 $\tilde{\boldsymbol{v}}, \tilde{\boldsymbol{w}} \in \mathbb{R}^n$ their representation
 in components as column vectors
-$$\langle \boldsymbol{v},\boldsymbol{w}\rangle = \tilde{\boldsymbol{v}}^T \boldsymbol{G} \tilde{\boldsymbol{w}},$$
+
+$$
+\langle \boldsymbol{v},\boldsymbol{w}\rangle = \tilde{\boldsymbol{v}}^T \boldsymbol{G}
+\tilde{\boldsymbol{w}},
+$$
+
 where a generic entry of $G$ is defined as
-$$g_{ij} := \langle \boldsymbol{e}_i, \boldsymbol{e}_j \rangle$$
+
+$$
+g_{ij} := \langle \boldsymbol{e}_i, \boldsymbol{e}_j \rangle
+$$
 
 ::: defbox
 $\boldsymbol{G}$ is called the **metric tensor**.
@@ -210,7 +231,12 @@ Let us the formal definition explicitly.
 **Definition 8**. Let $M$ be a Riemannian manifold with metric
 $\langle , \rangle$ and let $\alpha$ be a $1$-form on $M$. The **sharp
 map** $\sharp$ from $1$-forms to vector fields is defined as
-$$\langle \boldsymbol{\alpha}^{\sharp}, \boldsymbol{u}\rangle := \alpha(\boldsymbol{u}),$$ for
+
+$$
+\langle \boldsymbol{\alpha}^{\sharp}, \boldsymbol{u}\rangle := \alpha(\boldsymbol{u}),
+$$
+
+for
 any $x \in M$ and $\boldsymbol{u}\in T_x M$
 :::
 ::::
