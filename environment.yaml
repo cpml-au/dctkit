@@ -9,7 +9,7 @@ dependencies:
   - jaxopt
   - numpy
   - pygmo
-  - petsc4py
+  # - petsc4py
   - python
   - python-gmsh
   - scipy

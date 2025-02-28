@@ -5,12 +5,13 @@ import numpy.typing as npt
 from typing import List, Dict
 import pygmo as pg
 from typeguard import check_type
-from petsc4py import PETSc, init
-from petsc4py.PETSc import Vec
+
+# from petsc4py import PETSc, init
+# from petsc4py.PETSc import Vec
 import jaxopt
 
 
-class OptimizationProblem():
+class OptimizationProblem:
     """Class for (constrained) optimization problems.
 
     Args:
@@ -21,23 +22,28 @@ class OptimizationProblem():
             `set_obj_args`.
     """
 
-    def __init__(self, dim: int, state_dim: int,
-                 objfun: Callable[..., float | npt.NDArray | Array |
-                                  np.float32 | np.float64],
-                 constrfun: Callable[..., float | npt.NDArray | Array |
-                                     np.float32 | np.float64] | None = None,
-                 constr_args: Dict[str, float | np.float32 |
-                                   np.float64 | npt.NDArray | Array] = {},
-                 solver_lib: str = 'pygmo'):
+    def __init__(
+        self,
+        dim: int,
+        state_dim: int,
+        objfun: Callable[..., float | npt.NDArray | Array | np.float32 | np.float64],
+        constrfun: (
+            Callable[..., float | npt.NDArray | Array | np.float32 | np.float64] | None
+        ) = None,
+        constr_args: Dict[
+            str, float | np.float32 | np.float64 | npt.NDArray | Array
+        ] = {},
+        solver_lib: str = "pygmo",
+    ):
 
         self.dim = dim
         self.state_dim = state_dim
 
         self.__register_obj_and_grad_fn(objfun, constrfun, constr_args)
 
-        if solver_lib == "petsc":
-            self.solver = PETScSolver(self)
-        elif solver_lib == "jaxopt":
+        # if solver_lib == "petsc":
+        #     self.solver = PETScSolver(self)
+        if solver_lib == "jaxopt":
             self.solver = JAXoptSolver(self)
         else:
             self.solver = PygmoSolver(self)
@@ -58,8 +64,10 @@ class OptimizationProblem():
             # jacobian of the constraint equations wrt the parameters array
             self.constr_grad = jit(jacrev(constrfun))
             # TODO: check according to dt.float_dtype instead of np.float32 or 64
-            check_type(constr_args, Dict[str, float | np.float32 | np.float64 |
-                                         npt.NDArray | Array])
+            check_type(
+                constr_args,
+                Dict[str, float | np.float32 | np.float64 | npt.NDArray | Array],
+            )
             self.constr_args = constr_args
             self.constr_problem = True
 
@@ -67,16 +75,32 @@ class OptimizationProblem():
         """Sets the additional arguments to be passed to the objective function."""
         self.solver.set_obj_args(args)
 
-    def solve(self, x0: npt.NDArray, algo: str = "tnewton", ftol_abs: float = 1e-5,
-              ftol_rel: float = 1e-5, gatol=None, grtol=None, gttol=None,
-              maxeval: int = 500, verbose: bool = False) -> npt.NDArray:
+    def solve(
+        self,
+        x0: npt.NDArray,
+        algo: str = "tnewton",
+        ftol_abs: float = 1e-5,
+        ftol_rel: float = 1e-5,
+        gatol=None,
+        grtol=None,
+        gttol=None,
+        maxeval: int = 500,
+        verbose: bool = False,
+    ) -> npt.NDArray:
 
         # FIXME: these parameters should be set through a separate function of the
         # solver, only x0 should be a parameter
 
-        kwargs = {"algo": algo, "ftol_abs": ftol_abs, "ftol_rel": ftol_rel,
-                  "gatol": gatol, "grtol": grtol, "gttol": gttol, "maxeval": maxeval,
-                  "verbose": verbose}
+        kwargs = {
+            "algo": algo,
+            "ftol_abs": ftol_abs,
+            "ftol_rel": ftol_rel,
+            "gatol": gatol,
+            "grtol": grtol,
+            "gttol": gttol,
+            "maxeval": maxeval,
+            "verbose": verbose,
+        }
 
         u = self.solver.run(x0, **kwargs)
 
@@ -105,21 +129,29 @@ class OptimalControlProblem(OptimizationProblem):
         obj_args: extra keyword arguments for the objective function.
     """
 
-    def __init__(self, objfun: Callable[..., np.float32 | np.float64 |
-                                        npt.NDArray | Array],
-                 statefun: Callable[..., np.float32 | np.float64 | npt.NDArray | Array],
-                 state_dim: int, nparams: int,
-                 constraint_args: Dict[str, float | np.float32 |
-                                       np.float64 | npt.NDArray | Array] = {},
-                 obj_args: Dict[str, float | np.float32 |
-                                np.float64 | npt.NDArray | Array] = {}) -> None:
+    def __init__(
+        self,
+        objfun: Callable[..., np.float32 | np.float64 | npt.NDArray | Array],
+        statefun: Callable[..., np.float32 | np.float64 | npt.NDArray | Array],
+        state_dim: int,
+        nparams: int,
+        constraint_args: Dict[
+            str, float | np.float32 | np.float64 | npt.NDArray | Array
+        ] = {},
+        obj_args: Dict[str, float | np.float32 | np.float64 | npt.NDArray | Array] = {},
+    ) -> None:
 
-        super().__init__(dim=nparams, state_dim=state_dim, objfun=objfun,
-                         constrfun=statefun, constr_args=constraint_args)
+        super().__init__(
+            dim=nparams,
+            state_dim=state_dim,
+            objfun=objfun,
+            constrfun=statefun,
+            constr_args=constraint_args,
+        )
         super().set_obj_args(obj_args)
 
 
-class OptimizationSolver():
+class OptimizationSolver:
     def __init__(self, prb: OptimizationProblem):
         self.prb = prb
 
@@ -134,47 +166,47 @@ class OptimizationSolver():
         raise NotImplementedError
 
 
-class PETScSolver(OptimizationSolver):
-    def __init__(self, prb: OptimizationProblem):
-        super().__init__(prb)
-        init()
-        # create default solver and settings
-        self.tao = PETSc.TAO().create()
-        self.tao.setType(PETSc.TAO.Type.BQNLS)  # Specify the solver type
-        # create variable to store the gradient of the objective function
-        self.g = PETSc.Vec().createSeq(self.prb.dim)
+# class PETScSolver(OptimizationSolver):
+#     def __init__(self, prb: OptimizationProblem):
+#         super().__init__(prb)
+#         init()
+#         # create default solver and settings
+#         self.tao = PETSc.TAO().create()
+#         self.tao.setType(PETSc.TAO.Type.BQNLS)  # Specify the solver type
+#         # create variable to store the gradient of the objective function
+#         self.g = PETSc.Vec().createSeq(self.prb.dim)
 
-    def set_obj_args(self, args: dict) -> None:
-        check_type(args, Dict[str, float | np.float32 | np.float64
-                              | npt.NDArray | Array])
-        self.tao.setObjectiveGradient(
-            self.objective_and_gradient, self.g, kargs=args)
+#     def set_obj_args(self, args: dict) -> None:
+#         check_type(args, Dict[str, float | np.float32 | np.float64
+#                               | npt.NDArray | Array])
+#         self.tao.setObjectiveGradient(
+#             self.objective_and_gradient, self.g, kargs=args)
 
-    def objective_and_gradient(self, tao, x: Vec, g: Vec, **kwargs: Dict):
-        """PETSc-compatible wrapper for the function that returns the objective value
-        and the gradient."""
-        fval, grad = self.prb.objandgrad(x.getArray(), **kwargs)
-        g.setArray(grad)
-        return fval
+#     def objective_and_gradient(self, tao, x: Vec, g: Vec, **kwargs: Dict):
+#         """PETSc-compatible wrapper for the function that returns the objective value
+#         and the gradient."""
+#         fval, grad = self.prb.objandgrad(x.getArray(), **kwargs)
+#         g.setArray(grad)
+#         return fval
 
-    def run(self, x0: npt.NDArray, **kwargs: Dict) -> npt.NDArray:
-        maxeval = kwargs["maxeval"]
-        gatol = kwargs["gatol"]
-        grtol = kwargs["grtol"]
-        gttol = kwargs["gttol"]
-        verbose = kwargs["verbose"]
-        x = PETSc.Vec().createWithArray(x0)
-        self.tao.setSolution(x)
-        self.tao.setMaximumIterations(maxeval)
-        self.tao.setMaximumFunctionEvaluations(maxeval)
-        self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
-        self.tao.setFromOptions()  # Set options for the solver
-        self.tao.solve()
-        if verbose:
-            self.tao.view()
-        u = self.tao.getSolution().getArray()
-        # objective_value = self.tao.getObjectiveValue()
-        return u
+#     def run(self, x0: npt.NDArray, **kwargs: Dict) -> npt.NDArray:
+#         maxeval = kwargs["maxeval"]
+#         gatol = kwargs["gatol"]
+#         grtol = kwargs["grtol"]
+#         gttol = kwargs["gttol"]
+#         verbose = kwargs["verbose"]
+#         x = PETSc.Vec().createWithArray(x0)
+#         self.tao.setSolution(x)
+#         self.tao.setMaximumIterations(maxeval)
+#         self.tao.setMaximumFunctionEvaluations(maxeval)
+#         self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
+#         self.tao.setFromOptions()  # Set options for the solver
+#         self.tao.solve()
+#         if verbose:
+#             self.tao.view()
+#         u = self.tao.getSolution().getArray()
+#         # objective_value = self.tao.getObjectiveValue()
+#         return u
 
 
 class JAXoptSolver(OptimizationSolver):
@@ -233,7 +265,7 @@ class PygmoSolver(OptimizationSolver):
             return grad
 
     def get_bounds(self):
-        return ([-100]*self.prb.dim, [100]*self.prb.dim)
+        return ([-100] * self.prb.dim, [100] * self.prb.dim)
 
     def get_name(self) -> str:
         """Returns the name of the optimization problem. Override this method to set
@@ -261,6 +293,7 @@ class PygmoSolver(OptimizationSolver):
         algo.set_verbosity(verbose)
         pop = algo.evolve(pop)  # type: ignore
         self.prb.last_opt_result = algo.extract(  # type: ignore
-            pg.nlopt).get_last_opt_result()
+            pg.nlopt
+        ).get_last_opt_result()
         u = pop.champion_x
         return u

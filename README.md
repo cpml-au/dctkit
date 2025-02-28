@@ -17,6 +17,7 @@ Features:
   fields, sharp operator
 - interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
 - interface to the [`PETSc`](https://petsc.org) non-linear solvers and optimizers
+  (_temporarily disabled_)
 - routines for solving optimal control problems
 - implementation of discrete physical models: Dirichlet energy, Poisson, Euler's
   Elastica, isotropic linear elasticity
@@ -60,15 +61,6 @@ Running the benchmarks:
 $ sh ./bench/run_bench
 ```
 The Markdown file `bench_results.md` will be generated containing the results.
-
-*Reference performance (HP Z2 Workstation G9 - 12th Gen Intel i9-12900K (24) @ 5.200GHz - NVIDIA RTX A4000 - 64GB RAM - ArchLinux kernel v6.7.8)*
-
-| Command | Mean [s] | Min [s] | Max [s] | Relative |
-|:---|---:|---:|---:|---:|
-| `python bench_poisson.py scipy cpu` | 1.739 ± 0.014 | 1.724 | 1.754 | 2.04 ± 0.04 |
-| `python bench_poisson.py pygmo cpu` | 0.852 ± 0.017 | 0.835 | 0.876 | 1.00 |
-| `python bench_poisson.py jaxopt cpu` | 2.872 ± 0.018 | 2.851 | 2.898 | 3.37 ± 0.07 |
-| `python bench_poisson.py jaxopt gpu` | 3.297 ± 0.056 | 3.210 | 3.367 | 3.87 ± 0.10 |
 
 ## Usage
 
