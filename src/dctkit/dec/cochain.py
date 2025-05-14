@@ -410,11 +410,17 @@ def convolution(c: Cochain, kernel: Cochain, kernel_window: float) -> Cochain:
     # FIXME: add the docs
     n = len(c.coeffs)
     star_c_coeffs_flatten = star(c).coeffs.flatten()
+    # Extract the active part of the kernel
     kernel_non_zero = kernel.coeffs[:kernel_window]
 
+    # Compute the convolution using JAX's convolution function
+    # NOTE: we reverse the kernel ([::-1]) as required by the convolution def.
+    # "valid" mode means only return output where signals overlap completely
     conv_non_zero_coeffs = jnp.convolve(
         star_c_coeffs_flatten, kernel_non_zero.flatten()[::-1], mode="valid")
+
     conv_coeffs = jnp.zeros_like(star_c_coeffs_flatten)
+    # NOTE: last values should be fixed by BCs
     conv_coeffs = conv_coeffs.at[:n - kernel_window + 1].set(conv_non_zero_coeffs)
     conv = Cochain(c.dim, c.is_primal, c.complex, conv_coeffs)
     return conv
