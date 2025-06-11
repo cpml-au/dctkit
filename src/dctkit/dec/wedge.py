@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from jax import Array, vmap, debug
 from dctkit.dec import cochain as C
 import dctkit as dt
-from jax.scipy.special import factorial
+from scipy.special import factorial
 from functools import partial
 from dctkit.mesh import util
 
@@ -31,40 +31,49 @@ def find_simplex_idx(s: Array, S: Array):
     return simplex_idx
 
 
+@partial(vmap, in_axes=(0, None, None, None, None, None, None))
+def compute_wedge_coeffs(simplex, S, c_1, c_2, perm_vec, sgn_perm_vec, weight):
+    # perm the simplex idx vector
+    perm_simplex = simplex[perm_vec]
+    # split the perm simplices in vector of indices compatible
+    # with c_1 and c_2
+    perm_simplex_c_1 = perm_simplex[:, :c_1.dim+1]
+    perm_simplex_c_2 = perm_simplex[:, c_1.dim:]
+
+    # since the perm simplices may not have the same orientations
+    # as the original one, we need to account for that
+    perm_ord_c_1 = jnp.argsort(perm_simplex_c_1, axis=1)
+    perm_ord_c_2 = jnp.argsort(perm_simplex_c_2, axis=1)
+    sign_orientations_c_1 = permutation_sign(perm_ord_c_1)
+    sign_orientations_c_2 = permutation_sign(perm_ord_c_2)
+
+    # compute the indexes for every (ordered) perm_simplex
+    ord_simplex_c_1 = jnp.take_along_axis(perm_simplex_c_1, perm_ord_c_1, axis=1)
+    ord_simplex_c_2 = jnp.take_along_axis(perm_simplex_c_2, perm_ord_c_2, axis=1)
+    perm_idx_c_1 = find_simplex_idx(ord_simplex_c_1, S.S[c_1.dim])
+    perm_idx_c_2 = find_simplex_idx(ord_simplex_c_2, S.S[c_2.dim])
+
+    # compute the value of the cup product
+    cup_prod_no_sign = c_1.coeffs[perm_idx_c_1]*c_2.coeffs[perm_idx_c_2]
+    cup_prod = cup_prod_no_sign.ravel()*sign_orientations_c_1*sign_orientations_c_2
+
+    # compute wedge entry
+    wedge_vec = sgn_perm_vec*cup_prod
+    return weight*jnp.sum(wedge_vec)
+
+
 def primal_wedge(c_1: C.CochainP, c_2: C.CochainP) -> C.CochainP:
     wedge_coch_dim = c_1.dim + c_2.dim
-    weight = 1/factorial(wedge_coch_dim+1)
+    weight = 1/factorial(wedge_coch_dim+1, True)
     S = c_1.complex
     # extract the matrix of indices of the wedge_coch_dim+1-simplices
     simplices = S.S[wedge_coch_dim]
-    # extract the number of wedge_coch_dim-simplices
-    num_simplices = simplices.shape[0]
     # generate the permutation vectors and compute its signs
     perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
     sgn_perm_vec = permutation_sign(perm_vec)
-
-    # fill the coeffs of wedge coch
-    wedge_coch_coeffs = jnp.zeros(num_simplices, dtype=dt.float_dtype)
-    # FIXME: optimize this with vmap
-    for i, simplex in enumerate(simplices):
-        # perm the simplex idx vector
-        perm_simplex = simplex[perm_vec]
-        # split the perm simplices in vector of indices compatible
-        # with c_1 and c_2
-        perm_simplex_c_1 = perm_simplex[:, :c_1.dim+1]
-        perm_simplex_c_2 = perm_simplex[:, c_1.dim:]
-
-        print(perm_simplex_c_1, jnp.argsort(perm_simplex_c_1, axis=1))
-        assert False
-
-        # compute the indexes for every perm_simplex
-        perm_idx_c_1 = find_simplex_idx(perm_simplex_c_1, S.S[c_1.dim])
-        perm_idx_c_2 = find_simplex_idx(perm_simplex_c_2, S.S[c_2.dim])
-
-        # compute wedge entry
-        wedge_vec = sgn_perm_vec*c_1.coeffs[perm_idx_c_1]*c_2.coeffs[perm_idx_c_2]
-        wedge_coch_coeffs = wedge_coch_coeffs.at[i].set(weight*jnp.sum(wedge_vec))
-
+    # compute wedge coeffs
+    wedge_coch_coeffs = compute_wedge_coeffs(
+        simplices, S, c_1, c_2, perm_vec, sgn_perm_vec, weight)
     return C.CochainP(wedge_coch_dim, S, wedge_coch_coeffs)
 
 
@@ -79,23 +88,20 @@ if __name__ == "__main__":
     S_2.get_hodge_star()
     S_3.get_hodge_star()
 
-    print(S_2.S[1])
-    assert False
+    vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
+    vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
+    vP1_1 = jnp.array([1, 2, 3, 4], dtype=dt.float_dtype)
+    vP1_2 = jnp.array([5, 6, 7, 8], dtype=dt.float_dtype)
 
-    # vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
-    # vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
-    # vP1_1 = jnp.array([1, 2, 3, 4], dtype=dt.float_dtype)
-    # vP1_2 = jnp.array([5, 6, 7, 8], dtype=dt.float_dtype)
+    cP0_1 = C.CochainP0(complex=S_1, coeffs=vP0_1)
+    cP0_2 = C.CochainP0(complex=S_1, coeffs=vP0_2)
+    cP1_1 = C.CochainP1(complex=S_1, coeffs=vP1_1)
+    cP1_2 = C.CochainP1(complex=S_1, coeffs=vP1_2)
 
-    # cP0_1 = C.CochainP0(complex=S_1, coeffs=vP0_1)
-    # cP0_2 = C.CochainP0(complex=S_1, coeffs=vP0_2)
-    # cP1_1 = C.CochainP1(complex=S_1, coeffs=vP1_1)
-    # cP1_2 = C.CochainP1(complex=S_1, coeffs=vP1_2)
+    # vP1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
+    # vP1_2 = jnp.arange(8, 17, dtype=dt.float_dtype)
 
-    vP1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
-    vP1_2 = jnp.arange(8, 17, dtype=dt.float_dtype)
+    # cP1_1 = C.CochainP1(complex=S_2, coeffs=vP1_1)
+    # cP1_2 = C.CochainP1(complex=S_2, coeffs=vP1_2)
 
-    cP1_1 = C.CochainP1(complex=S_2, coeffs=vP1_1)
-    cP1_2 = C.CochainP1(complex=S_2, coeffs=vP1_2)
-
-    print(primal_wedge(cP1_1, cP1_2).coeffs)
+    print(primal_wedge(cP0_1, cP1_1).coeffs)
