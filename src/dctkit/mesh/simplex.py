@@ -310,9 +310,10 @@ class SimplicialComplex:
         num_nodes = self.num_nodes
         self.flat_PDP_weights = np.zeros(
             (num_edges, num_nodes), dtype=dctkit.float_dtype)
-        # FIXME: check if it is possible or not to optimize this routine
+        # FIXME: optimize this routine with jax.vmap
         for i in range(num_edges):
-            self.flat_PDP_weights[i, self.S[1][i]] = self.primal_volumes[1][i]/2
+            self.flat_PDP_weights[i, self.S[1][i]] = 1/2
+        self.flat_PDP_weights = self.flat_PDP_weights.T
 
     def get_current_covariant_basis(self, node_coords: npt.NDArray | Array) -> Array:
         """Compute the current covariant basis of each face of a 2D simplicial complex.
