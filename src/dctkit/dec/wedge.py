@@ -82,7 +82,7 @@ def dual_wedge(c_1: C.CochainD, c_2: C.CochainD) -> C.CochainD:
     weight = 1/factorial(wedge_coch_dim+1, True)
     S = c_1.complex
     # extract the matrix of indices of the wedge_coch_dim+1-simplices
-    simplices = S.S[wedge_coch_dim]
+    simplices = S.S_dual[wedge_coch_dim]
     # generate the permutation vectors and compute its signs
     perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
     sgn_perm_vec = permutation_sign(perm_vec)
@@ -94,7 +94,7 @@ def dual_wedge(c_1: C.CochainD, c_2: C.CochainD) -> C.CochainD:
 
 if __name__ == "__main__":
     mesh_1, _ = util.generate_line_mesh(5, 1.)
-    mesh_2, _ = util.generate_square_mesh(0.8)
+    mesh_2, _ = util.generate_square_mesh(1)
     mesh_3, _ = util.generate_tet_mesh(2.0)
     S_1 = util.build_complex_from_mesh(mesh_1)
     S_2 = util.build_complex_from_mesh(mesh_2)
@@ -102,6 +102,8 @@ if __name__ == "__main__":
     S_1.get_hodge_star()
     S_2.get_hodge_star()
     S_3.get_hodge_star()
+    S_1.get_S_dual()
+    S_2.get_S_dual()
 
     vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
     vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
@@ -113,17 +115,16 @@ if __name__ == "__main__":
     cP1_1 = C.CochainP1(complex=S_1, coeffs=vP1_1)
     cP1_2 = C.CochainP1(complex=S_1, coeffs=vP1_2)
 
-    # vP1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
+    vD0_1 = jnp.arange(1, 5, dtype=dt.float_dtype)
+    vD1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
     # vP1_2 = jnp.arange(8, 17, dtype=dt.float_dtype)
 
     # cP1_1 = C.CochainP1(complex=S_2, coeffs=vP1_1)
     # cP1_2 = C.CochainP1(complex=S_2, coeffs=vP1_2)
 
-    cD0_1 = C.CochainD0(complex=S_1, coeffs=vP1_1)
-    cD1_1 = C.CochainD1(complex=S_1, coeffs=vP0_1)
+    cD0_1 = C.CochainD0(complex=S_2, coeffs=vD0_1)
+    cD1_1 = C.CochainD1(complex=S_2, coeffs=vD1_1)
 
-    S_2.get_S_dual_k(1)
-    print(S_2.S_dual_k)
-    assert False
-
+    print(S_2.node_coords, S_2.circ[2])
+    print(S_2.S[1])
     print(dual_wedge(cD0_1, cD1_1).coeffs)
