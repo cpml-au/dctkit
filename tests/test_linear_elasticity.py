@@ -30,7 +30,7 @@ def test_linear_elasticity_pure_tension(setup_test, is_primal, energy_formulatio
 
     ref_node_coords = S.node_coords
 
-    bnd_edges_idx = S.bnd_faces_indices
+    bnd_edges_idx = S.boundary_simplices[S.dim-1]
     left_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "left")
     right_bnd_nodes_idx = util.get_nodes_for_physical_group(mesh, 1, "right")
     left_bnd_edges_idx = util.get_edges_for_physical_group(S, mesh, "left")

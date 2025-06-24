@@ -79,12 +79,30 @@ class SimplicialComplex:
 
     def get_complex_boundary_faces_indices(self):
         """Find the IDs of the boundary faces of the complex, i.e. the row indices of
-        the boundary faces in the matrix S[dim-1].
+        the boundary faces in the matrix S[dim-1]. (fix the docs)
         """
-        # boundary faces IDs appear only once in the matrix simplices_faces[dim]
-        unique_elements, counts = np.unique(
-            self.simplices_faces[self.dim], return_counts=True)
-        self.bnd_faces_indices = np.sort(unique_elements[counts == 1])
+        # FIXME: this routine is tested only for dim-1 boundary simplices. Fix it!
+        self.boundary_simplices = sl.ShiftedList([None] * (self.dim + 1), -1)
+
+        # For k = 0 to dim - 1, use boundary matrix ∂_{k+1}
+        for k in range(self.dim):
+            boundary_mat = self.boundary[k + 1]  # COO format
+            rows = boundary_mat[0]  # Each row corresponds to a k-simplex
+
+            unique, counts = np.unique(rows, return_counts=True)
+            bnd_k = unique[counts == 1]
+            self.boundary_simplices[k] = bnd_k
+
+        # For k = dim (top-level), look for top-simplices having at least one
+        # (dim-1)-face on the boundary
+
+        # Find boundary (dim-1)-simplices
+        boundary_faces = self.boundary_simplices[self.dim - 1]
+        # shape: (num_top_simplices, dim+1)
+        simplices_faces = self.simplices_faces[self.dim]
+        is_boundary_simplex = np.any(np.isin(simplices_faces, boundary_faces), axis=1)
+
+        self.boundary_simplices[self.dim] = np.nonzero(is_boundary_simplex)[0]
 
     def get_tets_containing_a_boundary_face(self):
         """Compute a list in which the i-th element is the index of the top-level
@@ -93,7 +111,7 @@ class SimplicialComplex:
             self.get_complex_boundary_faces_indices()
         dim = self.dim - 1
         self.tets_cont_bnd_face = get_cofaces(
-            self.bnd_faces_indices, dim, self)
+            self.boundary_simplices[dim], dim, self)
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
@@ -221,7 +239,8 @@ class SimplicialComplex:
         else:
             circ_faces = self.circ[dim-1]
         circ_bnd_faces = np.zeros(circ_faces.shape, dtype=dctkit.float_dtype)
-        circ_bnd_faces[self.bnd_faces_indices] = circ_faces[self.bnd_faces_indices]
+        circ_bnd_faces[self.boundary_simplices[dim-1]
+                       ] = circ_faces[self.boundary_simplices[dim-1]]
 
         # adjust the signs based on the appropriate entries of the dual coboundary
         # NOTE: here we take the values of the boundary matrix, we fix their signs later
@@ -243,7 +262,7 @@ class SimplicialComplex:
         # coboundary matrix
         sign = -vals[boundary_rows_idx][:, None]*(-1)**dim
         complement = circ_bnd_faces
-        complement[self.bnd_faces_indices] *= sign
+        complement[self.boundary_simplices[dim-1]] *= sign
 
         self.dual_edges_vectors += complement
 

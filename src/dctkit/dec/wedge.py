@@ -1,6 +1,6 @@
 import itertools
 import jax.numpy as jnp
-from jax import Array, vmap, debug
+from jax import Array, vmap
 from dctkit.dec import cochain as C
 import dctkit as dt
 from scipy.special import factorial
@@ -77,6 +77,21 @@ def primal_wedge(c_1: C.CochainP, c_2: C.CochainP) -> C.CochainP:
     return C.CochainP(wedge_coch_dim, S, wedge_coch_coeffs)
 
 
+def dual_wedge(c_1: C.CochainD, c_2: C.CochainD) -> C.CochainD:
+    wedge_coch_dim = c_1.dim + c_2.dim
+    weight = 1/factorial(wedge_coch_dim+1, True)
+    S = c_1.complex
+    # extract the matrix of indices of the wedge_coch_dim+1-simplices
+    simplices = S.S[wedge_coch_dim]
+    # generate the permutation vectors and compute its signs
+    perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
+    sgn_perm_vec = permutation_sign(perm_vec)
+    # compute wedge coeffs
+    wedge_coch_coeffs = compute_wedge_coeffs(
+        simplices, S, c_1, c_2, perm_vec, sgn_perm_vec, weight)
+    return C.CochainD(wedge_coch_dim, S, wedge_coch_coeffs)
+
+
 if __name__ == "__main__":
     mesh_1, _ = util.generate_line_mesh(5, 1.)
     mesh_2, _ = util.generate_square_mesh(0.8)
@@ -104,4 +119,11 @@ if __name__ == "__main__":
     # cP1_1 = C.CochainP1(complex=S_2, coeffs=vP1_1)
     # cP1_2 = C.CochainP1(complex=S_2, coeffs=vP1_2)
 
-    print(primal_wedge(cP0_1, cP1_1).coeffs)
+    cD0_1 = C.CochainD0(complex=S_1, coeffs=vP1_1)
+    cD1_1 = C.CochainD1(complex=S_1, coeffs=vP0_1)
+
+    S_2.get_S_dual_k(1)
+    print(S_2.S_dual_k)
+    assert False
+
+    print(dual_wedge(cD0_1, cD1_1).coeffs)

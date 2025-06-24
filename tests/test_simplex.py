@@ -103,7 +103,7 @@ def test_simplicial_complex_1(setup_test, space_dim: int):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
         assert np.allclose(S.hodge_star_inverse[i], hodge_inv_true[i])
 
-    assert np.allclose(S.bnd_faces_indices, bnd_faces_indices_true)
+    assert np.allclose(S.boundary_simplices[S.dim - 1], bnd_faces_indices_true)
     assert np.allclose(S.tets_cont_bnd_face, tets_cont_bnd_face_true)
     assert np.allclose(S.primal_edges_vectors, primal_edges_true)
     assert np.allclose(S.dual_edges_vectors, dual_edges_true)
@@ -235,13 +235,13 @@ def test_simplicial_complex_2(setup_test, space_dim):
     flat_DPP_weights_true = flat_DPD_weights_true
     flat_PDP_weights_true = np.array([[0.5, 0.5, 0., 0., 0.],
                                       [0.5, 0., 0., 0.5, 0.],
-                                      [0.35355339, 0., 0., 0., 0.35355339],
+                                      [0.5, 0., 0., 0., 0.5],
                                       [0., 0.5, 0.5, 0., 0.],
-                                      [0., 0.35355339, 0., 0., 0.35355339],
+                                      [0., 0.5, 0., 0., 0.5],
                                       [0., 0., 0.5, 0.5, 0.],
-                                      [0., 0., 0.35355339, 0., 0.35355339],
-                                      [0., 0., 0., 0.35355339, 0.35355339]],
-                                     dtype=dctkit.float_dtype)
+                                      [0., 0., 0.5, 0., 0.5],
+                                      [0., 0., 0., 0.5, 0.5]],
+                                     dtype=dctkit.float_dtype).T
 
     # define true reference metric
     metric_true = np.stack([np.identity(2)]*4)
@@ -255,7 +255,7 @@ def test_simplicial_complex_2(setup_test, space_dim):
         assert np.allclose(S.hodge_star[i], hodge_true[i])
 
     # test bnd faces indices
-    assert np.allclose(S.bnd_faces_indices, bnd_faces_indices_true)
+    assert np.allclose(S.boundary_simplices[S.dim - 1], bnd_faces_indices_true)
 
     # test tets containing boundary face
     assert np.allclose(S.tets_cont_bnd_face, tets_cont_bnd_face_true)
@@ -401,7 +401,7 @@ def test_simplicial_complex_3(setup_test, space_dim):
         assert np.all(S.boundary[3][i] == boundary_true[3][i])
 
     # test bnd faces indices
-    assert np.allclose(S.bnd_faces_indices, bnd_faces_indices_true)
+    assert np.allclose(S.boundary_simplices[S.dim - 1], bnd_faces_indices_true)
 
     # test tets containing boundary face
     assert np.allclose(S.tets_cont_bnd_face, tets_cont_bnd_face_true)
