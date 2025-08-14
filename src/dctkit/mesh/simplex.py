@@ -125,7 +125,7 @@ class SimplicialComplex:
 
     def get_S_dual(self):
         """
-        Compute S_dual[k] for all k = 1, ..., dim.
+        Compute S_dual[k] for all k = 0.1
         Each S_dual[k] is a matrix where each row contains the indices of dual nodes
         (i.e., circumcenters of top-dimensional simplices) that form a dual k-simplex.
 
@@ -135,32 +135,35 @@ class SimplicialComplex:
         if not hasattr(self, "boundary_simplices"):
             self.get_complex_boundary_faces_indices()
         dim = self.dim
-        self.S_dual = sl.ShiftedList([None] * (dim + 1), -1)
+        self.S_dual = [None]*2
+
+        # store dual 0-simplices
+        self.S_dual[0] = np.arange(
+            self.S[dim].shape[0], dtype=dctkit.int_dtype).reshape(-1, 1)
 
         # dual 0-simplices are the circumcenters of top-dimensional primal simplices
         # These are not stored in S_dual but are the "nodes" for the dual complex
 
-        for k in range(1, dim):
-            num_codim_k = self.S[dim - k].shape[0]
+        num_codim_1 = self.S[dim - 1].shape[0]
 
-            S_dual_interior_k = []
+        S_dual_interior_k = []
 
-            for idx in range(num_codim_k):
-                # Find all top-simplices (of dim) that contain this codim-k simplex
-                cofaces = np.nonzero(self.simplices_faces[dim] == idx)[0]
-                if len(cofaces) == k+1:
-                    S_dual_interior_k.append(cofaces)
+        for idx in range(num_codim_1):
+            # Find all top-simplices (of dim) that contain this codim-k simplex
+            cofaces = np.nonzero(self.simplices_faces[dim] == idx)[0]
+            if len(cofaces) == 2:
+                S_dual_interior_k.append(cofaces)
 
-            S_dual_interior_k = np.array(S_dual_interior_k, dtype=dctkit.int_dtype)
-            S_dual_bnd_k_idx = self.boundary_simplices[dim-k]
-            S_dual_interior_k_idx = np.setdiff1d(
-                np.arange(num_codim_k), S_dual_bnd_k_idx)
-            S_dual_k = np.empty((num_codim_k, k+1), dtype=dctkit.int_dtype)
-            # set placeholder for the boundary
-            S_dual_k[S_dual_bnd_k_idx] = 0.
-            # set correct value for the interior
-            S_dual_k[S_dual_interior_k_idx] = S_dual_interior_k
-            self.S_dual[k] = S_dual_k
+        S_dual_interior_k = np.array(S_dual_interior_k, dtype=dctkit.int_dtype)
+        S_dual_bnd_k_idx = self.boundary_simplices[dim-1]
+        S_dual_interior_k_idx = np.setdiff1d(
+            np.arange(num_codim_1), S_dual_bnd_k_idx)
+        S_dual_k = np.empty((num_codim_1, 2), dtype=dctkit.int_dtype)
+        # set placeholder for the boundary
+        S_dual_k[S_dual_bnd_k_idx] = 0.
+        # set correct value for the interior
+        S_dual_k[S_dual_interior_k_idx] = S_dual_interior_k
+        self.S_dual[1] = S_dual_k
 
     def get_primal_volumes(self):
         """Compute all the primal volumes."""
@@ -336,11 +339,8 @@ class SimplicialComplex:
             self.dual_edges_fractions_lengths[i, :][
                 dual_edges_indices] = np.linalg.norm(diff_circs, axis=1)
 
-        # self.flat_DPD_weights = self.dual_edges_fractions_lengths / \
-        #     self.dual_edges_lengths
-        self.flat_DPD_weights = self.dual_edges_fractions_lengths.copy()
-        self.flat_DPD_weights[(self.flat_DPD_weights != 0) & ~np.isnan(
-            self.flat_DPD_weights)] = 0.5
+        self.flat_DPD_weights = self.dual_edges_fractions_lengths / \
+            self.dual_edges_lengths
         # in the case of non-well centered mesh an entry of the flat weights matrix
         # can be NaN. In this case, the corresponding dual edge is the null vector,
         # hence we shouldn't take in account dot product with it. We then replace

@@ -32,7 +32,7 @@ def find_simplex_idx(s: Array, S: Array):
 
 
 @partial(vmap, in_axes=(0, None, None, None, None, None, None))
-def compute_wedge_coeffs(simplex, S, c_1, c_2, perm_vec, sgn_perm_vec, weight):
+def compute_wedge_coeffs(simplex, S_list, c_1, c_2, perm_vec, sgn_perm_vec, weight):
     # perm the simplex idx vector
     perm_simplex = simplex[perm_vec]
     # split the perm simplices in vector of indices compatible
@@ -50,8 +50,8 @@ def compute_wedge_coeffs(simplex, S, c_1, c_2, perm_vec, sgn_perm_vec, weight):
     # compute the indexes for every (ordered) perm_simplex
     ord_simplex_c_1 = jnp.take_along_axis(perm_simplex_c_1, perm_ord_c_1, axis=1)
     ord_simplex_c_2 = jnp.take_along_axis(perm_simplex_c_2, perm_ord_c_2, axis=1)
-    perm_idx_c_1 = find_simplex_idx(ord_simplex_c_1, S.S[c_1.dim])
-    perm_idx_c_2 = find_simplex_idx(ord_simplex_c_2, S.S[c_2.dim])
+    perm_idx_c_1 = find_simplex_idx(ord_simplex_c_1, S_list[c_1.dim])
+    perm_idx_c_2 = find_simplex_idx(ord_simplex_c_2, S_list[c_2.dim])
 
     # compute the value of the cup product
     cup_prod_no_sign = c_1.coeffs[perm_idx_c_1]*c_2.coeffs[perm_idx_c_2]
@@ -62,48 +62,40 @@ def compute_wedge_coeffs(simplex, S, c_1, c_2, perm_vec, sgn_perm_vec, weight):
     return weight*jnp.sum(wedge_vec)
 
 
-def primal_wedge(c_1: C.CochainP, c_2: C.CochainP) -> C.CochainP:
+def wedge(c_1: C.Cochain, c_2: C.Cochain) -> C.Cochain:
     wedge_coch_dim = c_1.dim + c_2.dim
     weight = 1/factorial(wedge_coch_dim+1, True)
     S = c_1.complex
-    # extract the matrix of indices of the wedge_coch_dim+1-simplices
-    simplices = S.S[wedge_coch_dim]
+    # extract the matrix of indices of the wedge_coch_dim+1-simplices (primal/dual)
+    if c_1.is_primal and c_2.is_primal:
+        # primal wedge
+        S_list = S.S
+    elif (not c_1.is_primal) and not (c_2.is_primal):
+        # dual wedge is only defined for wedge_coch_dim <=1
+        assert wedge_coch_dim <= 1
+        S_list = S.S_dual
+    else:
+        raise Exception("The primal-dual wedge product is not defined.")
+    simplices = S_list[wedge_coch_dim]
     # generate the permutation vectors and compute its signs
     perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
     sgn_perm_vec = permutation_sign(perm_vec)
     # compute wedge coeffs
     wedge_coch_coeffs = compute_wedge_coeffs(
-        simplices, S, c_1, c_2, perm_vec, sgn_perm_vec, weight)
-    return C.CochainP(wedge_coch_dim, S, wedge_coch_coeffs)
-
-
-def dual_wedge(c_1: C.CochainD, c_2: C.CochainD) -> C.CochainD:
-    wedge_coch_dim = c_1.dim + c_2.dim
-    weight = 1/factorial(wedge_coch_dim+1, True)
-    S = c_1.complex
-    # extract the matrix of indices of the wedge_coch_dim+1-simplices
-    simplices = S.S_dual[wedge_coch_dim]
-    # generate the permutation vectors and compute its signs
-    perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
-    sgn_perm_vec = permutation_sign(perm_vec)
-    # compute wedge coeffs
-    wedge_coch_coeffs = compute_wedge_coeffs(
-        simplices, S, c_1, c_2, perm_vec, sgn_perm_vec, weight)
-    return C.CochainD(wedge_coch_dim, S, wedge_coch_coeffs)
+        simplices, S_list, c_1, c_2, perm_vec, sgn_perm_vec, weight)
+    return C.Cochain(wedge_coch_dim, c_1.is_primal, S, wedge_coch_coeffs)
 
 
 if __name__ == "__main__":
     mesh_1, _ = util.generate_line_mesh(5, 1.)
     mesh_2, _ = util.generate_square_mesh(1)
-    mesh_3, _ = util.generate_tet_mesh(2.0)
     S_1 = util.build_complex_from_mesh(mesh_1)
     S_2 = util.build_complex_from_mesh(mesh_2)
-    S_3 = util.build_complex_from_mesh(mesh_3)
     S_1.get_hodge_star()
     S_2.get_hodge_star()
-    S_3.get_hodge_star()
     S_1.get_S_dual()
     S_2.get_S_dual()
+    S_2.get_flat_DPD_weights()
 
     vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
     vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
@@ -125,6 +117,9 @@ if __name__ == "__main__":
     cD0_1 = C.CochainD0(complex=S_2, coeffs=vD0_1)
     cD1_1 = C.CochainD1(complex=S_2, coeffs=vD1_1)
 
+    print(S_2.flat_DPD_weights, S_2.flat_DPD_weights.T)
+    assert False
+
     print(S_2.node_coords, S_2.circ[2])
     print(S_2.S[1])
-    print(dual_wedge(cD0_1, cD1_1).coeffs)
+    # print(dual_wedge(cD0_1, cD1_1).coeffs)
