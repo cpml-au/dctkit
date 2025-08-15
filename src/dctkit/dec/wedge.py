@@ -2,10 +2,8 @@ import itertools
 import jax.numpy as jnp
 from jax import Array, vmap
 from dctkit.dec import cochain as C
-import dctkit as dt
 from scipy.special import factorial
 from functools import partial
-from dctkit.mesh import util
 
 
 def compute_permutation_vectors(n: int) -> Array:
@@ -84,42 +82,3 @@ def wedge(c_1: C.Cochain, c_2: C.Cochain) -> C.Cochain:
     wedge_coch_coeffs = compute_wedge_coeffs(
         simplices, S_list, c_1, c_2, perm_vec, sgn_perm_vec, weight)
     return C.Cochain(wedge_coch_dim, c_1.is_primal, S, wedge_coch_coeffs)
-
-
-if __name__ == "__main__":
-    mesh_1, _ = util.generate_line_mesh(5, 1.)
-    mesh_2, _ = util.generate_square_mesh(1)
-    S_1 = util.build_complex_from_mesh(mesh_1)
-    S_2 = util.build_complex_from_mesh(mesh_2)
-    S_1.get_hodge_star()
-    S_2.get_hodge_star()
-    S_1.get_S_dual()
-    S_2.get_S_dual()
-    S_2.get_flat_DPD_weights()
-
-    vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
-    vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
-    vP1_1 = jnp.array([1, 2, 3, 4], dtype=dt.float_dtype)
-    vP1_2 = jnp.array([5, 6, 7, 8], dtype=dt.float_dtype)
-
-    cP0_1 = C.CochainP0(complex=S_1, coeffs=vP0_1)
-    cP0_2 = C.CochainP0(complex=S_1, coeffs=vP0_2)
-    cP1_1 = C.CochainP1(complex=S_1, coeffs=vP1_1)
-    cP1_2 = C.CochainP1(complex=S_1, coeffs=vP1_2)
-
-    vD0_1 = jnp.arange(1, 5, dtype=dt.float_dtype)
-    vD1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
-    # vP1_2 = jnp.arange(8, 17, dtype=dt.float_dtype)
-
-    # cP1_1 = C.CochainP1(complex=S_2, coeffs=vP1_1)
-    # cP1_2 = C.CochainP1(complex=S_2, coeffs=vP1_2)
-
-    cD0_1 = C.CochainD0(complex=S_2, coeffs=vD0_1)
-    cD1_1 = C.CochainD1(complex=S_2, coeffs=vD1_1)
-
-    print(S_2.flat_DPD_weights, S_2.flat_DPD_weights.T)
-    assert False
-
-    print(S_2.node_coords, S_2.circ[2])
-    print(S_2.S[1])
-    # print(dual_wedge(cD0_1, cD1_1).coeffs)
