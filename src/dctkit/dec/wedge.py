@@ -111,13 +111,24 @@ def compute_wedge_coeffs(simplex: Array,
     # compute the value of the cup product
     cup_prod_no_sign = c_1.coeffs[perm_idx_c_1]*c_2.coeffs[perm_idx_c_2]
     cup_prod = cup_prod_no_sign.ravel()*sign_orientations_c_1*sign_orientations_c_2
+    wedge_vec = sgn_perm_vec*cup_prod
+    # FIXME: fix this part of the code
+    if c_1.dim + c_2.dim > 1:
+        weight = weight[0]
+        return weight*jnp.sum(wedge_vec)
+
+    weight_coeffs = weight[perm_idx_c_2[0]]
+
+    weighted_wedge_vec = weight_coeffs*wedge_vec[0] + (1-weight_coeffs)*wedge_vec[1]
 
     # compute wedge entry
-    wedge_vec = sgn_perm_vec*cup_prod
-    return weight*jnp.sum(wedge_vec)
+
+    # print(weighted_wedge_vec)
+    # assert False
+    return weighted_wedge_vec
 
 
-def wedge(c_1: C.Cochain, c_2: C.Cochain) -> C.Cochain:
+def wedge(c_1: C.Cochain, c_2: C.Cochain, weight: Array = None) -> C.Cochain:
     """Computes the wedge product of two cochains.
 
     Args:
@@ -134,7 +145,6 @@ def wedge(c_1: C.Cochain, c_2: C.Cochain) -> C.Cochain:
         greater than 1, which is not defined.
     """
     wedge_coch_dim = c_1.dim + c_2.dim
-    weight = 1/factorial(wedge_coch_dim+1, True)
     S = c_1.complex
     # extract the matrix of indices of the wedge_coch_dim+1-simplices (primal/dual)
     if c_1.is_primal and c_2.is_primal:
@@ -146,6 +156,11 @@ def wedge(c_1: C.Cochain, c_2: C.Cochain) -> C.Cochain:
         S_list = S.S_dual
     else:
         raise Exception("The primal-dual wedge product is not defined.")
+    num_c_2_dim_simplex = S_list[c_2.dim].shape[0]
+    if weight is None:
+        # standard definition
+        weight = 1/(wedge_coch_dim+1)*jnp.ones(num_c_2_dim_simplex)
+    weight *= 1/factorial(wedge_coch_dim, True)
     simplices = S_list[wedge_coch_dim]
     # generate the permutation vectors and compute its signs
     perm_vec = compute_permutation_vectors(wedge_coch_dim+1)
