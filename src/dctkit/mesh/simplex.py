@@ -7,6 +7,9 @@ import numpy.typing as npt
 from jax import Array
 import jax.numpy as jnp
 from typing import Tuple, Any, List
+from functools import partial
+from jax import vmap
+from dctkit.math.permutation import *
 
 
 class SimplicialComplex:
@@ -513,6 +516,83 @@ class SimplicialComplex:
         F = jnp.transpose(current_covariant_basis, axes=(0, 2, 1)
                           ) @ self.ref_metric_contravariant @ self.ref_covariant_basis
         return F
+
+    @partial(vmap, in_axes=(None, 0, None))
+    def find_simplex_idx(self, s: Array, S: Array) -> Array:
+        """Finds the index of a given simplex in a set of simplices.
+
+        Args:
+            s: A 1D array representing a simplex (e.g., a set of vertex indices).
+            S: A 2D array where each row is a simplex.
+
+        Returns:
+            the index of the simplex `s` in `S`. If `s` is not found,
+            returns -1.
+        """
+        # Broadcast and compare all rows to the given row
+        matches = jnp.all(S == s, axis=1)
+        # Find the index where all elements match
+        simplex_idx = jnp.where(matches, size=1, fill_value=-1)[0][0]
+        return simplex_idx
+
+    # def compute_cup_product_entry(self, simplex,)
+
+    def get_cup_product_coeffs(self):
+        """FIXME: write the docs"""
+        if not hasattr(self, "S_dual"):
+            self.get_S_dual()
+        types = ["primal", "dual"]
+        S_lists = [self.S, self.S_dual]
+        max_dims = [self.dim, 1]
+        self.cup_lookup = {}
+        for k, type_ in enumerate(types):
+            for p in range(max_dims[k]):
+                for q in range(max_dims[k] - p + 1):
+                    # cup_product dim
+                    cup_product_dim = p + q
+                    S_p = S_lists[k][p]
+                    S_q = S_lists[k][q]
+                    S_cup_product = S_lists[k][cup_product_dim]
+
+                    # generate the permutation vectors and compute its signs
+                    perm_vec = compute_permutation_vectors(cup_product_dim+1)
+                    sgn_perm_vec = permutation_sign(perm_vec)
+
+                    # preallocate look-up table
+                    lookup = np.zeros(
+                        (S_cup_product.shape[0], 2), dtype=dctkit.int_dtype)
+                    sgn_orient = np.zeros(
+                        (S_cup_product.shape[0], 2), dtype=dctkit.int_dtype)
+
+                    # FIXME: optimize with vmap!
+                    for i, simplex in enumerate(S_cup_product):
+                        perm_simplex = simplex[perm_vec]
+                        # split the perm simplices in vector of indices compatible
+                        # with c_1 and c_2
+                        perm_simplex_c_1 = perm_simplex[:, :p+1]
+                        perm_simplex_c_2 = perm_simplex[:, p:]
+
+                        # since the perm simplices may not have the same orientations
+                        # as the original one, we need to account for that
+                        perm_ord_c_1 = jnp.argsort(perm_simplex_c_1, axis=1)
+                        perm_ord_c_2 = jnp.argsort(perm_simplex_c_2, axis=1)
+                        print(perm_ord_c_1, perm_ord_c_2)
+                        sgn_orient[i, 0] = permutation_sign(perm_ord_c_1)
+                        sgn_orient[i, 1] = permutation_sign(perm_ord_c_2)
+
+                        # compute the indexes for every (ordered) perm_simplex
+                        ord_simplex_c_1 = jnp.take_along_axis(
+                            perm_simplex_c_1, perm_ord_c_1, axis=1)
+                        ord_simplex_c_2 = jnp.take_along_axis(
+                            perm_simplex_c_2, perm_ord_c_2, axis=1)
+                        perm_idx_c_1 = self.find_simplex_idx(ord_simplex_c_1, S_p)
+                        perm_idx_c_2 = self.find_simplex_idx(ord_simplex_c_2, S_q)
+                        lookup[i] = np.array(
+                            [perm_idx_c_1, perm_idx_c_2], dtype=dctkit.int_dtype)
+
+                    self.cup_lookup[(type_, p, q)] = {"lookup": lookup,
+                                                      "sgn_orient": sgn_orient,
+                                                      "sgn_perm_vec": sgn_perm_vec}
 
 
 def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,

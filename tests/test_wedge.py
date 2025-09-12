@@ -10,7 +10,7 @@ def test_wedge(setup_test):
     mesh_1, _ = util.generate_line_mesh(5, 1.)
     S_1 = util.build_complex_from_mesh(mesh_1)
     S_1.get_hodge_star()
-    S_1.get_S_dual()
+    S_1.get_cup_product_coeffs()
 
     vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
     vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
@@ -44,7 +44,7 @@ def test_wedge(setup_test):
     mesh_2, _ = util.generate_square_mesh(1)
     S_2 = util.build_complex_from_mesh(mesh_2)
     S_2.get_hodge_star()
-    S_2.get_S_dual()
+    S_2.get_cup_product_coeffs()
 
     vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
     vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
