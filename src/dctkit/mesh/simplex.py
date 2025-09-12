@@ -324,9 +324,11 @@ class SimplicialComplex:
         dim = self.dim
         B = self.simplices_faces[dim]
         num_n_simplices = self.S[dim].shape[0]
-        num_nm1_simplices = self.S[dim-1].shape[0]
-        self.dual_edges_fractions_lengths = np.zeros(
-            (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
+
+        # Preallocate lists for COO format
+        rows = []
+        cols = []
+        data = []
 
         for i in range(num_n_simplices):
             # get the indices of the (n-1)-simplices belonging to the i-th n-simplex
@@ -336,16 +338,27 @@ class SimplicialComplex:
             # intersecting such a simplex, arranged in rows.
             diff_circs = self.circ[dim][i, :] - self.circ[dim-1][dual_edges_indices, :]
             # take the norms of the difference vectors
-            self.dual_edges_fractions_lengths[i, :][
-                dual_edges_indices] = np.linalg.norm(diff_circs, axis=1)
+            lengths = np.linalg.norm(diff_circs, axis=1)
 
-        self.flat_DPD_weights = self.dual_edges_fractions_lengths / \
-            self.dual_edges_lengths
+            # append nonzero entries
+            for j, val in zip(dual_edges_indices, lengths):
+                if val != 0:
+                    rows.append(i)
+                    cols.append(j)
+                    data.append(val/self.dual_edges_lengths[j])
+
+        # Convert to NumPy arrays
+        rows = np.array(rows, dtype=int)
+        cols = np.array(cols, dtype=int)
+        data = np.array(data, dtype=dctkit.float_dtype)
         # in the case of non-well centered mesh an entry of the flat weights matrix
         # can be NaN. In this case, the corresponding dual edge is the null vector,
         # hence we shouldn't take in account dot product with it. We then replace
         # any NaN with 0.
-        self.flat_DPD_weights = np.nan_to_num(self.flat_DPD_weights)
+        data = np.nan_to_num(data)
+
+        # Build sparse COO matrix of raw lengths
+        self.flat_DPD_weights = (rows, cols, data)
 
     def get_flat_DPP_weights(self):
         # FIXME: extend to 3D case.
@@ -368,13 +381,25 @@ class SimplicialComplex:
 
     def get_flat_PDP_weights(self):
         num_edges = self.S[1].shape[0]
-        num_nodes = self.num_nodes
-        self.flat_PDP_weights = np.zeros(
-            (num_edges, num_nodes), dtype=dctkit.float_dtype)
+
+        # Preallocate lists for COO format
+        rows = []
+        cols = []
+        data = []
+
         # FIXME: optimize this routine with jax.vmap
         for i in range(num_edges):
-            self.flat_PDP_weights[i, self.S[1][i]] = 1/2
-        self.flat_PDP_weights = self.flat_PDP_weights.T
+            edge_nodes = self.S[1][i]
+            for node in edge_nodes:
+                rows.append(node)
+                cols.append(i)
+                data.append(0.5)
+
+        # Convert to NumPy arrays
+        rows = np.array(rows, dtype=int)
+        cols = np.array(cols, dtype=int)
+        data = np.array(data, dtype=dctkit.float_dtype)
+        self.flat_PDP_weights = (rows, cols, data)
 
     def get_current_covariant_basis(self, node_coords: npt.NDArray | Array) -> Array:
         """Compute the current covariant basis of each face of a 2D simplicial complex.

@@ -1,12 +1,9 @@
-from functools import partial
-from jax import jit
 import jax.ops as ops
 from typing import Tuple
 from jax import Array
 import numpy.typing as npt
 
 
-@partial(jit, static_argnums=(2, 3))
 def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray],
          v: Array | npt.NDArray, transpose=False, shape=None) -> Array:
     """Performs the matrix-matrix product between a sparse matrix in COO format and a
@@ -30,7 +27,10 @@ def spmm(A: Tuple[Array | npt.NDArray, Array | npt.NDArray, Array | npt.NDArray]
         vv = v.take(cols, axis=0)
 
     # NOTE: make vals a column vector
-    prod = vals[:, None] * vv
+    # NOTE: the following formula is basically equivalent to
+    # prod = vals[:, None] * vv with the advantage that it works
+    # also in the case that vv is a tensor
+    prod = vals.reshape(-1, *([1] * (vv.ndim - 1))) * vv
 
     if transpose:
         result = ops.segment_sum(prod, cols, shape)

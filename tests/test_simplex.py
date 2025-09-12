@@ -216,32 +216,12 @@ def test_simplicial_complex_2(setup_test, space_dim):
                                                [0.5, -0.5],
                                                [0.5,  0.5]])
 
-    # define true dual edges lengths
-    num_n_simplices = S.S[S.dim].shape[0]
-    num_nm1_simplices = S.S[S.dim-1].shape[0]
-    dedges_lengths_true = np.zeros(
-        (num_n_simplices, num_nm1_simplices), dtype=dctkit.float_dtype)
-    dedges_lengths_true[0, [2, 4]] = np.sqrt(2)/4
-    dedges_lengths_true[1, [2, 7]] = np.sqrt(2)/4
-    dedges_lengths_true[2, [4, 6]] = np.sqrt(2)/4
-    dedges_lengths_true[3, [6, 7]] = np.sqrt(2)/4
-
     # define true flat DPD and DPP matrices
-    flat_DPD_weights_true = np.array([[0., 0., 0.5, 0., 0.5, 0., 0., 0.],
-                                      [0., 0., 0.5, 0., 0., 0., 0., 0.5],
-                                      [0., 0., 0., 0., 0.5, 0., 0.5, 0.],
-                                      [0., 0., 0., 0., 0., 0., 0.5, 0.5]],
-                                     dtype=dctkit.float_dtype)
+    flat_DPD_weights_true = ([0, 0, 1, 1, 2, 2, 3, 3], [
+                             2, 4, 2, 7, 4, 6, 6, 7], [0.5]*8)
     flat_DPP_weights_true = flat_DPD_weights_true
-    flat_PDP_weights_true = np.array([[0.5, 0.5, 0., 0., 0.],
-                                      [0.5, 0., 0., 0.5, 0.],
-                                      [0.5, 0., 0., 0., 0.5],
-                                      [0., 0.5, 0.5, 0., 0.],
-                                      [0., 0.5, 0., 0., 0.5],
-                                      [0., 0., 0.5, 0.5, 0.],
-                                      [0., 0., 0.5, 0., 0.5],
-                                      [0., 0., 0., 0.5, 0.5]],
-                                     dtype=dctkit.float_dtype).T
+    flat_PDP_weights_true = ([0, 1, 0, 3, 0, 4, 1, 2, 1, 4, 2, 3, 2, 4, 3, 4],
+                             [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7], [0.5]*16)
 
     # define true reference metric
     metric_true = np.stack([np.identity(2)]*4)
@@ -267,19 +247,22 @@ def test_simplicial_complex_2(setup_test, space_dim):
     # test primal edge
     assert np.allclose(S.primal_edges_vectors, primal_edges_vectors_true)
 
-    # test dual edge and dual edge lengths
+    # test dual edges
     assert np.allclose(S.dual_edges_vectors, dual_edges_vectors_true)
-    assert np.allclose(S.dual_edges_fractions_lengths, dedges_lengths_true)
 
     # test flat DPD
-    assert np.allclose(S.flat_DPD_weights, flat_DPD_weights_true)
+    for i in range(3):
+        assert np.allclose(S.flat_DPD_weights[i], flat_DPD_weights_true[i])
 
     # test flat DPP
     # FIXME: after extending flat DPP to other dimensions, test it!
-    assert np.allclose(S.flat_DPP_weights, flat_DPP_weights_true)
+    for i in range(3):
+        assert np.allclose(S.flat_DPP_weights[i], flat_DPP_weights_true[i])
 
     # test flat PDP
-    assert np.allclose(S.flat_PDP_weights, flat_PDP_weights_true)
+    print(S.flat_PDP_weights)
+    for i in range(3):
+        assert np.allclose(S.flat_PDP_weights[i], flat_PDP_weights_true[i])
 
     # test metric
     assert np.allclose(S.reference_metric, metric_true)
@@ -333,15 +316,15 @@ def test_simplicial_complex_3(setup_test, space_dim):
     # define true circumcenter
     circ_true = sl.ShiftedList([], -1)
     circ_1_true = np.array([[0.5, 0., 0.],
-                            [0.25, 0.5, 0.],
-                            [0., 0., 0.5],
-                            [0.75, 0.5, 0.],
-                            [0.5, 0., 0.5],
-                            [0.25, 0.5, 0.5]], dtype=dctkit.float_dtype)
+                           [0.25, 0.5, 0.],
+                           [0., 0., 0.5],
+                           [0.75, 0.5, 0.],
+                           [0.5, 0., 0.5],
+                           [0.25, 0.5, 0.5]], dtype=dctkit.float_dtype)
     circ_2_true = np.array([[0.5, 0.375, 0.],
-                            [0.5, 0., 0.5],
-                            [0.25, 0.5, 0.5],
-                            [0.41666667, 0.33333333, 0.41666667]],
+                           [0.5, 0., 0.5],
+                           [0.25, 0.5, 0.5],
+                           [0.41666667, 0.33333333, 0.41666667]],
                            dtype=dctkit.float_dtype)
     circ_3_true = np.array([[0.5, 0.375, 0.5]], dtype=dctkit.float_dtype)
     circ_true.append(circ_1_true)

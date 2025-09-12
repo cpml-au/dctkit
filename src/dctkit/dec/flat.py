@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 from dctkit.dec import cochain as C
+from dctkit.math.spmm import spmm
 from jax import Array, vmap
 from functools import partial
 from typing import Callable, Dict, Optional
@@ -31,7 +32,8 @@ def flat(c: C.CochainP0 | C.CochainD0, weights: Array, edges: C.CochainP1V |
     if interp_func is None:
         # contract over the simplices of the input cochain (last axis of weights,
         # first axis of input cochain coeffs)
-        def interp_func(x): return jnp.tensordot(weights.T, x.coeffs, axes=1)
+        def interp_func(x): return spmm(weights, x.coeffs,
+                                        transpose=True, shape=edges.coeffs.shape[0])
         interp_func_args = {}
     weighted_v = interp_func(c, **interp_func_args)
     # contract input vector/tensors with edge vectors (last indices of both
