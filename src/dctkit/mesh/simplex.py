@@ -8,8 +8,8 @@ from jax import Array
 import jax.numpy as jnp
 from typing import Tuple, Any, List
 from functools import partial
-from jax import vmap
-from dctkit.math.permutation import *
+from jax import vmap, jit
+from dctkit.math.permutation import permutation_sign, compute_permutation_vectors
 
 
 class SimplicialComplex:
@@ -535,7 +535,31 @@ class SimplicialComplex:
         simplex_idx = jnp.where(matches, size=1, fill_value=-1)[0][0]
         return simplex_idx
 
-    # def compute_cup_product_entry(self, simplex,)
+    @partial(vmap,  in_axes=(None, 0, None, None, None, None))
+    def compute_cup_product_entry(self, simplex, perm_vec, p, S_p, S_q):
+        perm_simplex = simplex[perm_vec]
+        # split the perm simplices in vector of indices compatible
+        # with c_1 and c_2
+        perm_simplex_c_1 = perm_simplex[:, :p+1]
+        perm_simplex_c_2 = perm_simplex[:, p:]
+
+        # since the perm simplices may not have the same orientations
+        # as the original one, we need to account for that
+        perm_ord_c_1 = jnp.argsort(perm_simplex_c_1, axis=1)
+        perm_ord_c_2 = jnp.argsort(perm_simplex_c_2, axis=1)
+        sgn_orient_c_1 = permutation_sign(perm_ord_c_1)
+        sgn_orient_c_2 = permutation_sign(perm_ord_c_2)
+
+        # compute the indexes for every (ordered) perm_simplex
+        ord_simplex_c_1 = jnp.take_along_axis(
+            perm_simplex_c_1, perm_ord_c_1, axis=1)
+        ord_simplex_c_2 = jnp.take_along_axis(
+            perm_simplex_c_2, perm_ord_c_2, axis=1)
+        perm_idx_c_1 = self.find_simplex_idx(ord_simplex_c_1, S_p)
+        perm_idx_c_2 = self.find_simplex_idx(ord_simplex_c_2, S_q)
+        lookup_simplex = jnp.array([perm_idx_c_1, perm_idx_c_2])
+        sgn_orient_simplex = jnp.array([sgn_orient_c_1, sgn_orient_c_2])
+        return lookup_simplex, sgn_orient_simplex
 
     def get_cup_product_coeffs(self):
         """FIXME: write the docs"""
@@ -545,6 +569,10 @@ class SimplicialComplex:
         S_lists = [self.S, self.S_dual]
         max_dims = [self.dim, 1]
         self.cup_lookup = {}
+        # jit the function that compute the cup_product entry
+        jitted_cup_prod_entry_fun = jit(
+            self.compute_cup_product_entry, static_argnums=(2,))
+
         for k, type_ in enumerate(types):
             for p in range(max_dims[k]):
                 for q in range(max_dims[k] - p + 1):
@@ -558,37 +586,9 @@ class SimplicialComplex:
                     perm_vec = compute_permutation_vectors(cup_product_dim+1)
                     sgn_perm_vec = permutation_sign(perm_vec)
 
-                    # preallocate look-up table
-                    lookup = np.zeros(
-                        (S_cup_product.shape[0], 2), dtype=dctkit.int_dtype)
-                    sgn_orient = np.zeros(
-                        (S_cup_product.shape[0], 2), dtype=dctkit.int_dtype)
-
-                    # FIXME: optimize with vmap!
-                    for i, simplex in enumerate(S_cup_product):
-                        perm_simplex = simplex[perm_vec]
-                        # split the perm simplices in vector of indices compatible
-                        # with c_1 and c_2
-                        perm_simplex_c_1 = perm_simplex[:, :p+1]
-                        perm_simplex_c_2 = perm_simplex[:, p:]
-
-                        # since the perm simplices may not have the same orientations
-                        # as the original one, we need to account for that
-                        perm_ord_c_1 = jnp.argsort(perm_simplex_c_1, axis=1)
-                        perm_ord_c_2 = jnp.argsort(perm_simplex_c_2, axis=1)
-                        print(perm_ord_c_1, perm_ord_c_2)
-                        sgn_orient[i, 0] = permutation_sign(perm_ord_c_1)
-                        sgn_orient[i, 1] = permutation_sign(perm_ord_c_2)
-
-                        # compute the indexes for every (ordered) perm_simplex
-                        ord_simplex_c_1 = jnp.take_along_axis(
-                            perm_simplex_c_1, perm_ord_c_1, axis=1)
-                        ord_simplex_c_2 = jnp.take_along_axis(
-                            perm_simplex_c_2, perm_ord_c_2, axis=1)
-                        perm_idx_c_1 = self.find_simplex_idx(ord_simplex_c_1, S_p)
-                        perm_idx_c_2 = self.find_simplex_idx(ord_simplex_c_2, S_q)
-                        lookup[i] = np.array(
-                            [perm_idx_c_1, perm_idx_c_2], dtype=dctkit.int_dtype)
+                    # compute lookup table
+                    lookup, sgn_orient = jitted_cup_prod_entry_fun(
+                        S_cup_product, perm_vec, p, S_p, S_q)
 
                     self.cup_lookup[(type_, p, q)] = {"lookup": lookup,
                                                       "sgn_orient": sgn_orient,
