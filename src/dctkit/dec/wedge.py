@@ -55,7 +55,7 @@ def wedge(c_1: C.Cochain, c_2: C.Cochain, weight: Array = None) -> C.Cochain:
         weight = weight[0]
         wedge_coch_coeffs = weight*jnp.sum(wedge_vec, axis=1)
     else:
-        weight_coeffs = weight[sgn_orient[:, 1, 0]]
+        weight_coeffs = weight[lookup[:, 1, 0]].flatten()
         wedge_coch_coeffs = weight_coeffs * \
             wedge_vec[:, 0] + (1-weight_coeffs)*wedge_vec[:, 1]
 
