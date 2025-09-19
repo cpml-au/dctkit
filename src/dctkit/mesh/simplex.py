@@ -575,24 +575,28 @@ class SimplicialComplex:
 
         for k, type_ in enumerate(types):
             for p in range(max_dims[k]):
-                for q in range(max_dims[k] - p + 1):
-                    # cup_product dim
-                    cup_product_dim = p + q
-                    S_p = S_lists[k][p]
-                    S_q = S_lists[k][q]
-                    S_cup_product = S_lists[k][cup_product_dim]
+                for q in range(p, max_dims[k] - p + 1):
+                    if q > 0:
+                        # cup_product dim
+                        cup_product_dim = p + q
+                        S_p = S_lists[k][p]
+                        S_q = S_lists[k][q]
+                        S_cup_product = S_lists[k][cup_product_dim]
 
-                    # generate the permutation vectors and compute its signs
-                    perm_vec = compute_permutation_vectors(cup_product_dim+1)
-                    sgn_perm_vec = permutation_sign(perm_vec)
+                        # generate the permutation vectors and compute its signs
+                        perm_vec = compute_permutation_vectors(cup_product_dim+1)
+                        sgn_perm_vec = permutation_sign(perm_vec)
 
-                    # compute lookup table
-                    lookup, sgn_orient = jitted_cup_prod_entry_fun(
-                        S_cup_product, perm_vec, p, S_p, S_q)
+                        # compute lookup table
+                        lookup, sgn_orient = jitted_cup_prod_entry_fun(
+                            S_cup_product, perm_vec, p, S_p, S_q)
 
-                    self.cup_lookup[(type_, p, q)] = {"lookup": lookup,
-                                                      "sgn_orient": sgn_orient,
-                                                      "sgn_perm_vec": sgn_perm_vec}
+                        sgn_orient = sgn_orient.astype(jnp.int8)
+                        perm_vec = perm_vec.astype(jnp.int8)
+
+                        self.cup_lookup[(type_, p, q)] = {"lookup": lookup,
+                                                          "sgn_orient": sgn_orient,
+                                                          "sgn_perm_vec": sgn_perm_vec}
 
 
 def get_cofaces(faces_ids: list[int] | npt.NDArray, faces_dim: int,
