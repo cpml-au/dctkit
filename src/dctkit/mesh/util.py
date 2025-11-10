@@ -138,7 +138,7 @@ def generate_line_mesh(num_nodes: int, L: float = 1.,
             # see also test_hex in pygmsh library's tests
             new_line_points = [points[i-1], points[i]]
             g.add_line(*new_line_points)
-            mesh = g.generate_mesh()
+        mesh = g.generate_mesh()
 
     return mesh, g
 
