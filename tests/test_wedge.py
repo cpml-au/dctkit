@@ -47,6 +47,8 @@ def test_wedge(setup_test):
     S_2.get_hodge_star()
     S_2.get_cup_product_coeffs()
 
+    interior_edges = jnp.array([2, 4, 6, 7])
+
     vP0_1 = jnp.array([1, 2, 3, 4, 5], dtype=dt.float_dtype)
     vP0_2 = jnp.array([6, 7, 8, 9, 10], dtype=dt.float_dtype)
     vP1_1 = jnp.arange(1, 9, dtype=dt.float_dtype)
@@ -81,5 +83,6 @@ def test_wedge(setup_test):
     assert jnp.allclose(wedge_P0_P0, wedge_P0_P0_true)
     assert jnp.allclose(wedge_P0_P1, wedge_P0_P1_true)
     assert jnp.allclose(wedge_P1_P1, wedge_P1_P1_true)
-    # assert jnp.allclose(wedge_D0_D0, wedge_D0_D0_true)
-    # assert jnp.allclose(wedge_D0_D1, wedge_D0_D1_true)
+    # test only in the interior of the domain
+    assert jnp.allclose(wedge_D0_D0, wedge_D0_D0_true)
+    assert jnp.allclose(wedge_D0_D1[interior_edges], wedge_D0_D1_true[interior_edges])

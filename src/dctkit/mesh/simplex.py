@@ -127,8 +127,8 @@ class SimplicialComplex:
             self.bary_circ[p] = B
 
     def get_S_dual(self):
-        """
-        Compute S_dual[k] for all k = 0.1
+        """Compute S_dual[k] for all k = 0.1
+
         Each S_dual[k] is a matrix where each row contains the indices of dual nodes
         (i.e., circumcenters of top-dimensional simplices) that form a dual k-simplex.
 
@@ -562,7 +562,11 @@ class SimplicialComplex:
         return lookup_simplex, sgn_orient_simplex
 
     def get_cup_product_coeffs(self):
-        """FIXME: write the docs"""
+        """Precompute lookup tables for the discrete cup product.
+
+        This method builds and stores the coefficient tables required to evaluate
+        the cup product between discrete p- and q-cochains, for both the primal
+        and dual cell complexes."""
         if not hasattr(self, "S_dual"):
             self.get_S_dual()
         types = ["primal", "dual"]
