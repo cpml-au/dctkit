@@ -184,6 +184,6 @@ def get_edges_for_physical_group(S: SimplicialComplex, mesh: Mesh,
     edges_nodes_ids = mesh.cells_dict["line"][edges_ids_in_mesh]
     # nodes ids for edges in S[1] are sorted lexicographycally
     edges_nodes_ids.sort()
-    edges_ids = [int(np.argwhere(np.all(S.S[1] == edge_nodes, axis=1)))
+    edges_ids = [int(np.argwhere(np.all(S.S[1] == edge_nodes, axis=1)).item())
                  for edge_nodes in edges_nodes_ids]
     return edges_ids
