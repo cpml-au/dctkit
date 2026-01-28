@@ -118,8 +118,12 @@ class SimplicialComplex:
 
     def get_circumcenters(self):
         """Compute all the circumcenters."""
-        self.circ = sl.ShiftedList([None] * (self.dim), -1)
-        self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
+        # self.circ = sl.ShiftedList([None] * (self.dim), -1)
+        # self.bary_circ = sl.ShiftedList([None] * (self.dim), -1)
+        self.circ = [None] * (self.dim+1)
+        self.bary_circ = [None] * (self.dim+1)
+        self.circ[0] = self.node_coords
+        self.bary_circ[0] = self.node_coords
         for p in range(1, self.dim + 1):
             S = self.S[p]
             C, B = circ.circumcenter(S, self.node_coords)
@@ -362,6 +366,60 @@ class SimplicialComplex:
 
         # Build sparse COO matrix of raw lengths
         self.flat_DPD_weights = (rows, cols, data)
+
+    def get_flat_dual_upw_weights(self):
+        #FIXME: fix the docs!
+        """Compute the matrix where each non-negative entry (i,j) is the ratio between
+           the length of the j-th dual edge contained in the i-th n-simplex and the
+           total length of the j-th dual edge.
+
+           This ratio appears as a weighting factor in the computation of the discrete
+           flat operator.
+        """
+        if not hasattr(self, "dual_edges_lengths"):
+            self.get_dual_edge_vectors()
+
+        dim = self.dim
+        B = self.simplices_faces[dim]
+        num_n_simplices = self.S[dim].shape[0]
+
+        # Preallocate lists for COO format
+        rows = []
+        cols = []
+        data = []
+
+        for i in range(num_n_simplices):
+            # get the indices of the (n-1)-simplices belonging to the i-th n-simplex
+            dual_edges_indices = B[i, :]
+            # construct the matrix containing the difference vectors between the
+            # circumcenter of the i-th n-simplex and the circumcenters of the dual edges
+            # intersecting such a simplex, arranged in rows.
+            diff_circs = self.circ[dim][i, :] - self.circ[dim-1][dual_edges_indices, :]
+            # take the norms of the difference vectors
+            lengths = np.linalg.norm(diff_circs, axis=1)
+
+            # append nonzero entries
+            count = 0
+            for j, val in zip(dual_edges_indices, lengths):
+                if val != 0 and count == 1:
+                    rows.append(i)
+                    cols.append(j)
+                    data.append(1.)
+                count += 1
+                    
+
+        # Convert to NumPy arrays
+        rows = np.array(rows, dtype=int)
+        cols = np.array(cols, dtype=int)
+        data = np.array(data, dtype=dctkit.float_dtype)
+        # in the case of non-well centered mesh an entry of the flat weights matrix
+        # can be NaN. In this case, the corresponding dual edge is the null vector,
+        # hence we shouldn't take in account dot product with it. We then replace
+        # any NaN with 0.
+        data = np.nan_to_num(data)
+
+        # Build sparse COO matrix of raw lengths
+        self.flat_dual_upw_weights = (rows, cols, data)
 
     def get_flat_DPP_weights(self):
         # FIXME: extend to 3D case.

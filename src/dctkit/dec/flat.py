@@ -89,3 +89,16 @@ def flat_PDP(c: C.CochainP0V | C.CochainP0T) -> C.CochainP1:
     flat_matrix = c.complex.flat_PDP_weights
 
     return flat(c, flat_matrix, C.CochainP1(c.complex, primal_edges))
+
+def flat_dual_upw(c: C.CochainD0V | C.CochainD0T) -> C.CochainD1:
+    """Implements the flat DPD operator for dual discrete vector fields.
+
+    Args:
+        v: a dual discrete vector field.
+    Returns:
+        the dual 1-cochain resulting from the application of the flat operator.
+    """
+    dual_edges = c.complex.dual_edges_vectors[:, :c.coeffs.shape[1]]
+    flat_matrix = c.complex.flat_dual_upw_weights
+
+    return flat(c, flat_matrix, C.CochainD1(c.complex, dual_edges))
