@@ -53,7 +53,8 @@ def test_simplicial_complex_1(setup_test, space_dim: int):
     tets_cont_bnd_face_true = np.array([0, 3], dtype=dctkit.int_dtype).reshape(-1, 1)
 
     # define true circumcenters
-    circ_true = sl.ShiftedList([], -1)
+    circ_true = []
+    circ_true.append(S.node_coords)
     circ_true_1 = np.zeros((num_nodes - 1, space_dim))
     circ_true_1[:, 0] = np.array([1/8, 3/8, 5/8, 7/8], dtype=dctkit.float_dtype)
     circ_true.append(circ_true_1)
@@ -146,7 +147,8 @@ def test_simplicial_complex_2(setup_test, space_dim):
     tets_cont_bnd_face_true = np.arange(4, dtype=dctkit.int_dtype).reshape(-1, 1)
 
     # define true circumcenters
-    circ_true = sl.ShiftedList([], -1)
+    circ_true = []
+    circ_true.append(S.node_coords)
     circ_1_true = np.zeros((num_edges, space_dim), dtype=dctkit.float_dtype)
     circ_1_true[:, :2] = np.array([[0.5, 0.],
                                    [0.,  0.5],
@@ -314,7 +316,8 @@ def test_simplicial_complex_3(setup_test, space_dim):
     tets_cont_bnd_face_true = np.zeros(4, dtype=dctkit.int_dtype).reshape(-1, 1)
 
     # define true circumcenter
-    circ_true = sl.ShiftedList([], -1)
+    circ_true = []
+    circ_true.append(S.node_coords)
     circ_1_true = np.array([[0.5, 0., 0.],
                            [0.25, 0.5, 0.],
                            [0., 0., 0.5],
