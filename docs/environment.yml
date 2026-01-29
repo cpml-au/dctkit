@@ -17,6 +17,7 @@ dependencies:
   - yaml
   - pyvista
   - pip:
+    - nbsphinx
     - sphinx_rtd_theme
     - myst-parser[linkify]
     - sphinx>=3.2.1
