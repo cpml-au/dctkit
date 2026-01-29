@@ -50,10 +50,10 @@ def flat(c: C.CochainP0 | C.CochainD0, weights: Array, edges: C.CochainP1V |
 
 
 def flat_DPD(c: C.CochainD0V | C.CochainD0T) -> C.CochainD1:
-    """Implements the flat DPD operator for dual discrete vector fields.
+    """Implements the flat DPD operator for dual 0-cochains.
 
     Args:
-        v: a dual discrete vector field.
+        v: a dual 0-cochain.
     Returns:
         the dual 1-cochain resulting from the application of the flat operator.
     """
@@ -64,10 +64,10 @@ def flat_DPD(c: C.CochainD0V | C.CochainD0T) -> C.CochainD1:
 
 
 def flat_DPP(c: C.CochainD0V | C.CochainD0T) -> C.CochainP1:
-    """Implements the flat DPP operator for dual discrete vector fields.
+    """Implements the flat DPP operator for dual 0-cochains.
 
     Args:
-        v: a dual discrete vector field.
+        v: a dual 0-cochain.
     Returns:
         the primal 1-cochain resulting from the application of the flat operator.
     """
@@ -90,11 +90,12 @@ def flat_PDP(c: C.CochainP0V | C.CochainP0T) -> C.CochainP1:
 
     return flat(c, flat_matrix, C.CochainP1(c.complex, primal_edges))
 
+
 def flat_dual_upw(c: C.CochainD0V | C.CochainD0T) -> C.CochainD1:
-    """Implements the flat DPD operator for dual discrete vector fields.
+    """Implements the flat upwind operator for dual 0-cochains.
 
     Args:
-        v: a dual discrete vector field.
+        v: a dual 0-cochain.
     Returns:
         the dual 1-cochain resulting from the application of the flat operator.
     """

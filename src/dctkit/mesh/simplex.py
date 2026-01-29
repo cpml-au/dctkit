@@ -368,7 +368,7 @@ class SimplicialComplex:
         self.flat_DPD_weights = (rows, cols, data)
 
     def get_flat_dual_upw_weights(self):
-        #FIXME: fix the docs!
+        # FIXME: fix the docs!
         """Compute the matrix where each non-negative entry (i,j) is the ratio between
            the length of the j-th dual edge contained in the i-th n-simplex and the
            total length of the j-th dual edge.
@@ -406,7 +406,6 @@ class SimplicialComplex:
                     cols.append(j)
                     data.append(1.)
                 count += 1
-                    
 
         # Convert to NumPy arrays
         rows = np.array(rows, dtype=int)
