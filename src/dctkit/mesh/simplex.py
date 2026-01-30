@@ -368,54 +368,43 @@ class SimplicialComplex:
         self.flat_DPD_weights = (rows, cols, data)
 
     def get_flat_dual_upw_weights(self):
-        # FIXME: fix the docs!
-        """Compute the matrix where each non-negative entry (i,j) is the ratio between
-           the length of the j-th dual edge contained in the i-th n-simplex and the
-           total length of the j-th dual edge.
+        """Compute the matrix where each nonzero entry (i, j) corresponds to the 
+           contribution of the j-th dual (n-1)-cell (dual edge) to the i-th n-simplex.
+           The weight represents the fraction of the dual edge length that lies inside
+           the n-simplex. In the current implementation, this contribution is treated
+           as unitary (value 1.0) when the dual edge intersects the simplex in a
+           non-degenerate way, and zero otherwise.
 
            This ratio appears as a weighting factor in the computation of the discrete
            flat operator.
         """
         if not hasattr(self, "dual_edges_lengths"):
             self.get_dual_edge_vectors()
+        if not hasattr(self, "S_dual"):
+            self.get_S_dual()
 
         dim = self.dim
         B = self.simplices_faces[dim]
         num_n_simplices = self.S[dim].shape[0]
+        num_dual_edges = self.S_dual[1].shape[0]
 
         # Preallocate lists for COO format
         rows = []
         cols = []
         data = []
-
-        for i in range(num_n_simplices):
-            # get the indices of the (n-1)-simplices belonging to the i-th n-simplex
-            dual_edges_indices = B[i, :]
-            # construct the matrix containing the difference vectors between the
-            # circumcenter of the i-th n-simplex and the circumcenters of the dual edges
-            # intersecting such a simplex, arranged in rows.
-            diff_circs = self.circ[dim][i, :] - self.circ[dim-1][dual_edges_indices, :]
-            # take the norms of the difference vectors
-            lengths = np.linalg.norm(diff_circs, axis=1)
-
-            # append nonzero entries
-            count = 0
-            for j, val in zip(dual_edges_indices, lengths):
-                if val != 0 and count == 1:
-                    rows.append(i)
-                    cols.append(j)
-                    data.append(1.)
-                count += 1
+        for i in range(num_dual_edges):
+            dual_edge = self.S_dual[1][i]
+            # check that the dual edge is not degenerate, that is not of length 0
+            if jnp.sum(dual_edge) > 0:
+                # extract only the left value
+                rows.append(dual_edge[0])
+                cols.append(i)
+                data.append(1.)
 
         # Convert to NumPy arrays
         rows = np.array(rows, dtype=int)
         cols = np.array(cols, dtype=int)
         data = np.array(data, dtype=dctkit.float_dtype)
-        # in the case of non-well centered mesh an entry of the flat weights matrix
-        # can be NaN. In this case, the corresponding dual edge is the null vector,
-        # hence we shouldn't take in account dot product with it. We then replace
-        # any NaN with 0.
-        data = np.nan_to_num(data)
 
         # Build sparse COO matrix of raw lengths
         self.flat_dual_upw_weights = (rows, cols, data)
@@ -440,6 +429,8 @@ class SimplicialComplex:
             self.flat_DPP_weights = self.flat_DPD_weights
 
     def get_flat_PDP_weights(self):
+        """Construct the primal-dual-primal (PDP) weighting matrix for the
+           discrete flat operator."""
         num_edges = self.S[1].shape[0]
 
         # Preallocate lists for COO format
