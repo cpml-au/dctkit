@@ -368,7 +368,7 @@ class SimplicialComplex:
         self.flat_DPD_weights = (rows, cols, data)
 
     def get_flat_dual_upw_weights(self):
-        """Compute the matrix where each nonzero entry (i, j) corresponds to the 
+        """Compute the matrix where each nonzero entry (i, j) corresponds to the
            contribution of the j-th dual (n-1)-cell (dual edge) to the i-th n-simplex.
            The weight represents the fraction of the dual edge length that lies inside
            the n-simplex. In the current implementation, this contribution is treated
@@ -378,14 +378,9 @@ class SimplicialComplex:
            This ratio appears as a weighting factor in the computation of the discrete
            flat operator.
         """
-        if not hasattr(self, "dual_edges_lengths"):
-            self.get_dual_edge_vectors()
         if not hasattr(self, "S_dual"):
             self.get_S_dual()
 
-        dim = self.dim
-        B = self.simplices_faces[dim]
-        num_n_simplices = self.S[dim].shape[0]
         num_dual_edges = self.S_dual[1].shape[0]
 
         # Preallocate lists for COO format
