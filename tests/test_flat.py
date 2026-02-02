@@ -1,7 +1,7 @@
 import numpy as np
 import dctkit as dt
 from dctkit.mesh import util
-import dctkit.dec.flat as V
+from dctkit.dec.flat import flat_DPD, flat_DPP, flat_PDP, flat_dual_upw
 from dctkit.dec import cochain as C
 
 
@@ -14,21 +14,16 @@ def test_flat_2D(setup_test):
     S.get_flat_PDP_weights()
     S.get_flat_dual_upw_weights()
 
-    dedges = S.dual_edges_vectors
-    pedges = S.primal_edges_vectors
-    dual_edges_coch = C.CochainD1V(complex=S, coeffs=dedges)
-    primal_edges_coch = C.CochainP1V(complex=S, coeffs=pedges)
-
     # vector-valued cochains test
     vP0_coeffs = np.ones((S.num_nodes, S.space_dim), dtype=dt.float_dtype)
     vD0_coeffs = np.ones((S.S[2].shape[0], S.space_dim), dtype=dt.float_dtype)
     vP0 = C.CochainP0V(S, vP0_coeffs)
     vD0 = C.CochainD0V(S, vD0_coeffs)
 
-    c_v_DPD = V.flat(vD0, S.flat_DPD_weights, dual_edges_coch)
-    c_v_DPP = V.flat(vD0, S.flat_DPP_weights, primal_edges_coch)
-    c_v_PDP = V.flat(vP0, S.flat_PDP_weights, primal_edges_coch)
-    c_v_dual_upw = V.flat(vD0, S.flat_dual_upw_weights, dual_edges_coch)
+    c_v_DPD = flat_DPD(vD0)
+    c_v_DPP = flat_DPP(vD0)
+    c_v_PDP = flat_PDP(vP0)
+    c_v_dual_upw = flat_dual_upw(vD0)
 
     c_v_DPD_true_coeffs = S.dual_edges_vectors.sum(axis=1)[:, None]
     c_v_DPP_true_coeffs = S.primal_edges_vectors.sum(axis=1)[:, None]
@@ -70,10 +65,10 @@ def test_flat_2D(setup_test):
     TP0 = C.CochainP0V(S, TP0_coeffs)
     TD0 = C.CochainD0T(S, TD0_coeffs)
 
-    c_T_DPD = V.flat(TD0, S.flat_DPD_weights, dual_edges_coch)
-    c_T_DPP = V.flat(TD0, S.flat_DPP_weights, primal_edges_coch)
-    c_T_PDP = V.flat(TP0, S.flat_PDP_weights, primal_edges_coch)
-    c_T_dual_upw = V.flat(TD0, S.flat_dual_upw_weights, dual_edges_coch)
+    c_T_DPD = flat_DPD(TD0)
+    c_T_DPP = flat_DPP(TD0)
+    c_T_PDP = flat_PDP(TP0)
+    c_T_dual_upw = flat_dual_upw(TD0)
 
     c_T_DPD_true_coeffs = np.ones((12, 2), dtype=dt.float_dtype)
     c_T_DPD_true_coeffs = c_v_DPD_true_coeffs*c_T_DPD_true_coeffs
