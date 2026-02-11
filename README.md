@@ -5,9 +5,10 @@ testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge
 [![Docs](https://readthedocs.org/projects/dctkit/badge/?version=latest)](https://dctkit.readthedocs.io/en/latest/?badge=latest)
 
 `dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
-Discrete Differential Geometry to provide a *mathematical language for building discrete physical models*.
+Discrete Differential Geometry to provide a _mathematical language for building discrete physical models_.
 
 Features:
+
 - uses [`jax`](http://github.com/google/jax/) as a backend for numerical computations
 - manipulation of simplicial complexes of any dimension: computation of
   boundary/coboundary operators, circumcenters, dual/primal volumes
@@ -60,6 +61,7 @@ Running the benchmarks:
 ```bash
 $ sh ./bench/run_bench
 ```
+
 The Markdown file `bench_results.md` will be generated containing the results.
 
 ## Usage
@@ -67,7 +69,7 @@ The Markdown file `bench_results.md` will be generated containing the results.
 Read the full [documentation](https://dctkit.readthedocs.io/en/latest/) (including API
 docs).
 
-*Example*: solving discrete Poisson equation in 1D (variational formulation):
+_Example_: solving discrete Poisson equation in 1D (variational formulation):
 
 ```python
 import dctkit as dt
@@ -121,3 +123,14 @@ x = jnp.insert(x, 0, 0.)
 
 plot(x)
 ```
+
+## Repositories using dctkit
+
+The following projects leverage dctkit as their discrete calculus toolkit. If you have a project you would like to showcase, please submit a pull request with your repository details to be included in this list.
+
+- [SR-DEC_Examples](https://github.com/cpml-au/SR-DEC_Examples): benchmarks for symbolic regression paired with discrete exterior calculus.
+- [SR-Traffic](https://github.com/cpml-au/SR-Traffic): symbolic regression of fundamental diagrams of first-order traffic flow models.
+
+## Acknowledgements
+
+This work is supported by the European Union (European Research Council (ERC), ALPS, 101039481). Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the ERC Executive Agency. Neither the European Union nor the granting authority can be held responsible for them.
