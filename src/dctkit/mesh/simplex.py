@@ -81,30 +81,37 @@ class SimplicialComplex:
                 self.S[self.dim - p], faces_ordered)
 
     def get_complex_boundary_faces_indices(self):
-        """Find the IDs of the boundary faces of the complex, i.e. the row indices of
-        the boundary faces in the matrix S[dim-1]. (fix the docs)
-        """
-        # FIXME: this routine is tested only for dim-1 boundary simplices. Fix it!
-        self.boundary_simplices = sl.ShiftedList([None] * (self.dim + 1), -1)
+        """Finds boundary k-simplices IDs for any k=0,...,dim."""
+        self.boundary_simplices = [None] * (self.dim + 1)
 
-        # For k = 0 to dim - 1, use boundary matrix ∂_{k+1}
-        for k in range(self.dim):
-            boundary_mat = self.boundary[k + 1]  # COO format
-            rows = boundary_mat[0]  # Each row corresponds to a k-simplex
+        # top-level boundary (Faces in 3D, Edges in 2D)
+        # these are (n-1)-simplices that belong to exactly ONE n-simplex
+        boundary_mat = self.boundary[self.dim]
+        # indices of (n-1)-simplices
+        rows = boundary_mat[0]
+        unique, counts = np.unique(rows, return_counts=True)
+        bnd_top_faces = unique[counts == 1]
+        self.boundary_simplices[self.dim - 1] = bnd_top_faces
 
-            unique, counts = np.unique(rows, return_counts=True)
-            bnd_k = unique[counts == 1]
-            self.boundary_simplices[k] = bnd_k
+        # boundary Nodes (0-simplices)
+        # recursively find all nodes contained in the boundary faces
+        # get all nodes (S[0]) belonging to the boundary (n-1)-simplices
+        # we use S[dim-1] to get the connectivity of the boundary elements
+        bnd_nodes = np.unique(self.S[self.dim - 1][bnd_top_faces])
+        self.boundary_simplices[0] = bnd_nodes
 
-        # For k = dim (top-level), look for top-simplices having at least one
-        # (dim-1)-face on the boundary
+        # intermediate dimensions (e.g., edges in a 3D mesh boundary)
+        if self.dim == 3:
+            # Boundary edges are edges that belong to the boundary faces
+            # We can find them by looking at S[2] (faces) -> S[1] (edges)
+            # NOTE: This requires having a simplices_faces map for faces
+            bnd_faces_edges = self.simplices_faces[2][bnd_top_faces]
+            self.boundary_simplices[1] = np.unique(bnd_faces_edges)
 
-        # Find boundary (dim-1)-simplices
-        boundary_faces = self.boundary_simplices[self.dim - 1]
-        # shape: (num_top_simplices, dim+1)
+        # identify boundary n-simplices (Tets in 3D, Tris in 2D)
+        # any n-simplex that has at least one face on the boundary
         simplices_faces = self.simplices_faces[self.dim]
-        is_boundary_simplex = np.any(np.isin(simplices_faces, boundary_faces), axis=1)
-
+        is_boundary_simplex = np.any(np.isin(simplices_faces, bnd_top_faces), axis=1)
         self.boundary_simplices[self.dim] = np.nonzero(is_boundary_simplex)[0]
 
     def get_tets_containing_a_boundary_face(self):
