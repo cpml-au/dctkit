@@ -35,7 +35,7 @@ def test_simplicial_complex_1(setup_test, space_dim: int):
     S = util.build_complex_from_mesh(mesh, space_dim=space_dim)
     S.get_hodge_star()
     S.get_primal_edge_vectors()
-    S.get_complex_boundary_faces_indices()
+    S.get_complex_boundary_simplices_indices()
     S.get_tets_containing_a_boundary_face()
     S.get_dual_edge_vectors()
 
@@ -116,7 +116,7 @@ def test_simplicial_complex_2(setup_test, space_dim):
     S = util.build_complex_from_mesh(mesh, is_well_centered=False, space_dim=space_dim)
     S.get_hodge_star()
     S.get_primal_edge_vectors()
-    S.get_complex_boundary_faces_indices()
+    S.get_complex_boundary_simplices_indices()
     S.get_tets_containing_a_boundary_face()
     S.get_dual_edge_vectors()
     S.get_flat_DPD_weights()
@@ -288,7 +288,7 @@ def test_simplicial_complex_3(setup_test, space_dim):
     S = util.build_complex_from_mesh(mesh, space_dim)
     S.get_hodge_star()
     S.get_primal_edge_vectors()
-    S.get_complex_boundary_faces_indices()
+    S.get_complex_boundary_simplices_indices()
     S.get_tets_containing_a_boundary_face()
     S.get_dual_edge_vectors()
 

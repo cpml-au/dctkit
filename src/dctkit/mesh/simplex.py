@@ -80,7 +80,7 @@ class SimplicialComplex:
             self.simplices_faces[self.dim - p] = compute_simplices_faces(
                 self.S[self.dim - p], faces_ordered)
 
-    def get_complex_boundary_faces_indices(self):
+    def get_complex_boundary_simplices_indices(self):
         """Finds boundary k-simplices IDs for any k=0,...,dim."""
         self.boundary_simplices = [None] * (self.dim + 1)
 
@@ -118,7 +118,7 @@ class SimplicialComplex:
         """Compute a list in which the i-th element is the index of the top-level
         simplex in which the i-th boundary face belongs."""
         if not hasattr(self, "boundary_simplices"):
-            self.get_complex_boundary_faces_indices()
+            self.get_complex_boundary_simplices_indices()
         dim = self.dim - 1
         self.tets_cont_bnd_face = get_cofaces(
             self.boundary_simplices[dim], dim, self)
@@ -147,7 +147,7 @@ class SimplicialComplex:
         """
         # FIXME: test properly this routine!
         if not hasattr(self, "boundary_simplices"):
-            self.get_complex_boundary_faces_indices()
+            self.get_complex_boundary_simplices_indices()
         dim = self.dim
         self.S_dual = [None]*2
 
@@ -288,7 +288,7 @@ class SimplicialComplex:
         # construct the array consisting of the positions of the circumcenters of the
         # boundary faces arranged by rows, padded with zeros for the non-boundary edges
         if not hasattr(self, "bnd_faces_indices"):
-            self.get_complex_boundary_faces_indices()
+            self.get_complex_boundary_simplices_indices()
         if dim == 1:
             # in this case faces = nodes
             circ_faces = self.node_coords

@@ -27,17 +27,17 @@ def build_complex_from_mesh(mesh: Mesh, space_dim=3,
     elif "line" in cell_types:
         tet_node_tags = mesh.cells_dict["line"]
 
-    # 2. Identify unique nodes actually used by these simplices
+    # identify unique nodes actually used by these simplices
     used_node_indices, inverse_indices = np.unique(tet_node_tags, return_inverse=True)
 
-    # 3. Filter coordinates to keep only used nodes
+    # filter coordinates to keep only used nodes
     new_coords = node_coords[used_node_indices]
 
-    # 4. RE-INDEX the simplices!
+    # re-index the simplices!
     # This maps original global indices to the new 0...N-1 range
     new_tet_node_tags = inverse_indices.reshape(tet_node_tags.shape)
 
-    # 5. Initialize the complex with the cleaned data
+    # initialize the complex with the cleaned data
     S = SimplicialComplex(new_tet_node_tags, new_coords, space_dim,
                           is_well_centered=is_well_centered)
     return S
