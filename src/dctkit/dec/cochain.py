@@ -287,8 +287,6 @@ def star(c: Cochain) -> Cochain:
     if c.is_primal:
         star_c.coeffs = (c.complex.hodge_star[c.dim]*c.coeffs.T).T
     else:
-        # NOTE: this step only works with well-centered meshes!
-        assert c.complex.is_well_centered
         star_c.coeffs = (
             c.complex.hodge_star_inverse[c.complex.dim - c.dim]*c.coeffs.T).T
 

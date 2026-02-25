@@ -113,7 +113,7 @@ def test_simplicial_complex_1(setup_test, space_dim: int):
 @pytest.mark.parametrize('space_dim', space_dim[1:])
 def test_simplicial_complex_2(setup_test, space_dim):
     mesh, _ = util.generate_square_mesh(1.0)
-    S = util.build_complex_from_mesh(mesh, is_well_centered=False, space_dim=space_dim)
+    S = util.build_complex_from_mesh(mesh, space_dim=space_dim)
     S.get_hodge_star()
     S.get_primal_edge_vectors()
     S.get_complex_boundary_simplices_indices()

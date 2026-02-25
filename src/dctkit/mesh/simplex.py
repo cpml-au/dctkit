@@ -20,7 +20,6 @@ class SimplicialComplex:
             tetrahedron or top-level simplex (rows).
         node_coords: Cartesian coordinates (columns) of all the nodes (rows) of the
             simplicial complex.
-        is_well_centered: True if the mesh is well-centered.
 
     Attributes:
         dim (int): dimension of the complex.
@@ -42,7 +41,7 @@ class SimplicialComplex:
     """
 
     def __init__(self, tet_node_tags: npt.NDArray, node_coords: npt.NDArray,
-                 space_dim: int = 3, is_well_centered: bool = False):
+                 space_dim: int = 3):
 
         self.node_coords = node_coords.astype(dctkit.float_dtype)[:, :space_dim]
         tet_node_tags = tet_node_tags.astype(dctkit.int_dtype)
@@ -50,7 +49,6 @@ class SimplicialComplex:
         self.space_dim = space_dim
         self.float_dtype = dctkit.float_dtype
         self.int_dtype = dctkit.int_dtype
-        self.is_well_centered = is_well_centered
         self.ref_covariant_basis = None
         self.ref_metric_contravariant = None
 
@@ -254,10 +252,9 @@ class SimplicialComplex:
         self.hodge_star = [self.dual_volumes[i]/self.primal_volumes[i]
                            for i in range(n + 1)]
 
-        if self.is_well_centered:
-            # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
-            self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
-                                       for i in range(n + 1)]
+        # adjust the sign in order to have star_inv*star = (-1)^(p*(n-p))
+        self.hodge_star_inverse = [(-1)**(i*(n-i))/self.hodge_star[i]
+                                   for i in range(n + 1)]
 
     def get_primal_edge_vectors(self):
         """Compute the primal edge vectors."""

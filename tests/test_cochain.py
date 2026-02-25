@@ -10,7 +10,7 @@ def test_coboundary(setup_test):
     mesh_2, _ = util.generate_square_mesh(1.0)
     mesh_3, _ = util.generate_tet_mesh(2.0)
     S_1 = util.build_complex_from_mesh(mesh_1)
-    S_2 = util.build_complex_from_mesh(mesh_2, is_well_centered=False)
+    S_2 = util.build_complex_from_mesh(mesh_2)
     S_3 = util.build_complex_from_mesh(mesh_3)
 
     # 1D test
@@ -634,7 +634,7 @@ def test_convolution(setup_test):
 
 def test_coboundary_closure(setup_test):
     mesh_2, _ = util.generate_square_mesh(1.0)
-    S_2 = util.build_complex_from_mesh(mesh_2, is_well_centered=False)
+    S_2 = util.build_complex_from_mesh(mesh_2)
     S_2.get_hodge_star()
 
     c = C.CochainP1(complex=S_2, coeffs=np.arange(

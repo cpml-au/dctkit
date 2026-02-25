@@ -5,13 +5,12 @@ from pygmsh.geo import Geometry
 from meshio import Mesh
 
 
-def build_complex_from_mesh(mesh: Mesh, space_dim=3,
-                            is_well_centered=True) -> SimplicialComplex:
+def build_complex_from_mesh(mesh: Mesh, space_dim: int = 3) -> SimplicialComplex:
     """Build a SimplicialComplex object from a meshio.Mesh object.
 
     Args:
         mesh: a meshio.Mesh object.
-        is_well_centered: True if the mesh is well centered.
+        space_dim: dimension of the ambient space
 
     Returns:
         a SimplicialComplex object.
@@ -38,8 +37,7 @@ def build_complex_from_mesh(mesh: Mesh, space_dim=3,
     new_tet_node_tags = inverse_indices.reshape(tet_node_tags.shape)
 
     # initialize the complex with the cleaned data
-    S = SimplicialComplex(new_tet_node_tags, new_coords, space_dim,
-                          is_well_centered=is_well_centered)
+    S = SimplicialComplex(new_tet_node_tags, new_coords, space_dim)
     return S
 
 
