@@ -18,7 +18,6 @@ Features:
   fields, sharp operator
 - interface to the [`pygmo`](https://github.com/esa/pygmo2) optimization library
 - interface to the [`PETSc`](https://petsc.org) non-linear solvers and optimizers
-  (_temporarily disabled_)
 - routines for solving optimal control problems
 - implementation of discrete physical models: Dirichlet energy, Poisson, Euler's
   Elastica, isotropic linear elasticity

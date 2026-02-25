@@ -7,7 +7,6 @@ import pygmo as pg
 from typeguard import check_type
 
 from petsc4py import PETSc, init
-from petsc4py.PETSc import Vec
 import jaxopt
 
 
