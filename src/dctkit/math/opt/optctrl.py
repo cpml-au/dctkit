@@ -6,8 +6,8 @@ from typing import List, Dict
 import pygmo as pg
 from typeguard import check_type
 
-# from petsc4py import PETSc, init
-# from petsc4py.PETSc import Vec
+from petsc4py import PETSc, init
+from petsc4py.PETSc import Vec
 import jaxopt
 
 
@@ -41,9 +41,9 @@ class OptimizationProblem:
 
         self.__register_obj_and_grad_fn(objfun, constrfun, constr_args)
 
-        # if solver_lib == "petsc":
-        #     self.solver = PETScSolver(self)
-        if solver_lib == "jaxopt":
+        if solver_lib == "petsc":
+            self.solver = PETScSolver(self)
+        elif solver_lib == "jaxopt":
             self.solver = JAXoptSolver(self)
         else:
             self.solver = PygmoSolver(self)
@@ -166,47 +166,59 @@ class OptimizationSolver:
         raise NotImplementedError
 
 
-# class PETScSolver(OptimizationSolver):
-#     def __init__(self, prb: OptimizationProblem):
-#         super().__init__(prb)
-#         init()
-#         # create default solver and settings
-#         self.tao = PETSc.TAO().create()
-#         self.tao.setType(PETSc.TAO.Type.BQNLS)  # Specify the solver type
-#         # create variable to store the gradient of the objective function
-#         self.g = PETSc.Vec().createSeq(self.prb.dim)
+class PETScSolver(OptimizationSolver):
+    def __init__(self, prb: OptimizationProblem):
+        super().__init__(prb)
+        init()
+        self.tao = PETSc.TAO().create()
+        self.tao.setType(PETSc.TAO.Type.BQNLS)
+        self.g = PETSc.Vec().createSeq(self.prb.dim)
+        self.obj_args = {}  # Store args here
 
-#     def set_obj_args(self, args: dict) -> None:
-#         check_type(args, Dict[str, float | np.float32 | np.float64
-#                               | npt.NDArray | Array])
-#         self.tao.setObjectiveGradient(
-#             self.objective_and_gradient, self.g, kargs=args)
+    def set_obj_args(self, args: dict) -> None:
+        # Save the dict to the instance
+        self.obj_args = args
+        # Tell TAO to use our internal wrapper
+        self.tao.setObjectiveGradient(self.objective_and_gradient, self.g)
 
-#     def objective_and_gradient(self, tao, x: Vec, g: Vec, **kwargs: Dict):
-#         """PETSc-compatible wrapper for the function that returns the objective value
-#         and the gradient."""
-#         fval, grad = self.prb.objandgrad(x.getArray(), **kwargs)
-#         g.setArray(grad)
-#         return fval
+    def objective_and_gradient(self, tao, x, g):
+        """Default wrapper that pulls args from self.obj_args"""
+        x_array = x.getArray(readonly=True)
 
-#     def run(self, x0: npt.NDArray, **kwargs: Dict) -> npt.NDArray:
-#         maxeval = kwargs["maxeval"]
-#         gatol = kwargs["gatol"]
-#         grtol = kwargs["grtol"]
-#         gttol = kwargs["gttol"]
-#         verbose = kwargs["verbose"]
-#         x = PETSc.Vec().createWithArray(x0)
-#         self.tao.setSolution(x)
-#         self.tao.setMaximumIterations(maxeval)
-#         self.tao.setMaximumFunctionEvaluations(maxeval)
-#         self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
-#         self.tao.setFromOptions()  # Set options for the solver
-#         self.tao.solve()
-#         if verbose:
-#             self.tao.view()
-#         u = self.tao.getSolution().getArray()
-#         # objective_value = self.tao.getObjectiveValue()
-#         return u
+        # Unpack the stored obj_args directly into the JAX call
+        fval, grad = self.prb.objandgrad(x_array, **self.obj_args)
+
+        g.setArray(np.array(grad.flatten(), dtype=PETSc.ScalarType))
+        return fval
+
+    def run(self, x0: npt.NDArray, **kwargs: Dict) -> npt.NDArray:
+        # Extract settings with defaults
+        maxeval = kwargs.get("maxeval", 500)
+        gatol = kwargs.get("gatol", 1e-5)
+        grtol = kwargs.get("grtol", 1e-5)
+        gttol = kwargs.get("gttol", 1e-5)
+        verbose = kwargs.get("verbose", False)
+
+        # Create the solution vector
+        # Using 'createWithArray' links the memory. Ensure x0 is float64.
+        x = PETSc.Vec().createWithArray(x0.astype(PETSc.ScalarType))
+
+        self.tao.setSolution(x)
+        self.tao.setMaximumIterations(maxeval)
+        self.tao.setTolerances(gatol=gatol, grtol=grtol, gttol=gttol)
+
+        # Allow command line overrides (e.g., -tao_monitor)
+        self.tao.setFromOptions()
+
+        self.tao.solve()
+
+        if verbose:
+            self.tao.view()
+            reason = self.tao.getConvergedReason()
+            print(f"TAO Termination Reason: {reason}")
+
+        # Return a copy of the results as a numpy array
+        return self.tao.getSolution().getArray().copy()
 
 
 class JAXoptSolver(OptimizationSolver):

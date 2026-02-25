@@ -9,7 +9,6 @@ dependencies:
   - jaxopt
   - numpy
   - pygmo
-  # - petsc4py
   - python
   - python-gmsh
   - scipy
@@ -20,6 +19,9 @@ dependencies:
   - ipywidgets
   - pyvista
   - pip
+  - petsc
+  - petsc4py
   - pip:
     - pygmsh
     - tox-conda
+    

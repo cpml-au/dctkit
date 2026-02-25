@@ -20,6 +20,7 @@ class SimplicialComplex:
             tetrahedron or top-level simplex (rows).
         node_coords: Cartesian coordinates (columns) of all the nodes (rows) of the
             simplicial complex.
+        space_dim: dimension of the ambient space.
 
     Attributes:
         dim (int): dimension of the complex.

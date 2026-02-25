@@ -12,7 +12,8 @@ from functools import partial
 
 
 cases = [["jaxopt", False], ["jaxopt", True], ["pygmo", True],
-         ["pygmo", False], ["scipy", False], ["scipy", True]]
+         ["pygmo", False], ["scipy", False], ["scipy", True],
+         ["petsc", False], ["petsc", True],]
 
 
 @pytest.mark.parametrize('optimizer,energy_formulation', cases)
@@ -155,6 +156,60 @@ def test_poisson(setup_test, optimizer, energy_formulation):
                                      solver_lib="jaxopt")
         prb.set_obj_args(args)
         u = prb.solve(x0=u_0)
+
+    elif optimizer == "petsc":
+        print("Using PETSc optimizer...")
+
+        gamma = 1000.
+
+        if energy_formulation:
+            print("Using energy formulation...")
+
+            def energy_poisson(x, f, k, boundary_values, gamma):
+                pos, value = boundary_values
+                f_coch = C.Cochain(0, True, S, f)
+                u_coch = C.Cochain(0, True, S, x)
+                du = C.coboundary(u_coch)
+                norm_grad = k/2.*C.inner(du, du)
+                bound_term = -C.inner(u_coch, f_coch)
+                penalty = 0.5*gamma*jnp.sum((x[pos] - value)**2)
+                return norm_grad + bound_term + penalty
+
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma}
+            obj = energy_poisson
+
+        else:
+            print("Solving Poisson equation...")
+
+            def obj_poisson(x, f, k, boundary_values, gamma, mask):
+                pos, value = boundary_values
+                c = C.Cochain(0, True, S, x)
+                # compute Laplace-de Rham of c
+                laplacian = C.laplacian(c)
+                # the Laplacian on forms is the negative of the Laplacian on scalar fields
+                laplacian.coeffs *= -k
+                # compute the residual of the Poisson equation k*Delta u + f = 0
+                r = laplacian.coeffs + f
+                penalty = jnp.sum((x[pos] - value)**2)
+                obj = 0.5*jnp.linalg.norm(r*mask)**2 + 0.5*gamma*penalty
+                return obj
+
+            args = {'f': f_vec, 'k': k, 'boundary_values': boundary_values,
+                    'gamma': gamma, 'mask': mask}
+            obj = obj_poisson
+
+        # Ensure "petsc" is passed to the problem class
+        prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj,
+                                     solver_lib="petsc")
+        prb.set_obj_args(args)
+
+        # PETSc often requires tighter tolerances for these discrete problems
+        u = prb.solve(x0=u_0, gatol=1e-7, grtol=1e-7).astype(dt.float_dtype)
+
+        prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj)
+        prb.set_obj_args(args)
+        u = prb.solve(u_0, algo="lbfgs").astype(dt.float_dtype)
 
     assert u.dtype == dt.float_dtype
     assert u_true.dtype == u.dtype
