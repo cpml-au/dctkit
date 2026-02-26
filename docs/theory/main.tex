@@ -562,6 +562,8 @@ $$\begin{CD}
     
 \end{Ex}
 
+\paragraph{The coboundary closure} The \textbf{coboundary closure} is a critical modification to the dual 1-coboundary operator necessary for maintaining physical and mathematical consistency at domain boundaries. It was first introduced in \cite{mohamed2016discrete}. While the standard dual 1-coboundary $d^* _1$ is designed to evaluate the circulation dual 1-cochains along the boundaries of dual 2-cells (polygons), it encounters a limitation for nodes located on the physical boundary of a mesh. For these boundary nodes, the dual 2-cells are "open" because their boundaries are partially composed of primal edges. To resolve this, a supplementary boundary operator, denoted as $d_b$, is introduced to "close" these dual cells by traversing along the primal boundary edges in the direction of the dual cell's orientation. The coboundary closure ensures that discrete circulation and conservation properties are preserved across the entire computational domain.
+
 \subsection{The Discrete Hodge Star}
 
 \begin{figure}[t!]
@@ -745,7 +747,54 @@ An analogous analysis can be done for tensor-valued cochains.
 
 Notice that all the discrete theory developed so far should be properly extended in this case. Some operations are straightforward to extend (\textsl{e.g.}, the inner product), but for others an extended differential theory is needed.
 For example, the coboundary of vector valued-cochains can be seen as the discrete version of the exterior covariant derivative \cite{berwick2021discrete}.
-Since not all the operators will be of our interest for vector-valued cochains, we are not going to present their formal extension here. For further information, we refer the reader to \cite{berwick2021discrete}. 
+Since not all the operators will be of our interest for vector-valued cochains, we are not going to present their formal extension here. For further information, we refer the reader to \cite{berwick2021discrete}.
+
+\paragraph{Coboundary of a Vector-Valued Cochain} A natural way to define the coboundary of a vector-valued cochain is ``component-wise'', in the sense that if $\mathbf{c}^p = \sum_i \cc^p(\sigma^i_p)  \sigma^i_p$ is a vector-valued $p$-cochain and $d$ is the usual coboundary operator for scalar-valued cochain, then
+\begin{equation}
+    d \cc^p := \sum_i \cc^p(\sigma^i_p) d \sigma^p_i. \label{cobvec}
+\end{equation}
+Geometrically, we are adding up the contributions of basic $p$-cochains to obtain a $(p+1)$-cochain. On the contrary, we also want to preserve the relationship between continuous and discrete world, in the sense that vector-valued cochains should be the discrete counterpart of vector-valued differential forms. 
+
+Berwick-Evans et al \cite{berwick2021discrete} defined the discrete exterior covariant derivative and in the special case of trivial bundles this coincides with \eqref{cobvec}. Their definition of a discrete $d_\nabla$ is
+$$\langle d_\nabla \alpha, [0,\dots, k] \rangle_0 := U_{01}\langle \alpha, [1,\dots,k] \rangle_1 + \sum_{i=1}^k (-1)^i \langle \alpha, [0, \dots, \hat{i}, \dots, k] \rangle_0,$$
+
+where the $0$ and $1$ subscripts describe where the vector is transported through the discrete parallel transport $U_{01}: \mathcal{V}_1 \rightarrow \mathcal{V}_0$ and $\sigma^k = [0,\dots, k]$ is a general ordered $k$-simplex. Since in the case of trivial bundles we have a common vector space $\mathcal{V}$, we have $U_{ij} = id_{\mathcal{V}}$ for any $i \neq j$, thus we can disregard subscripts. We have
+\begin{equation*}
+    \begin{split}
+        \langle d_\nabla \alpha, [0,\dots, k] \rangle &:= \langle \alpha, [1,\dots,k] \rangle + \sum_{i=1}^k (-1)^i \langle \alpha, [0, \dots, \hat{i}, \dots, k] \rangle\\
+        & = \langle \alpha, \sum^k_{i=0} (-1)^i [0, \dots, \hat{i}, \dots, k] \rangle\\
+        &= \langle \alpha, \partial \sigma^k \rangle,
+    \end{split}
+\end{equation*}
+
+thus $d_\nabla$ is the adjoint with respect to chain-cochain pairing of the boundary operator. Since also the coboundary operator defined in \eqref{cobvec} satisfies this property, they must coincide.
+
+\subsection{Hirani Flat Operators} 
+We report here some of the discrete flats operators defined in \cite{hirani2003discrete} for vector-valued cochains. In the following, $\sigma_k \succ \sigma_l$ is the set of all the $k$-simplices in which the $l$-simplex $\sigma_l$ belongs to (for more details, see \cite{hirani2003discrete}).
+
+\begin{Def}
+    Let $c^0$ be a dual $0$-cochain. We define the \textbf{DPD flat} $\flat_{\text{DPD}}: \mathcal{C}^0(\star K, \rr) \rightarrow \mathcal{C}^1(\star K, \rr)$ as
+    \begin{equation}
+        \flat_{\text{DPD}}(c^0)(\star \sigma_{n-1}) := \sum_{\sigma_n \succ \sigma_{n-1}} c(\star \sigma_n) \cdot (\star \sigma_{n-1} \cap \sigma_n),
+    \end{equation}
+    where $(\star \sigma_{n-1} \cap \sigma_n)$ is the portion of the vector $\star \sigma_{n-1}$ in $\sigma_n$.
+\end{Def}
+
+\begin{Def}
+    Let $c^0$ be a dual $0$-cochain. We define the \textbf{DPP flat} $\flat_{\text{DPP}}: \mathcal{C}^0(\star K, \rr) \rightarrow \mathcal{C}^1( K, \rr)$ as
+    \begin{equation}
+        \flat_{\text{DPP}}(c^0)(\sigma_{1}) := \sum_{\sigma_n \succ \sigma_1} \frac{|\star \sigma_1 \cap \sigma_n|}{|\star \sigma_1|} c^0(\star \sigma_n) \cdot \Vec{\sigma}_1,
+    \end{equation}
+    where $\Vec{\sigma}_1$ is the vector corresponding to $\sigma_1$ with the inherited direction and orientation.
+\end{Def}
+
+\begin{Def}
+    Let $c^0$ be a primal $0$-cochain. We define the \textbf{PDP flat} $\flat_{\text{PDP}}: \mathcal{C}^0(K, \rr) \rightarrow \mathcal{C}^1( K, \rr)$ as
+    \begin{equation}
+         \flat_{\text{PDP}}(c^0)(\sigma_{1}) := \frac{c(\sigma^0_0) + c(\sigma^1_0)}{2} \cdot \Vec{\sigma}_1,
+    \end{equation}
+    where $\sigma^0_0$ and $\sigma^1_0$ are the nodes belonging to $\sigma_1$.
+\end{Def}
 
 \section{Application of DEC to Computational Physics: Examples}
 \label{sec: dec_examples}
