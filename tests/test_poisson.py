@@ -208,10 +208,6 @@ def test_poisson(setup_test, optimizer, energy_formulation):
         # PETSc often requires tighter tolerances for these discrete problems
         u = prb.solve(x0=u_0, gatol=1e-7, grtol=1e-7).astype(dt.float_dtype)
 
-        prb = oc.OptimizationProblem(dim=num_nodes, state_dim=num_nodes, objfun=obj)
-        prb.set_obj_args(args)
-        u = prb.solve(u_0, algo="lbfgs").astype(dt.float_dtype)
-
     assert u.dtype == dt.float_dtype
     assert u_true.dtype == u.dtype
     assert np.allclose(u[bnodes], u_true[bnodes], atol=1e-2)
