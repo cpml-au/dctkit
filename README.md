@@ -4,6 +4,17 @@
 testing](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml/badge.svg)](https://github.com/alucantonio/dctkit/actions/workflows/tests.yml)
 [![Docs](https://readthedocs.org/projects/dctkit/badge/?version=latest)](https://dctkit.readthedocs.io/en/latest/?badge=latest)
 
+<table style="width:100%; border-collapse: collapse; border: none;">
+  <tr style="border: none;">
+    <td style="width:50%; border: none; padding: 0px;">
+      <img src="figures/stanford_bunny.png" alt="Description of first figure" width="55%">
+    </td>
+    <td style="width:50%; border: none; padding: 0px;">
+      <img src="figures/cow.png" alt="Description of second figure" width="70%">
+    </td>
+  </tr>
+</table>
+
 `dctkit` implements operators from Algebraic Topology, Discrete Exterior Calculus and
 Discrete Differential Geometry to provide a _mathematical language for building discrete physical models_.
 
