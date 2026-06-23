@@ -20,6 +20,12 @@ build:
   os: "ubuntu-20.04"
   tools:
     python: "mambaforge-4.10"
+  jobs:
+    # RTD does a shallow clone without tags, which makes setuptools-scm fall
+    # back to 0.0.0. Fetch full history and tags so the real version is used.
+    post_checkout:
+      - git fetch --unshallow || true
+      - git fetch --tags || true
 
 conda:
   environment: docs/environment.yml
